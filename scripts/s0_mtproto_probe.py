@@ -129,6 +129,9 @@ class ObservationStore:
             )
         return result.rowcount == 1
 
+    def total_messages(self) -> int:
+        return int(self.conn.execute("SELECT COUNT(*) FROM seen").fetchone()[0])
+
     def warn(self, category: str) -> None:
         with self.conn:
             self.conn.execute("INSERT INTO warnings (observed_utc, category) VALUES (?,?)", (utc_now(), category))
@@ -146,6 +149,40 @@ class ObservationStore:
                 "first_observed_via": dict(counts), "warnings": dict(warns),
                 "real_time_latency_verified": False,
                 "note": "Message timestamps are Telegram timestamps, not NodeSeek forum publish times."}
+
+
+def log_callback_observation(store: ObservationStore, msg: Any, via: str) -> bool:
+    """Print each channel callback immediately without leaking message content.
+
+    A callback may already be persisted by history: say so, not 'new'.
+    """
+    inserted = store.insert(msg, via)
+    label = "LIVE" if via == "event_callback" else "CATCHUP"
+    post_id = post_id_from_message(msg) or "UNRECOGNIZED"
+    print(
+        f"[{label}] logged_utc={utc_now()} message_id={int(msg.id)} "
+        f"post_id={post_id} stored={'new' if inserted else 'already_recorded'}",
+        flush=True,
+    )
+    return inserted
+
+
+def format_reconcile_line(result: dict[str, Any], total_stored: int,
+                          *, startup: bool = False) -> str:
+    """'new' belongs ONLY to the history fetch, not all Telegram events."""
+    label = "STARTUP_CHECK" if startup else "CHECK"
+    status = result["status"]
+    fetched = int(result["retrieved"])
+    cursor = result["cursor"]
+    if status != "ok":
+        return (f"[{label}] status={status} fetched={fetched} "
+                f"backfill=INCOMPLETE total_stored={total_stored} cursor={cursor}")
+    history_new = int(result["new"])
+    return (
+        f"[{label}] fetched={fetched} history_new={history_new} "
+        f"already_recorded={fetched - history_new} "
+        f"total_stored={total_stored} cursor={cursor}"
+    )
 
 
 async def initialize_baseline(client: Any, channel: Any, store: ObservationStore) -> bool:
@@ -217,20 +254,20 @@ async def run_client(command: str, folder: Path, minutes: int) -> int:
         async def on_message(event: Any) -> None:
             # Conservative label: catch_up callbacks are not proven live events.
             kind = "catchup_callback" if startup["catching_up"] else "event_callback"
-            store.insert(event.message, kind)
+            log_callback_observation(store, event.message, kind)
 
         # catch_up only after registering handler; audit history too because
         # updates can be unavailable after long offline windows.
         await client.catch_up()
         startup["catching_up"] = False
         first_pass = await reconcile(client, channel, store)
-        print("INITIAL_RECONCILE:", json.dumps(first_pass, sort_keys=True))
+        print(format_reconcile_line(first_pass, store.total_messages(), startup=True), flush=True)
         deadline = time.monotonic() + minutes * 60
         while time.monotonic() < deadline:
             await asyncio.sleep(min(60.0, max(0.0, deadline - time.monotonic())))
             try:
                 state = await reconcile(client, channel, store)
-                print("RECONCILE:", json.dumps(state, sort_keys=True))
+                print(format_reconcile_line(state, store.total_messages()), flush=True)
             except Exception as exc:
                 store.warn("RECONCILE_" + type(exc).__name__)
                 print("RECONCILE_FAILED:", type(exc).__name__)

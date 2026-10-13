@@ -1,6 +1,8 @@
 """Offline S0 MTProto test harness tests; no Telethon login or network."""
 
+from contextlib import redirect_stdout
 from datetime import datetime, timezone
+from io import StringIO
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from types import SimpleNamespace
@@ -8,7 +10,9 @@ import unittest
 
 from scripts.s0_mtproto_probe import (
     ObservationStore,
+    format_reconcile_line,
     initialize_baseline,
+    log_callback_observation,
     post_id_from_message,
     private_state_dir,
     reconcile,
@@ -102,6 +106,67 @@ class TestRecovery(unittest.IsolatedAsyncioTestCase):
                 await reconcile(BadClient(), object(), store)
             self.assertEqual(store.cursor(), 15)
             store.close()
+
+
+class TestObservationOutput(unittest.TestCase):
+    def test_live_event_logs_new_and_duplicate_without_message_content(self):
+        with TemporaryDirectory() as temp:
+            store = ObservationStore(Path(temp) / "sample.sqlite3")
+            raw = "PRIVATE MESSAGE TEXT https://nodeseek.com/post-1234-1"
+            message = msg(77, raw)
+            buffer = StringIO()
+            with redirect_stdout(buffer):
+                self.assertTrue(log_callback_observation(store, message, "event_callback"))
+                self.assertFalse(log_callback_observation(store, message, "event_callback"))
+            lines = buffer.getvalue().splitlines()
+            self.assertEqual(len(lines), 2)
+            self.assertTrue(all(line.startswith("[LIVE]") for line in lines))
+            self.assertIn("message_id=77", lines[0])
+            self.assertIn("post_id=1234", lines[0])
+            self.assertIn("stored=new", lines[0])
+            self.assertIn("stored=already_recorded", lines[1])
+            self.assertNotIn("PRIVATE MESSAGE TEXT", buffer.getvalue())
+            self.assertEqual(store.total_messages(), 1)
+            store.close()
+
+    def test_catchup_callback_not_mislabeled_live(self):
+        with TemporaryDirectory() as temp:
+            store = ObservationStore(Path(temp) / "sample.sqlite3")
+            buffer = StringIO()
+            with redirect_stdout(buffer):
+                self.assertTrue(log_callback_observation(
+                    store, msg(78, "https://nodeseek.com/post-5678-1"), "catchup_callback"
+                ))
+            self.assertTrue(buffer.getvalue().startswith("[CATCHUP] "))
+            self.assertNotIn("[LIVE]", buffer.getvalue())
+            store.close()
+
+    def test_check_separates_fetched_new_and_previously_recorded(self):
+        line = format_reconcile_line(
+            {"status": "ok", "retrieved": 2, "new": 0, "cursor": 942537},
+            total_stored=7,
+        )
+        self.assertEqual(
+            line,
+            "[CHECK] fetched=2 history_new=0 already_recorded=2 total_stored=7 cursor=942537",
+        )
+        line = format_reconcile_line(
+            {"status": "ok", "retrieved": 11, "new": 11, "cursor": 942564},
+            total_stored=34, startup=True,
+        )
+        self.assertEqual(
+            line,
+            "[STARTUP_CHECK] fetched=11 history_new=11 already_recorded=0 total_stored=34 cursor=942564",
+        )
+
+    def test_overflow_is_explicit_and_never_claims_success(self):
+        line = format_reconcile_line(
+            {"status": "INCOMPLETE_CURSOR_UNCHANGED", "retrieved": 501, "cursor": 100},
+            total_stored=15,
+        )
+        self.assertIn("status=INCOMPLETE_CURSOR_UNCHANGED", line)
+        self.assertIn("backfill=INCOMPLETE", line)
+        self.assertNotIn("history_new=", line)
 
 
 if __name__ == "__main__":

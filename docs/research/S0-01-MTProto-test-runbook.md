@@ -43,3 +43,11 @@ Windows PowerShell：
 ## 清理
 
 确认测试进程退出后，可由用户自行删除 ~/.local/share/seekpulse-s0/，并在 Telegram 客户端撤销对应测试会话。禁止将这个目录导出到仓库或聊天。
+
+## 实时观察日志（S0-01 小范围可读性修正）
+
+- [LIVE] 表示 NewMessage 事件回调发生；[CATCHUP] 表示调用 catch_up() 期间的回调，**不得把它当成真实实时延迟证据**。
+- 日志仅输出 UTC 记录时间、公开频道的 message_id、NodeSeek post_id 和 stored=new/already_recorded；不打印正文、标题或账号凭证。
+- [STARTUP_CHECK] 为重启后的首次历史查询，[CHECK] 为每分钟历史查询。fetched 是查到的数量；history_new 仅指**本次历史查询新保存**的记录，**不是频道新发帖总量**；already_recorded 可能由先前实时回调或历史补查保存。
+- total_stored 是自第一次建立基线以来的累计频道消息数，不是这次运行的新帖数。最终 LOCAL_TEST_REPORT 的 recognized_post_ids 也是“成功解析出链接的频道消息条数”，**并非去重后的帖子篇数**。
+- 输出不会发送任何 Telegram 消息；收集 S0-02 的对照时间应使用本机数据库中原有 first_seen_utc，而非把打印时间当作精确端到端延迟。
