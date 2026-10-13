@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "purpose": "Audit-friendly digest of explicit user authorization; not proof of an independent user signature",
+  "events": [
+    {
+      "event_id": "APPROVAL-2026-10-13-G0",
+      "date": "2026-10-13",
+      "approved_plan": "SeekPulse V1.1",
+      "authorized_stage": "G0",
+      "authorized_actions": [
+        "G0 engineering repository bootstrap",
+        "AI collaboration files and task system",
+        "baseline CI and draft PR"
+      ],
+      "not_authorized": [
+        "S0-S7 implementation",
+        "merge main",
+        "release or tag publication",
+        "production deployment or changes"
+      ],
+      "user_instruction": "正式批准 SeekPulse V1.1 最终开发方案。先执行 G0 工程建档，按方案建立 AI 协作规范、GitHub 任务体系和基础 CI。未经我进一步授权，不合并 main、不发布版本、不修改生产环境。",
+      "source": "User message in ChatGPT conversation; must verify any newer user instruction before actions"
+    }
+  ]
+}

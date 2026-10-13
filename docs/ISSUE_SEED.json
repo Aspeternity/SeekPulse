@@ -1,0 +1,153 @@
+{
+  "version": "1",
+  "source": "SeekPulse V1.1 approved proposal; G0 implementation authorized only",
+  "tasks": [
+    {
+      "key": "G0-01",
+      "title": "[G0] 建立保留上游历史的 SeekPulse Fork 与独立工作分支",
+      "labels": [
+        "phase:G0",
+        "type:task"
+      ],
+      "body": "## 范围与验收\n\n目标：创建 Aspeternity/SeekPulse，确保继承 AI-XMLY/nodeseek-rss-telegram-bot 原始 Git 历史，记录基准提交 8107b18e99148127bc6c993ac8384959ac871f6d。\n范围：仓库 Fork、命名、身份/权限和分支核验；不改变上游 app/、不合并 main。\n验收：真实 GitHub URL 可访问、基准提交包含在历史、G0 分支创建、分支 SHA 可核查。\n负责人：待指派；状态：当前 G0 获授权，执行前核验目标仓库是否已存在。\n\n## 实施记录（待填）\n\n- 唯一写入负责人：待指派\n- 工作分支：无\n- Draft PR：无\n- HEAD SHA：UNKNOWN\n- 最新 CI：UNKNOWN\n- 实机验收：未开始\n- 下一动作：先检查 docs/APPROVALS.md 的最新授权\n"
+    },
+    {
+      "key": "G0-02",
+      "title": "[G0] 建立统一 AGENTS/Claude/Gemini 规范和已批方案记录",
+      "labels": [
+        "phase:G0",
+        "type:task"
+      ],
+      "body": "## 范围与验收\n\n目标：AGENTS.md 为主规则，CLAUDE.md/GEMINI.md 指向主规则；归档 V1.1、审批范围、架构 ADR、ROADMAP、TEST_MATRIX。\n范围：纯工程治理文件，禁止调整上游业务行为。\n验收：所有文件位于 G0 工作分支；审查明确记录 S0 尚未授权。\n负责人：待指派；依赖：G0-01。\n\n## 实施记录（待填）\n\n- 唯一写入负责人：待指派\n- 工作分支：无\n- Draft PR：无\n- HEAD SHA：UNKNOWN\n- 最新 CI：UNKNOWN\n- 实机验收：未开始\n- 下一动作：先检查 docs/APPROVALS.md 的最新授权\n"
+    },
+    {
+      "key": "G0-03",
+      "title": "[G0] Issue/PR 流程、基础 CI 和可信交接报告",
+      "labels": [
+        "phase:G0",
+        "type:task"
+      ],
+      "body": "## 范围与验收\n\n目标：提供 Issue Forms、PR 模板、最小 CI、项目交接只读脚本、受控任务种子；Draft PR 验证。\n范围：不合并 main，不发布，不触及生产环境。\n验收：PR HEAD SHA 的完整 CI 绿、Issue 真实可见、脚本可处理无远端时 UNKNOWN；用户明确 G0 验收。\n负责人：待指派；依赖：G0-01、G0-02。\n\n## 实施记录（待填）\n\n- 唯一写入负责人：待指派\n- 工作分支：无\n- Draft PR：无\n- HEAD SHA：UNKNOWN\n- 最新 CI：UNKNOWN\n- 实机验收：未开始\n- 下一动作：先检查 docs/APPROVALS.md 的最新授权\n"
+    },
+    {
+      "key": "S0-01",
+      "title": "[S0 / 待授权] NodeSeek 官方 TG 频道消息结构与恢复可行性",
+      "labels": [
+        "phase:S0",
+        "type:research",
+        "status:blocked"
+      ],
+      "body": "## 范围与验收\n\n仅规划；**尚未授权执行 S0**。\n研究频道 @nodeseekc 的帖子 URL、标题、栏目缺失、编辑/删除、恢复与 Session 风险。只用专用账号，保留脱敏样本和真实证据。\n验收：可靠的 post_id 提取规则、异常样本及可行性报告。\n\n## 实施记录（待填）\n\n- 唯一写入负责人：待指派\n- 工作分支：无\n- Draft PR：无\n- HEAD SHA：UNKNOWN\n- 最新 CI：UNKNOWN\n- 实机验收：未开始\n- 下一动作：先检查 docs/APPROVALS.md 的最新授权\n"
+    },
+    {
+      "key": "S0-02",
+      "title": "[S0 / 待授权] RSS 与 TG 首次发现时间与覆盖率对照",
+      "labels": [
+        "phase:S0",
+        "type:research",
+        "status:blocked"
+      ],
+      "body": "## 范围与验收\n\n仅规划；**尚未授权执行 S0**。\n观察来源各自首次发现时间、覆盖差异、RSS 更新/窗口、轮询负担；不能仅凭轮询周期断言低延迟。\n验收：原始计时、样本范围、可能漏报的分析和推荐间隔。\n\n## 实施记录（待填）\n\n- 唯一写入负责人：待指派\n- 工作分支：无\n- Draft PR：无\n- HEAD SHA：UNKNOWN\n- 最新 CI：UNKNOWN\n- 实机验收：未开始\n- 下一动作：先检查 docs/APPROVALS.md 的最新授权\n"
+    },
+    {
+      "key": "S0-03",
+      "title": "[S0 / 待授权] Apprise/Bark/ntfy 适配与资源预评估",
+      "labels": [
+        "phase:S0",
+        "type:research",
+        "status:blocked"
+      ],
+      "body": "## 范围与验收\n\n仅规划；**尚未授权执行 S0**。\n验证 Apprise 具体版本结果接口、Bark/ntfy 错误、超时、非任意 URL 配置、iOS 推送限制及低配 VPS 初始占用。\n验收：可重复测试、明确依赖版本和结论。\n\n## 实施记录（待填）\n\n- 唯一写入负责人：待指派\n- 工作分支：无\n- Draft PR：无\n- HEAD SHA：UNKNOWN\n- 最新 CI：UNKNOWN\n- 实机验收：未开始\n- 下一动作：先检查 docs/APPROVALS.md 的最新授权\n"
+    },
+    {
+      "key": "S0-04",
+      "title": "[S0 / 待授权] 来源可行性 Go/No-Go 报告",
+      "labels": [
+        "phase:S0",
+        "type:research",
+        "status:blocked"
+      ],
+      "body": "## 范围与验收\n\n仅规划；**尚未授权执行 S0**。\n汇总 S0-01～03，辨别 TG 是否确有时效/覆盖收益，报告限制和架构调整建议。\n验收：用户审批是否进入 S1，不能自动开始代码开发。\n\n## 实施记录（待填）\n\n- 唯一写入负责人：待指派\n- 工作分支：无\n- Draft PR：无\n- HEAD SHA：UNKNOWN\n- 最新 CI：UNKNOWN\n- 实机验收：未开始\n- 下一动作：先检查 docs/APPROVALS.md 的最新授权\n"
+    },
+    {
+      "key": "S1-01",
+      "title": "[S1 / 待授权] 上游行为测试基线与依赖兼容核验",
+      "labels": [
+        "phase:S1",
+        "type:task",
+        "status:blocked"
+      ],
+      "body": "## 范围与验收\n\n仅规划；**尚未授权执行 S1**。\n为 AI-XMLY 的 RSS、组合匹配、屏蔽词、分类、多用户多目标建回归测试并校验 Python 3.12 等依赖兼容。\n验收：真实 CI 与完整回归结果。\n\n## 实施记录（待填）\n\n- 唯一写入负责人：待指派\n- 工作分支：无\n- Draft PR：无\n- HEAD SHA：UNKNOWN\n- 最新 CI：UNKNOWN\n- 实机验收：未开始\n- 下一动作：先检查 docs/APPROVALS.md 的最新授权\n"
+    },
+    {
+      "key": "S2-01",
+      "title": "[S2 / 待授权] 规范化帖子模型、字段来源和规则三态",
+      "labels": [
+        "phase:S2",
+        "type:task",
+        "status:blocked"
+      ],
+      "body": "## 范围与验收\n\n仅规划；**尚未授权执行 S2**。\n创建 canonical post 与 source observation，支持 matched/not_matched/insufficient_data 的确定性规则语义。\n验收：缺失版块/摘要、补全字段、双源同帖测试。\n\n## 实施记录（待填）\n\n- 唯一写入负责人：待指派\n- 工作分支：无\n- Draft PR：无\n- HEAD SHA：UNKNOWN\n- 最新 CI：UNKNOWN\n- 实机验收：未开始\n- 下一动作：先检查 docs/APPROVALS.md 的最新授权\n"
+    },
+    {
+      "key": "S2-02",
+      "title": "[S2 / 待授权] SQLite 原子投递任务与状态机",
+      "labels": [
+        "phase:S2",
+        "type:task",
+        "status:blocked"
+      ],
+      "body": "## 范围与验收\n\n仅规划；**尚未授权执行 S2**。\n设计 (user, post, target) 唯一任务、租约、重试、过期、取消、多目标独立状态；不能在事务中等待 HTTP。\n验收：并发、重启、失败补偿和迁移测试。\n\n## 实施记录（待填）\n\n- 唯一写入负责人：待指派\n- 工作分支：无\n- Draft PR：无\n- HEAD SHA：UNKNOWN\n- 最新 CI：UNKNOWN\n- 实机验收：未开始\n- 下一动作：先检查 docs/APPROVALS.md 的最新授权\n"
+    },
+    {
+      "key": "S3-01",
+      "title": "[S3 / 待授权] Telegram + RSS 双来源适配集成",
+      "labels": [
+        "phase:S3",
+        "type:task",
+        "status:blocked"
+      ],
+      "body": "## 范围与验收\n\n仅规划；**尚未授权执行 S3**。\nTG NewMessage 和游标恢复、RSS 轮询与退避、来源健康；跨源触发统一 Core。\n验收：断线、格式变化、来源独立运行。\n\n## 实施记录（待填）\n\n- 唯一写入负责人：待指派\n- 工作分支：无\n- Draft PR：无\n- HEAD SHA：UNKNOWN\n- 最新 CI：UNKNOWN\n- 实机验收：未开始\n- 下一动作：先检查 docs/APPROVALS.md 的最新授权\n"
+    },
+    {
+      "key": "S4-01",
+      "title": "[S4 / 待授权] 原生 Telegram + Bark/ntfy 与规则路由",
+      "labels": [
+        "phase:S4",
+        "type:task",
+        "status:blocked"
+      ],
+      "body": "## 范围与验收\n\n仅规划；**尚未授权执行 S4**。\n默认和规则覆盖、两级优先级、并行通知、目标独立限流及重试。\n验收：同帖多规则不重复、一个渠道故障不阻塞另一个。\n\n## 实施记录（待填）\n\n- 唯一写入负责人：待指派\n- 工作分支：无\n- Draft PR：无\n- HEAD SHA：UNKNOWN\n- 最新 CI：UNKNOWN\n- 实机验收：未开始\n- 下一动作：先检查 docs/APPROVALS.md 的最新授权\n"
+    },
+    {
+      "key": "S5-01",
+      "title": "[S5 / 待授权] FastAPI + HTMX Web 后台及安全",
+      "labels": [
+        "phase:S5",
+        "type:task",
+        "status:blocked"
+      ],
+      "body": "## 范围与验收\n\n仅规划；**尚未授权执行 S5**。\n开发仪表盘、规则、来源、通知渠道、历史与统计；管理员认证、CSRF/XSS、回环访问。\n验收：Web/Telegram 双端一致性与安全测试。\n\n## 实施记录（待填）\n\n- 唯一写入负责人：待指派\n- 工作分支：无\n- Draft PR：无\n- HEAD SHA：UNKNOWN\n- 最新 CI：UNKNOWN\n- 实机验收：未开始\n- 下一动作：先检查 docs/APPROVALS.md 的最新授权\n"
+    },
+    {
+      "key": "S6-01",
+      "title": "[S6 / 待授权] 稳定性硬化、备份/迁移/回滚",
+      "labels": [
+        "phase:S6",
+        "type:task",
+        "status:blocked"
+      ],
+      "body": "## 范围与验收\n\n仅规划；**尚未授权执行 S6**。\n模拟磁盘不足、数据库繁忙、Session 丢失、长时间断网、平台限流；备份恢复、资源和依赖审查。\n验收：可验证恢复与日志诊断、无残留临时测试接口。\n\n## 实施记录（待填）\n\n- 唯一写入负责人：待指派\n- 工作分支：无\n- Draft PR：无\n- HEAD SHA：UNKNOWN\n- 最新 CI：UNKNOWN\n- 实机验收：未开始\n- 下一动作：先检查 docs/APPROVALS.md 的最新授权\n"
+    },
+    {
+      "key": "S7-01",
+      "title": "[S7 / 待授权] 真实 VPS 与跨 AI 接续最终验收",
+      "labels": [
+        "phase:S7",
+        "type:task",
+        "status:blocked"
+      ],
+      "body": "## 范围与验收\n\n仅规划；**尚未授权执行 S7**。\n48–72h 真实运行、延迟/覆盖/资源记录；AI B 无旧对话独立接续；提交用户最终验收。\n不自动合并 main、不发布，发布另行审批。\n\n## 实施记录（待填）\n\n- 唯一写入负责人：待指派\n- 工作分支：无\n- Draft PR：无\n- HEAD SHA：UNKNOWN\n- 最新 CI：UNKNOWN\n- 实机验收：未开始\n- 下一动作：先检查 docs/APPROVALS.md 的最新授权\n"
+    }
+  ]
+}

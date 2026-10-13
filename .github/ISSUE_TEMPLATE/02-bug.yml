@@ -1,0 +1,40 @@
+name: Bug 与回归
+description: 先复现、再测试、再修复
+labels: ["type:bug"]
+body:
+  - type: textarea
+    id: symptom
+    attributes:
+      label: 实际问题与影响范围
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: 可复现步骤与预期行为
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: 日志、测试、环境与版本证据
+      description: 不要提交 Token、Session、密码或个人敏感信息。
+  - type: input
+    id: owner
+    attributes:
+      label: 当前唯一写入负责人
+      placeholder: "待指派"
+    validations:
+      required: true
+  - type: textarea
+    id: boundary
+    attributes:
+      label: 根因调查范围与禁止修改事项
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: 失败回归测试和修复验收标准
+    validations:
+      required: true
