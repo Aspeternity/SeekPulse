@@ -1,0 +1,52 @@
+name: 开发任务
+description: 明确授权、唯一写入负责人、代码范围及验收标准
+labels: ["type:task"]
+body:
+  - type: markdown
+    attributes:
+      value: "注意：建立 Issue 不等于获准开发，必须先检查 docs/APPROVALS.md、AGENTS.md 和阶段授权。"
+  - type: input
+    id: phase
+    attributes:
+      label: 阶段编号
+      placeholder: "G0 / S0 / S1 ..."
+    validations:
+      required: true
+  - type: textarea
+    id: objective
+    attributes:
+      label: 目标与问题背景
+      description: 描述需要实现的可验证结果。
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: 允许修改的范围 / 禁止事项
+      description: 明确预期涉及的文件、接口及不可修改的行为。
+    validations:
+      required: true
+  - type: input
+    id: owner
+    attributes:
+      label: 当前唯一写入负责人
+      placeholder: "待指派 / ChatGPT / Claude / Gemini / @github-user"
+    validations:
+      required: true
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: 前置依赖与关联任务
+      placeholder: "Blocked by #..."
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: 验收条件与测试证据
+      placeholder: "含自动测试、CI 对应 SHA、实机验证要求"
+    validations:
+      required: true
+  - type: textarea
+    id: handoff
+    attributes:
+      label: 当前进度与接续状态
+      placeholder: "分支、HEAD SHA、Draft PR、CI、遗留问题、下一动作（初建可写未开始）"

@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 项目协作与授权规范
+    url: https://github.com/Aspeternity/SeekPulse/blob/chore/g0-engineering-foundation/AGENTS.md
+    about: 建立 Issue 前请先确认开发阶段的实际授权。

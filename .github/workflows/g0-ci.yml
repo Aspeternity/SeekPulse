@@ -1,0 +1,67 @@
+name: G0 Engineering Baseline
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - 'chore/**'
+      - 'feat/**'
+      - 'fix/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: g0-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  governance:
+    name: Governance and handoff
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Validate G0 required files and approved boundaries
+        run: python scripts/validate_g0.py
+      - name: Offline context smoke (explicitly unverified remote status)
+        run: python scripts/context_report.py --offline --format json > /tmp/seekpulse-g0-context.json
+      - name: G0 stdlib tests
+        run: python -m unittest discover -s tests -p 'test_g0_*.py' -v
+
+  baseline:
+    name: Python ${{ matrix.python-version }} baseline
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.11', '3.12']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+      - name: Install unchanged upstream requirements and G0 checker
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+          python -m pip install ruff==0.9.10
+      - name: Compile source and G0 tools
+        run: python -m compileall -q app scripts tests
+      - name: Run lightweight upstream and G0 regression tests
+        run: python -m unittest discover -s tests -v
+      - name: Lint G0 code (do not change upstream during G0)
+        run: python -m ruff check scripts tests --select E4,E7,E9,F
+
+  docker-build:
+    name: Unmodified upstream Docker build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build image; do not deploy or publish
+        run: docker build --tag seekpulse-g0-smoke:${{ github.sha }} .
