@@ -20,6 +20,26 @@
       ],
       "user_instruction": "正式批准 SeekPulse V1.1 最终开发方案。先执行 G0 工程建档，按方案建立 AI 协作规范、GitHub 任务体系和基础 CI。未经我进一步授权，不合并 main、不发布版本、不修改生产环境。",
       "source": "User message in ChatGPT conversation; must verify any newer user instruction before actions"
+    },
+    {
+      "event_id": "APPROVAL-2026-10-13-G0-ACCEPTED",
+      "date": "2026-10-13",
+      "approved_plan": "SeekPulse V1.1",
+      "authorization_kind": "stage_acceptance",
+      "accepted_stage": "G0",
+      "authorized_stage": "G0",
+      "authorized_actions": [
+        "record G0 acceptance and close completed G0 issues without merging"
+      ],
+      "not_authorized": [
+        "S0-S7 implementation",
+        "merge main",
+        "release or tag publication",
+        "production deployment or changes"
+      ],
+      "user_instruction": "批准",
+      "context": "Immediately follows a G0 completion report requesting user G0 acceptance, explicitly stating S0 requires separate approval and main will not be merged",
+      "source": "User message in current ChatGPT conversation; check later instructions before interpreting as current"
     }
   ]
 }

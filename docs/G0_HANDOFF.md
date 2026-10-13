@@ -18,7 +18,7 @@
 ## 强制注意
 
 1. 当前 **只批准 G0**；S0–S7 只规划，未执行。
-2. G0 **尚未获用户最终验收**；CI 绿不等于验收通过。
+2. G0 **已于 2026-10-13 获用户明确验收通过**；该验收独立于 CI，通过 G0 不等于允许合并 main，也不等于授权 S0。
 3. 此文件更新本身会产生新的分支提交，**必须重新验证该新 PR HEAD 的 CI**；历史 CI 绿不得代替当前 CI。
 4. 工程文件还在 G0 工作分支，`main` 尚没有 `AGENTS.md` 等文件。所有 AI 新会话必须先切换/读取该工作分支。
 5. 未经用户明确授权，不合并 `main`、不发布、不操作生产环境，也不能提前开始 S0。
@@ -28,4 +28,4 @@
 1. 读取分支 `chore/g0-engineering-foundation` 的 `AGENTS.md`、`docs/PLAN.md`、`docs/APPROVALS.md`、`docs/PROJECT_STATE.md`。
 2. 检查 [PR #1](https://github.com/Aspeternity/SeekPulse/pull/1) 最新 HEAD、四项对应 GitHub Actions、Issue #2–#16、Ruleset、`main` SHA。
 3. 可运行 `python scripts/context_report.py --repo Aspeternity/SeekPulse` 辅助核对；若 GitHub 无法访问，将远端状态标为 UNKNOWN。
-4. 向用户报告核验结果并申请 **G0 阶段验收**。得到单独 S0 授权后才可进入技术可行性验证。
+4. **G0 验收已通过**。待最新 PR HEAD CI 核对后，向用户单独申请 **S0 技术验证授权**；不得借 G0 验收自动合并 PR #1。
