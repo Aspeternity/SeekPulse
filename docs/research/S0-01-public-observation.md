@@ -1,0 +1,56 @@
+# S0-01 — NodeSeek Telegram 官方频道可行性初步观测
+
+**状态：研究中；尚不能验收 MTProto 实时监听及断线恢复。**  
+**日期：2026-10-13**  
+**关联 Issue：[#5](https://github.com/Aspeternity/SeekPulse/issues/5)**
+
+## 公开来源中已观察的事实
+
+- [NodeSeek 官方频道公开预览](https://t.me/s/nodeseekc) 存在连续的新帖信息，显示原帖标题、部分摘要以及指向 NodeSeek 的原帖链接。
+- 已人工观察到下述两个公开样例：
+  - `https://www.nodeseek.com/post-981300-1` → 规范化 `post_id=981300`
+  - `https://www.nodeseek.com/post-981314-1` → 规范化 `post_id=981314`
+- 公开 HTML 可能展示部分摘要，但不能假定版块字段、正文或作者完整。
+- `https://rss.nodeseek.com/` 被某些 Web 文本浏览器标记为不支持 `application/xml`，这**不是 RSS 服务故障证据**。
+- 当前隔离代码执行环境直接访问 TG/RSS 遇到 DNS 解析失败，无法在该环境收集可信的实时时效数据；网络可用性需另行验证。
+
+## 已完成的、仅属于 S0 的探针
+
+`scripts/s0_public_probe.py` 使用 Python 标准库，只读 GET 一次公开 TG HTML 和 RSS（同时开始请求），提供脱敏 JSON：来源、采样时间、HTTP 状态、链接数量、帖子 ID 及错误类型；不保存标题、摘要、Telegram 会话或任何凭证。
+
+- 帖子身份采用经过域名严格校验的 NodeSeek 链接 `/post-<id>-<page>`；拒绝非 NodeSeek 域名/伪造链接。
+- 基于公开预览的检测**不是 Telethon MTProto 新消息事件**；只能检验公网页面的链接可识别性。
+- 单次两个网页的请求时间和 ID 交集**不能衡量论坛→TG/RSS 的发布延迟或漏报率**，其结果字段明确写成 `UNMEASURED`。
+- GitHub Actions 如可访问公共网络，保存单次源采样工件，但外部网络失败不得被 CI 绿误称为“来源可行性通过”。
+
+
+## GitHub Actions 首次真实公网页面样本（已核实）
+
+2026-10-13 13:59:37 UTC，`S0 Public Source One-Shot (Diagnostic)` 在隔离的 GitHub Actions Runner 中完成首次实际采样。
+
+- 运行证据：[Run #38409533402](https://github.com/Aspeternity/SeekPulse/actions/runs/38409533402)。
+- 公开来源 JSON 工件：`s0-public-source-one-shot`（Artifact ID `11820157448`），并已由开发会话实际读取，不只看 CI 显示为绿色。
+- Telegram 公开 HTML：HTTP 200；共识别到 **38 个符合格式的链接**，去重后 **20 个不同帖子 ID**；HTTP 获取耗时约 **872 ms**。
+- RSS：HTTP 200；**20 个 RSS 条目**，解析出 **20 个不同帖子 ID**；HTTP 获取耗时约 **516 ms**。
+- 两组本次不同帖子 ID 的交集为 **20**；本次样本未见只在一边出现的帖子。
+- **绝不把以上请求耗时当作“论坛发帖 → TG/RSS 发布”的延迟**；这只是一次 HTTP 页面抓取，不能证明后续时间段同样完整、谁更快，或 MTProto 能稳定恢复。
+
+局部判断：**公开源 URL / 原帖 ID 可解析：PASS（20/20 重合的单次公开采样）**。**真实 Telethon 事件接收：UNVERIFIED；断线恢复：UNVERIFIED；24h+ 时效/覆盖：UNMEASURED。**
+
+## 尚未验证，需后续实验
+
+1. 使用专门的测试 Telegram 账号，经用户自行控制的受信环境完成 Telethon 登录与订阅；不将 API ID、API Hash、登录验证码、Session 上传 GitHub/聊天。
+2. 用 `events.NewMessage` 监听实际 `@nodeseekc` 频道，核查频道 ID、消息 ID、可用文本、URL entities、编辑和删除边界。
+3. 使用 Telethon `catch_up()` 和有限 `iter_messages(..., min_id=...)` 验证短时断网/重启的真实补查能力；不要凭 API 文档当作实机 PASS。
+4. 与 RSS 同机持续采样 24h+，记录同一 `post_id` 在两来源首次被看到的时间和数据缺口；归属后续 [#6](https://github.com/Aspeternity/SeekPulse/issues/6)。
+5. 必须对“标题可识别、版块缺失、内容截断、非原帖链接、编辑/删除消息”等情况保留脱敏样本与 PASS/FAIL 证据。
+
+## 阶段授权边界
+
+当前只授权 S0 技术验证，未获批准修改 `app/` 业务运行行为、合并 main、部署生产环境、发布 Release 或开始 S1。未经 Telegram 账号专用测试，不得宣称“实时通道稳定、低于 RSS 延迟、能够完整断线恢复”。
+
+## 本次 S0-01 授权后的受控试验准备（待真人账号）
+
+- 用户于 2026-10-13 在要求继续 S0-01 Telethon 验证的回复中表示“批准”。范围为非生产环境只读验证，不包含 PR 合并、生产部署或下一阶段开发。
+- 新增 `scripts/s0_mtproto_probe.py` 与 `tests/test_s0_mtproto_probe.py`，以 Telethon 1.45.0 为测试版本，支持本机授权、有限时长事件接收、历史补查及本地脱敏统计；**不变更 `app/` 或主应用依赖**。
+- 操作步骤见 `docs/research/S0-01-MTProto-test-runbook.md`。此阶段仅实现和模拟验证实验工具，**真人账号 MTProto、断线恢复及 TG vs RSS 实时延迟仍为 UNVERIFIED**。
