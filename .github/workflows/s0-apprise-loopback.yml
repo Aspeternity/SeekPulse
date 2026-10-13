@@ -1,0 +1,36 @@
+name: S0 Apprise Loopback Feasibility
+
+on:
+  pull_request:
+    paths:
+      - "scripts/s0_apprise_smoke.py"
+      - "tests/test_s0_apprise_smoke.py"
+      - "docs/research/S0-03-apprise.md"
+      - ".github/workflows/s0-apprise-loopback.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  apprise-loopback:
+    name: S0 Apprise pinned version loopback
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install pinned trial version
+        run: python -m pip install --disable-pip-version-check "apprise==2.0.1"
+      - name: Offline result contract tests
+        run: python -m unittest discover -s tests -p 'test_s0_apprise_smoke.py' -v
+      - name: Bark and ntfy mock HTTP success and 403
+        run: python scripts/s0_apprise_smoke.py --output s0-apprise-loopback.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: s0-apprise-loopback-results
+          path: s0-apprise-loopback.json
+          if-no-files-found: warn
+          retention-days: 7
