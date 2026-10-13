@@ -5,6 +5,8 @@ on:
     paths:
       - "scripts/s0_public_probe.py"
       - "scripts/s0_mtproto_probe.py"
+      - "scripts/s0_dual_source_probe.py"
+      - "tests/test_s0_dual_source_probe.py"
       - "tests/test_s0_mtproto_probe.py"
       - "tests/test_s0_public_probe.py"
       - "docs/research/**"
@@ -79,3 +81,5 @@ jobs:
           PY
       - name: Read-only probe offline simulations
         run: python -m unittest discover -s tests -p 'test_s0_mtproto_probe.py' -v
+      - name: S0-02 dual-source offline timing and recovery tests
+        run: python -m unittest discover -s tests -p 'test_s0_dual_source_probe.py' -v
