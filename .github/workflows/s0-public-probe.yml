@@ -4,6 +4,8 @@ on:
   pull_request:
     paths:
       - "scripts/s0_public_probe.py"
+      - "scripts/s0_mtproto_probe.py"
+      - "tests/test_s0_mtproto_probe.py"
       - "tests/test_s0_public_probe.py"
       - "docs/research/**"
       - ".github/workflows/s0-public-probe.yml"
@@ -53,3 +55,27 @@ jobs:
           path: s0-public-snapshot.json
           if-no-files-found: warn
           retention-days: 7
+
+  telethon-offline-contract:
+    name: S0 Telethon library contract (no login)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install S0 research dependency only
+        run: python -m pip install -r docs/research/S0-01-telethon-requirement.txt
+      - name: Verify Telethon interfaces without any network login
+        run: |
+          python - <<'PY'
+          from telethon import TelegramClient, events
+          assert hasattr(TelegramClient, "catch_up")
+          assert hasattr(TelegramClient, "iter_messages")
+          assert hasattr(TelegramClient, "get_input_entity")
+          assert hasattr(events, "NewMessage")
+          print("S0_ONLY_TELETHON_IMPORT_AND_CONTRACT=PASS")
+          PY
+      - name: Read-only probe offline simulations
+        run: python -m unittest discover -s tests -p 'test_s0_mtproto_probe.py' -v
