@@ -77,12 +77,12 @@ def percentile(values: list[float], fraction: float) -> float | None:
 
 
 def validate_rss_interval(seconds: int, acknowledged_10s: bool, minutes: int) -> None:
-    """Short 10s research requires explicit opt-in and a finite trial."""
+    """10s research requires explicit opt-in; a run lasts at most 180 minutes."""
     if seconds == 10:
         if not acknowledged_10s:
             raise ValueError("10s RSS polling requires --ack-10s-rss")
-        if minutes > 90:
-            raise ValueError("10s RSS research trials must be <=90 minutes")
+        if minutes > 180:
+            raise ValueError("10s RSS research trials must be <=180 minutes")
         return
     if not 60 <= seconds <= 600:
         raise ValueError("RSS interval must be 10 (opt-in) or 60..600 seconds")
@@ -559,7 +559,7 @@ def main(argv: list[str] | None = None) -> int:
     duration.add_argument("--hours", type=int)
     parser.add_argument("--rss-interval", type=int, default=60)
     parser.add_argument("--ack-10s-rss", action="store_true",
-                        help="Explicitly accept a <=90m 10-second research trial")
+                        help="Explicitly accept a <=180m 10-second research trial")
     parser.add_argument("--rss-timeout", type=float, default=12.0)
     parser.add_argument("--state-dir", type=Path, default=DEFAULT_STATE)
     args = parser.parse_args(argv)

@@ -119,9 +119,11 @@ class Observations(unittest.TestCase):
     def test_10s_requires_explicit_ack_and_is_time_bounded(self):
         with self.assertRaisesRegex(ValueError, "ack-10s-rss"):
             validate_rss_interval(10, False, 60)
-        with self.assertRaisesRegex(ValueError, "90 minutes"):
-            validate_rss_interval(10, True, 91)
+        with self.assertRaisesRegex(ValueError, "180 minutes"):
+            validate_rss_interval(10, True, 181)
         validate_rss_interval(10, True, 60)
+        validate_rss_interval(10, True, 90)
+        validate_rss_interval(10, True, 180)
         validate_rss_interval(60, False, 60)
         with self.assertRaises(ValueError):
             validate_rss_interval(30, False, 60)
