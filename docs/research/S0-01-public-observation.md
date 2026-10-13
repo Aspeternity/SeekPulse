@@ -48,3 +48,9 @@
 ## 阶段授权边界
 
 当前只授权 S0 技术验证，未获批准修改 `app/` 业务运行行为、合并 main、部署生产环境、发布 Release 或开始 S1。未经 Telegram 账号专用测试，不得宣称“实时通道稳定、低于 RSS 延迟、能够完整断线恢复”。
+
+## 本次 S0-01 授权后的受控试验准备（待真人账号）
+
+- 用户于 2026-10-13 在要求继续 S0-01 Telethon 验证的回复中表示“批准”。范围为非生产环境只读验证，不包含 PR 合并、生产部署或下一阶段开发。
+- 新增 `scripts/s0_mtproto_probe.py` 与 `tests/test_s0_mtproto_probe.py`，以 Telethon 1.45.0 为测试版本，支持本机授权、有限时长事件接收、历史补查及本地脱敏统计；**不变更 `app/` 或主应用依赖**。
+- 操作步骤见 `docs/research/S0-01-MTProto-test-runbook.md`。此阶段仅实现和模拟验证实验工具，**真人账号 MTProto、断线恢复及 TG vs RSS 实时延迟仍为 UNVERIFIED**。
