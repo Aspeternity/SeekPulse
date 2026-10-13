@@ -1,6 +1,6 @@
 # S0-02 — Telegram MTProto / RSS 首次发现同机对照实验
 
-**S0 只读研究；Issue #6；24h+ 实际数据未验证。** 依赖 S0-01 Telethon 1.45.0 已完成的真人账号接入；不更改正式 app/ 或现有 Compose。
+**S0 只读研究；Issue #6。2026-10-14 经用户同意：以有效样本为核心，取消 24h 强制门槛。** 依赖 S0-01 Telethon 1.45.0 已完成的真人账号接入；不更改正式 app/ 或现有 Compose。
 
 ## 核心统计口径
 
@@ -37,15 +37,41 @@
 
 预期输出 BASELINE、TG_STARTUP_CHECK、TG_LIVE、RSS、TG_CHECK 和 S0_02_REPORT（具体出现 TG_LIVE 的数量取决于实际发帖）。五分钟仅是烟雾测试，不能据此推荐最终轮询间隔。
 
-## 24h+ 非生产试验和退出门槛
+## 修订方案：约 2–3 小时分段观察，不强制 24 小时
 
-Windows 短测通过后，**优先在独立测试 VPS 中使用隔离的 Docker 容器**连续运行至少 24 小时，不让 Windows 睡眠/经常切换网络破坏连续性。不在已经承载生产 1Panel/正式机器人业务的容器里运行，不修改正式 compose。跨机器测试账号需在目标机上单独完成安全登录；不可把 Windows Session 上传或发送到聊天。
+2026-10-14 用户明确同意：缩短 S0-02 的必要测试时长，保留后续独立稳定性测试，不阻塞 S0-03 等可并行工作。**时间只是建议，不是机械验收闸门**。
 
-同一研究脚本支持：
+- A 组：RSS 每 60 秒轮询，与 TG 实时事件同机对照，建议 45–75 分钟。研究工具默认此间隔，之前 5 分钟实测仅贡献 3 个有效配对样本。
+- B 组：与原项目 .env.example 中的 10 秒 RSS 默认轮询保持可比较性，建议 45–75 分钟。在本轮研究中，10 秒间隔需要显式 --ack-10s-rss，且单次最多 90 分钟；**先确认当前网络和 RSS 服务条件允许，再执行。**
+- 两组均使用同一受控测试主机/Session/本地时钟，各自独立记录有效配对样本。每组建议先取得不少于 30 个 tg_live + rss_poll 有效配对样本，合计期望 100 个左右。**这仅是方向性研究的样本目标，不是统计学充分性保证，也不是一个达不到就必须继续等的开发阻塞条件。**
+- 60s 与 10s 按顺序运行，可能受不同发帖时段和 RSS 缓存策略干扰；不能把两组 P50/P95 的差直接当作纯轮询因果收益。长时间断线、服务器缓存、HTTP 错误、RSS feed 滚动以及临近起止边界帖均需单独审阅。
+- 只有 TG 回调真实首次记录且 RSS 普通成功轮询首次记录、**两者属于同一轮运行**的帖子，才进入对应轮询间隔的速度统计。TG 补查、RSS 恢复和初始基线不进入正常时差比较。分别检查 report 中 comparison_by_rss_interval_seconds，不混算旧轮次。
+- 如果 RSS 返回 HTTP 403/429：工具记录 RSS_ACCESS_DENIED_STOP 或 RSS_RATE_LIMIT_STOP 后**停止本次观察**，不要重试高频轮询。其他临时网络错误会指数退避到最多 600s。无法确认服务端允许 10s 时，**不要强行执行该组**，据已有数据写清限制即可。
+- S0-02 的退出可分“观测结论可用于架构权衡”“证据不足，暂不推荐某方案”。2–3 小时后先整理可用证据；不足的项目列为未验证，**不要求等待 24h，也不将 S0-02 测试时长自动变成 S1 授权**。长期 24–72h 稳定性留到后续独立的 S6/S7 阶段按授权开展。
 
-    python scripts/s0_dual_source_probe.py listen --hours 24 --rss-interval 60
-    python scripts/s0_dual_source_probe.py report
+### 运行命令（Windows PowerShell）
 
-验收须同时核查同一 HEAD 的 CI、首次源观察时间、TG 历史恢复分类、RSS 错误与 feed 窗口、有效配对样本数、P50/P95、两源覆盖差异及样本的左右删失。报告 continuous_24h_observed=true 只表示一次 24h 进程自然完成，不证明网络一路正常。
+先确认旧的 S0-01 与 S0-02 监听程序均已结束，工作区干净，然后：
 
-S0-02 完成后进入 S0-04 Go/No-Go 汇总，仍需用户验收。PR 仅保留 Draft 状态，**不合并 main、不发布、不实施 S1**。
+    cd "$HOME\SeekPulse-S0"
+    git status --short
+    git pull --ff-only
+    .\.venv\Scripts\python.exe -m unittest discover -s tests -p test_s0_dual_source_probe.py -v
+
+A 组（先执行；可按实时样本调整观察时长）：
+
+    .\.venv\Scripts\python.exe .\scripts\s0_dual_source_probe.py listen --minutes 60 --rss-interval 60
+
+A 组结束、确认 RSS 不存在 403/429 且服务端允许高频测试后，才可开启 B 组：
+
+    .\.venv\Scripts\python.exe .\scripts\s0_dual_source_probe.py listen --minutes 60 --rss-interval 10 --ack-10s-rss
+
+得到不包含凭据的累计统计：
+
+    .\.venv\Scripts\python.exe .\scripts\s0_dual_source_probe.py report
+
+两轮均复用已有的 S0-02 独立 SQLite、S0-01 私有 Session 和进程互斥锁。report 中 study_sample_guidance 仅提供**样本量建议**，不是自动 Go/No-Go。若 Windows 将休眠、网络经常切换，可以安排独立非生产测试 VPS，但**本轮不需要等 VPS Docker 运行 24h 才继续研究**。
+
+### 验收与后续决策
+
+明确列出每种轮询间隔的实际运行分钟数、正常配对 n、P50/P95、TG 补查占比、RSS 成功/失败与 HTTP 状态、feed 窗口缺口、TG/RSS 未匹配帖及左右删失风险。P95 在小样本下不稳定，要标注不确定性。S0-02 可以在形成有边界的结论后申请用户验收；S0-04 汇总时再决定 Telethon 是否值得保留。PR 继续 Draft，不修改 main、生产配置，不启动未经批准的 S1。

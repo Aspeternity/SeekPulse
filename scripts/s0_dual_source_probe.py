@@ -76,6 +76,27 @@ def percentile(values: list[float], fraction: float) -> float | None:
     return round(values[low] * (1 - weight) + values[low + 1] * weight, 3)
 
 
+def validate_rss_interval(seconds: int, acknowledged_10s: bool, minutes: int) -> None:
+    """Short 10s research requires explicit opt-in and a finite trial."""
+    if seconds == 10:
+        if not acknowledged_10s:
+            raise ValueError("10s RSS polling requires --ack-10s-rss")
+        if minutes > 90:
+            raise ValueError("10s RSS research trials must be <=90 minutes")
+        return
+    if not 60 <= seconds <= 600:
+        raise ValueError("RSS interval must be 10 (opt-in) or 60..600 seconds")
+
+
+def rss_access_stop_reason(response: dict) -> str | None:
+    """Do not retry authorization denials or rate-limited RSS endpoints."""
+    if response.get("status") != "error":
+        return None
+    return {403: "RSS_ACCESS_DENIED_STOP", 429: "RSS_RATE_LIMIT_STOP"}.get(
+        response.get("http_status")
+    )
+
+
 class ComparisonStore:
     """One SQLite writer, with short synchronous transactions in the event loop."""
 
@@ -256,6 +277,15 @@ class ComparisonStore:
         warning_counts = dict(self.conn.execute(
             "SELECT category,COUNT(*) FROM warnings GROUP BY category"
         ).fetchall())
+        rss_failure_rows = self.conn.execute(
+            "SELECT error_type,http_status,COUNT(*) FROM rss_samples "
+            "WHERE status='error' GROUP BY error_type,http_status "
+            "ORDER BY COUNT(*) DESC"
+        ).fetchall()
+        rss_failures_by_reason = [
+            {"error_type": reason, "http_status": status, "count": count}
+            for reason, status, count in rss_failure_rows
+        ]
         run_rows = self.conn.execute(
             "SELECT duration_seconds,finished_utc,completed,rss_interval_seconds FROM runs"
         ).fetchall()
@@ -265,48 +295,129 @@ class ComparisonStore:
         ]
         interval_values = sorted(set(row[3] for row in run_rows))
         uninterrupted = max(completed_seconds, default=0)
+        # Compare only posts first seen by both sources during the SAME run.
+        # This prevents mixing an earlier 60s run with a later opt-in 10s run.
+        cohort_rows = self.conn.execute(
+            "SELECT rss_interval_seconds, started_utc, finished_utc "
+            "FROM runs ORDER BY id"
+        ).fetchall()
+        interval_differences: dict[int, list[float]] = {
+            interval: [] for interval in interval_values
+        }
+        for interval, began, ended in cohort_rows:
+            start_time = datetime.fromisoformat(began)
+            end_time = datetime.fromisoformat(ended) if ended else datetime.now(timezone.utc)
+            for _, tg_ts, rss_ts, tg_method, rss_method in matched:
+                if tg_method != "tg_live" or rss_method != "rss_poll":
+                    continue
+                tg_time = datetime.fromisoformat(tg_ts)
+                rss_time = datetime.fromisoformat(rss_ts)
+                if start_time <= tg_time <= end_time and start_time <= rss_time <= end_time:
+                    interval_differences[interval].append((rss_time - tg_time).total_seconds())
+        if cohort_rows:
+            # With real runs, never pool clean latency samples across run boundaries.
+            clean = [
+                difference for values in interval_differences.values()
+                for difference in values
+            ]
+        health_by_interval = {
+            str(interval): {"ok": 0, "error": 0}
+            for interval in interval_values
+        }
+        for stamp, status in self.conn.execute(
+            "SELECT observed_utc,status FROM rss_samples WHERE status IN ('ok','error')"
+        ):
+            sample_time = datetime.fromisoformat(stamp)
+            for interval, began, ended in cohort_rows:
+                start_time = datetime.fromisoformat(began)
+                end_time = datetime.fromisoformat(ended) if ended else datetime.now(timezone.utc)
+                if start_time <= sample_time <= end_time:
+                    health_by_interval[str(interval)][status] += 1
+                    break
+        comparison_by_interval = {
+            str(interval): {
+                "clean_matched_posts": len(differences),
+                "rss_minus_tg_p50_seconds": percentile(differences, .5),
+                "rss_minus_tg_p95_seconds": percentile(differences, .95),
+                "tg_seen_first": sum(x > 0 for x in differences),
+                "rss_seen_first": sum(x < 0 for x in differences),
+            }
+            for interval, differences in sorted(interval_differences.items())
+        }
+        minutes_by_interval = {}
+        for interval, duration, end, completed in self.conn.execute(
+            "SELECT rss_interval_seconds,duration_seconds,finished_utc,completed FROM runs"
+        ):
+            if end and completed and duration is not None:
+                key = str(interval)
+                minutes_by_interval[key] = round(
+                    minutes_by_interval.get(key, 0.0) + duration / 60, 2
+                )
+        sample_min = 30
+        two_cadences_reached_min = (
+            all(len(interval_differences.get(x, [])) >= sample_min for x in (10, 60))
+        )
         unrecognized_tg = self.conn.execute(
             "SELECT COUNT(*) FROM tg_messages WHERE post_id IS NULL"
         ).fetchone()[0]
         tg_methods = dict(self.conn.execute(
             "SELECT method,COUNT(*) FROM tg_messages GROUP BY method"
         ).fetchall())
+        pooled_latency = {
+            "p50": percentile(clean, .5),
+            "p95": percentile(clean, .95),
+            "tg_seen_before_rss": sum(x > 0 for x in clean),
+            "rss_seen_before_tg": sum(x < 0 for x in clean),
+            "within_one_second": sum(abs(x) < 1 for x in clean),
+        }
+        if len(interval_values) > 1:
+            pooled_latency = {
+                "p50": None,
+                "p95": None,
+                "reason": "MULTIPLE_RSS_INTERVALS_USE_PER_INTERVAL_RESULTS",
+            }
         return {
             "schema_version": 1,
             "status": "S0_ONLY_SAME_HOST_FIRST_OBSERVATION",
             "generated_utc": utc_now(),
             "sources": ["telegram_mtproto", "rss"],
             "configured_rss_intervals_seconds": interval_values,
+            "comparison_by_rss_interval_seconds": comparison_by_interval,
+            "rss_poll_health_by_interval_seconds": health_by_interval,
+            "completed_observation_minutes_by_interval": minutes_by_interval,
+            "study_sample_guidance": {
+                "suggested_clean_pairs_per_interval": sample_min,
+                "aspirational_total_clean_pairs": 100,
+                "both_10s_and_60s_above_suggested_min": two_cadences_reached_min,
+                "not_an_automatic_go_decision": True,
+            },
             "telegram_observed_messages": sum(tg_methods.values()),
             "telegram_message_methods": tg_methods,
             "telegram_unrecognized_message_count": unrecognized_tg,
             "eligible_first_seen_by_source": seen,
             "matched_nonbaseline_post_ids": len(matched),
             "matched_live_tg_and_normal_rss_poll": len(clean),
-            "clean_observed_rss_minus_tg_seconds": {
-                "p50": percentile(clean, .5),
-                "p95": percentile(clean, .95),
-                "tg_seen_before_rss": sum(x > 0 for x in clean),
-                "rss_seen_before_tg": sum(x < 0 for x in clean),
-                "within_one_second": sum(abs(x) < 1 for x in clean),
-            },
+            "clean_observed_rss_minus_tg_seconds": pooled_latency,
             "provisional_source_only_post_ids": {
                 "tg_only": len(valid_tg - valid_rss),
                 "rss_only": len(valid_rss - valid_tg),
             },
             "rss_poll_results": poll_counts,
+            "rss_failures_by_reason": rss_failures_by_reason,
             "rss_window_no_overlap_count": gap_count,
             "warnings": warning_counts,
             "completed_runs": len(completed_seconds),
             "interrupted_runs_or_in_progress": len(run_rows) - len(completed_seconds),
             "longest_completed_continuous_hours": round(uninterrupted / 3600, 3),
-            "continuous_24h_observed": uninterrupted >= 24 * 3600,
+            "optional_24h_stability_run_observed": uninterrupted >= 24 * 3600,
             "interpretation": (
                 "First observed on one machine, NOT original NodeSeek publish time; "
                 "RSS event time is bounded by polling and network latency. "
                 "Backfilled, resumed and RSS-baseline posts are excluded from "
-                "clean time comparisons. Source-only counts are provisional; "
-                "recent posts, feed rollover, outages, and deletion censor coverage."
+                "clean time comparisons. RSS 10s vs 60s cohorts are SEQUENTIAL, "
+                "so different traffic periods and source caching confound comparisons. "
+                "2-3h and sample targets are guidance, NOT a mandatory 24h gate. "
+                "Source-only counts are provisional due to windows, outages and feed rollover."
             ),
         }
 
@@ -409,20 +520,26 @@ async def run_probe(folder: Path, minutes: int, rss_interval: int, timeout: floa
 
         async def rss_loop() -> None:
             first_poll = True
+            resume_pending = resumed
             next_wait = rss_interval
             while time.monotonic() < deadline:
                 # After an initial baseline wait for the normal poll interval.
                 wait = next_wait if not (first_poll and seeded_rss) else 0
-                first_resume_poll = first_poll and resumed
                 first_poll = False
                 await asyncio.sleep(min(wait, max(0.0, deadline - time.monotonic())))
                 if time.monotonic() >= deadline:
                     break
                 sample = await asyncio.to_thread(fetch_rss, timeout)
-                details = store.observe_rss(sample, resumed=first_resume_poll)
+                details = store.observe_rss(sample, resumed=resume_pending)
+                if details["status"] == "ok":
+                    resume_pending = False
                 next_wait = (min(600, max(rss_interval, next_wait * 2))
                              if details["status"] != "ok" else rss_interval)
                 print("[RSS]", json.dumps(details, sort_keys=True), flush=True)
+                stop_reason = rss_access_stop_reason(details)
+                if stop_reason:
+                    store.warn(stop_reason)
+                    raise RuntimeError(stop_reason)
 
         await asyncio.gather(tg_loop(), rss_loop())
         finished_ok = True
@@ -441,6 +558,8 @@ def main(argv: list[str] | None = None) -> int:
     duration.add_argument("--minutes", type=int)
     duration.add_argument("--hours", type=int)
     parser.add_argument("--rss-interval", type=int, default=60)
+    parser.add_argument("--ack-10s-rss", action="store_true",
+                        help="Explicitly accept a <=90m 10-second research trial")
     parser.add_argument("--rss-timeout", type=float, default=12.0)
     parser.add_argument("--state-dir", type=Path, default=DEFAULT_STATE)
     args = parser.parse_args(argv)
@@ -448,11 +567,14 @@ def main(argv: list[str] | None = None) -> int:
         parser.error("--minutes must be 1..180")
     if args.hours is not None and not 1 <= args.hours <= 72:
         parser.error("--hours must be 1..72")
-    if not 60 <= args.rss_interval <= 600:
-        parser.error("--rss-interval must be 60..600 seconds")
     if not 2 <= args.rss_timeout <= 30:
         parser.error("--rss-timeout must be 2..30 seconds")
-    minutes = args.minutes if args.minutes is not None else (args.hours or 24) * 60
+    minutes = args.minutes if args.minutes is not None else (args.hours or 1) * 60
+    if args.command == "listen":
+        try:
+            validate_rss_interval(args.rss_interval, args.ack_10s_rss, minutes)
+        except ValueError as exc:
+            parser.error(str(exc))
     try:
         folder = private_state_dir(args.state_dir)
         if args.command == "report":

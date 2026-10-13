@@ -11,6 +11,7 @@ from xml.etree.ElementTree import ParseError
 
 from scripts.s0_dual_source_probe import (
     ComparisonStore, fetch_rss, percentile, reconcile_tg,
+    rss_access_stop_reason, validate_rss_interval,
 )
 
 
@@ -100,16 +101,81 @@ class Observations(unittest.TestCase):
             self.assertEqual(r["provisional_source_only_post_ids"]["rss_only"], 2)
             s.close()
 
-    def test_24h_requires_completed_continuous_run(self):
+    def test_24h_is_optional_not_eligibility_gate(self):
         with TemporaryDirectory() as d:
             s = ComparisonStore(Path(d) / "sample.db")
             run = s.begin_run(60, 86400)
-            self.assertFalse(s.report()["continuous_24h_observed"])
+            self.assertFalse(s.report()["optional_24h_stability_run_observed"])
+            self.assertFalse(s.report()["study_sample_guidance"]["both_10s_and_60s_above_suggested_min"])
             s.finish_run(run, 86401, completed=True)
-            self.assertTrue(s.report()["continuous_24h_observed"])
+            self.assertTrue(s.report()["optional_24h_stability_run_observed"])
+            self.assertFalse(s.report()["study_sample_guidance"]["both_10s_and_60s_above_suggested_min"])
             bad = s.begin_run(60, 86400)
             s.finish_run(bad, 50, completed=False)
             self.assertEqual(s.report()["interrupted_runs_or_in_progress"], 1)
+            s.close()
+
+
+    def test_10s_requires_explicit_ack_and_is_time_bounded(self):
+        with self.assertRaisesRegex(ValueError, "ack-10s-rss"):
+            validate_rss_interval(10, False, 60)
+        with self.assertRaisesRegex(ValueError, "90 minutes"):
+            validate_rss_interval(10, True, 91)
+        validate_rss_interval(10, True, 60)
+        validate_rss_interval(60, False, 60)
+        with self.assertRaises(ValueError):
+            validate_rss_interval(30, False, 60)
+
+    def test_rss_429_or_403_stop_without_continued_polling(self):
+        for status, reason in [
+            (429, "RSS_RATE_LIMIT_STOP"), (403, "RSS_ACCESS_DENIED_STOP")
+        ]:
+            self.assertEqual(rss_access_stop_reason(
+                {"status": "error", "http_status": status}
+            ), reason)
+        self.assertIsNone(rss_access_stop_reason(
+            {"status": "error", "http_status": 200}
+        ))
+        self.assertIsNone(rss_access_stop_reason(
+            {"status": "ok", "http_status": 200}
+        ))
+
+    def test_report_separates_60s_and_10s_first_seen_cohorts(self):
+        with TemporaryDirectory() as d:
+            s = ComparisonStore(Path(d) / "sample.db")
+            r60 = s.begin_run(60, 300)
+            s.finish_run(r60, 300, completed=True)
+            r10 = s.begin_run(10, 300)
+            s.finish_run(r10, 300, completed=True)
+            with s.conn:
+                s.conn.execute(
+                    "UPDATE runs SET started_utc=?, finished_utc=? WHERE id=?",
+                    ("2026-10-13T16:00:00+00:00",
+                     "2026-10-13T16:05:00+00:00", r60)
+                )
+                s.conn.execute(
+                    "UPDATE runs SET started_utc=?, finished_utc=? WHERE id=?",
+                    ("2026-10-13T16:10:00+00:00",
+                     "2026-10-13T16:15:00+00:00", r10)
+                )
+            s.observe_tg(message(10, 700), "tg_live", "2026-10-13T16:01:00+00:00")
+            s.observe_rss(rss({"700"}, "2026-10-13T16:01:40+00:00"))
+            s.observe_tg(message(11, 701), "tg_live", "2026-10-13T16:11:00+00:00")
+            s.observe_rss(rss({"701"}, "2026-10-13T16:11:05+00:00"))
+            # Both ends must be from the SAME run; this must not be counted.
+            s.observe_tg(message(12, 702), "tg_live", "2026-10-13T16:04:00+00:00")
+            s.observe_rss(rss({"702"}, "2026-10-13T16:12:00+00:00"))
+            result = s.report()
+            by_interval = result["comparison_by_rss_interval_seconds"]
+            self.assertEqual(by_interval["60"]["clean_matched_posts"], 1)
+            self.assertEqual(by_interval["10"]["clean_matched_posts"], 1)
+            self.assertEqual(by_interval["60"]["rss_minus_tg_p50_seconds"], 40)
+            self.assertEqual(by_interval["10"]["rss_minus_tg_p50_seconds"], 5)
+            self.assertEqual(result["matched_live_tg_and_normal_rss_poll"], 2)
+            self.assertEqual(result["rss_poll_health_by_interval_seconds"]["60"]["ok"], 1)
+            self.assertEqual(result["rss_poll_health_by_interval_seconds"]["10"]["ok"], 2)
+            self.assertIsNone(result["clean_observed_rss_minus_tg_seconds"]["p50"])
+            self.assertFalse(result["study_sample_guidance"]["both_10s_and_60s_above_suggested_min"])
             s.close()
 
     def test_percentile_boundaries(self):
