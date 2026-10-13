@@ -27,7 +27,7 @@ class RemoteTests(unittest.TestCase):
     def test_offline_never_claims_remote_green(self) -> None:
         report = collect_report(offline=True)
         self.assertEqual(report["github"]["verification"], "UNKNOWN")
-        self.assertIn("stage G0", report["recorded_approval"]["summary"])
+        self.assertIn("stage S0", report["recorded_approval"]["summary"])
         content = render_markdown(report)
         self.assertIn("UNKNOWN", content)
         self.assertIn("不得自动开发", content)

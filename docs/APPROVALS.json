@@ -40,6 +40,52 @@
       "user_instruction": "批准",
       "context": "Immediately follows a G0 completion report requesting user G0 acceptance, explicitly stating S0 requires separate approval and main will not be merged",
       "source": "User message in current ChatGPT conversation; check later instructions before interpreting as current"
+    },
+    {
+      "event_id": "APPROVAL-2026-10-13-G0-PR1-MERGE",
+      "date": "2026-10-13",
+      "approved_plan": "SeekPulse V1.1",
+      "authorization_kind": "scoped_merge",
+      "authorized_stage": "G0",
+      "authorized_actions": [
+        "merge G0 PR #1 to main"
+      ],
+      "not_authorized": [
+        "S0-S7 implementation",
+        "release or tag publication",
+        "production deployment or changes"
+      ],
+      "user_instruction": "批准合并 G0 PR #1",
+      "evidence": "https://github.com/Aspeternity/SeekPulse/pull/1",
+      "resulting_main_commit": "4900a52eef1583804b44bcd00145767df7fc1e26",
+      "source": "User message in preceding ChatGPT conversation; check later instructions"
+    },
+    {
+      "event_id": "APPROVAL-2026-10-13-S0",
+      "date": "2026-10-13",
+      "approved_plan": "SeekPulse V1.1",
+      "authorization_kind": "stage_execution",
+      "authorized_stage": "S0",
+      "authorized_issues": [
+        5,
+        6,
+        7,
+        8
+      ],
+      "authorized_actions": [
+        "Telegram channel source feasibility research",
+        "RSS/Telegram coverage and latency measurement",
+        "Apprise/Bark/ntfy isolated tests and resource baseline",
+        "S0 Go/No-Go report on dedicated research branches and draft PRs"
+      ],
+      "not_authorized": [
+        "S1-S7 implementation",
+        "merge main",
+        "release or tag publication",
+        "production deployment or changes"
+      ],
+      "user_instruction": "批准进入 S0 阶段",
+      "source": "User's most recent explicit ChatGPT authorization for S0; later messages supersede only if explicit"
     }
   ]
 }
