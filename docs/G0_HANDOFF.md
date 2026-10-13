@@ -1,37 +1,31 @@
-# G0 工程文件包 — 初始交接记录
+# G0 工程建档 — 实际 GitHub 交接记录
 
-**制作日期：2026-10-13，历史快照。新 AI 不得把这份记录当成 GitHub 实时状态。**
+> 核验日期：2026-10-13。仓库信息随时间变化；**必须以 GitHub 实时核查为准**，不能引用此记录代替最新 CI 或用户授权。
 
-## 已制作（本地文件，不代表远程提交）
+## 本轮实际建档
 
-- `AGENTS.md`、`CLAUDE.md`、`GEMINI.md`：多 AI 共用规则与入口。
-- `docs/PLAN.md`、`APPROVALS.md` 和 `APPROVALS.json`：已批准 V1.1 与仅 G0 执行范围；后续授权应增量记录。
-- `docs/ARCHITECTURE.md`、`ROADMAP.md`、`TEST_MATRIX.md`、`decisions/ADR-0001..0003`：技术契约与验收门槛。
-- `.github/ISSUE_TEMPLATE/`、`PULL_REQUEST_TEMPLATE.md`、`CODEOWNERS`、`workflows/g0-ci.yml`：任务/审查模板及 CI 定义。
-- `docs/ISSUE_SEED.json`：15 个稳定编号任务，其中 G0 3 项，后续 S0–S7 均明确标记为未授权。
-- `scripts/context_report.py`：只读 GitHub 实时交接报告，断网或无数据时标记 UNKNOWN。
-- `scripts/bootstrap_issues.py`：默认 dry-run，显式 --apply 才创建 Issue，且先枚举避免重复。
-- `scripts/validate_g0.py`、`tests/`：治理验证与初始行为冒烟测试。
+- 仓库：<https://github.com/Aspeternity/SeekPulse>，保留上游 `AI-XMLY/nodeseek-rss-telegram-bot` Git 历史及 MIT LICENSE。
+- `main` 保留上游基准 `8107b18e99148127bc6c993ac8384959ac871f6d`；没有合并任何 G0 代码。
+- 独立分支：`chore/g0-engineering-foundation`。
+- [Draft PR #1](https://github.com/Aspeternity/SeekPulse/pull/1)：仅工程治理、任务模板、基础 CI、交接工具及测试；未合并。
+- 初始提交 `e2289b478a3a45a2b12906b57243a38cd105dce5` 新增 30 个工程文件，不改上游 `app/`、`Dockerfile`、`docker-compose.yml`、`requirements.txt`。
+- [CI #38393797865](https://github.com/Aspeternity/SeekPulse/actions/runs/38393797865) 在上述初始提交上四项成功：Governance and handoff、Python 3.11 baseline、Python 3.12 baseline、Unmodified upstream Docker build。
+- [Protect main Ruleset](https://github.com/Aspeternity/SeekPulse/rules/25001077)：Active；四项必需检查匹配 GitHub Actions，要求 PR、最新分支检查、审查讨论解决；禁止删除/强推；无 bypass。
+- GitHub Issues 共 15 项实际创建：G0 [#2](https://github.com/Aspeternity/SeekPulse/issues/2)、[#3](https://github.com/Aspeternity/SeekPulse/issues/3)、[#4](https://github.com/Aspeternity/SeekPulse/issues/4)；S0 [#5–#8](https://github.com/Aspeternity/SeekPulse/issues)；S1–S7 [#9–#16](https://github.com/Aspeternity/SeekPulse/issues)。后续阶段的 Issue 均保留 `status:blocked`。
+- 多 AI 规范：根目录 `AGENTS.md` 为唯一主规则，`CLAUDE.md` 和 `GEMINI.md` 仅引用该规则；Issue、PR 和状态报告协同工作。
+- `scripts/bootstrap_issues.py` 默认 dry-run，正式执行时核查已存在的稳定任务标识；**不要重复创建 #2–#16**。
 
-## 本地核验结果
+## 强制注意
 
-- G0 必要文件与审批范围检查：通过。
-- 本地 G0 工具单测：8 项通过。
-- Python 源码语法编译：通过。
-- Workflow 与 Issue Forms YAML 语法：通过。
-- 任务种子 JSON：15 项有效且稳定标识不重复。
-- **上游应用测试、真正 GitHub Actions、真实 PR HEAD CI：尚未运行，不能标记通过。**
+1. 当前 **只批准 G0**；S0–S7 只规划，未执行。
+2. G0 **尚未获用户最终验收**；CI 绿不等于验收通过。
+3. 此文件更新本身会产生新的分支提交，**必须重新验证该新 PR HEAD 的 CI**；历史 CI 绿不得代替当前 CI。
+4. 工程文件还在 G0 工作分支，`main` 尚没有 `AGENTS.md` 等文件。所有 AI 新会话必须先切换/读取该工作分支。
+5. 未经用户明确授权，不合并 `main`、不发布、不操作生产环境，也不能提前开始 S0。
 
-## 远端已知阻断
+## 新会话快速恢复
 
-制作时 `Aspeternity/SeekPulse` 尚不存在；当前连接的 GitHub 工具不提供创建仓库或 Fork 操作，远程电脑也未在线。不能在此情况下声称已创建 Issue、PR、CI 或配置 main 分支保护。
-
-## 下一步（G0 内）
-
-1. 在 GitHub 真实 Fork 上游并命名 `Aspeternity/SeekPulse`，确认保留上游提交历史。
-2. 创建 G0 分支，按 `docs/OPERATIONS.md` 导入工程文件。
-3. 创建真实 GitHub Issues，开 Draft PR，不合并 main。
-4. 开启并核验 G0 CI 对应最新 PR HEAD SHA、远端访问控制以及交接报告。
-5. 请求用户 G0 实机/流程验收；**未获得明确下一阶段授权，不执行 S0。**
-
-**G0 不包含业务功能修改，`app/`、`Dockerfile`、上游依赖和 Compose 不在本工程包内。**
+1. 读取分支 `chore/g0-engineering-foundation` 的 `AGENTS.md`、`docs/PLAN.md`、`docs/APPROVALS.md`、`docs/PROJECT_STATE.md`。
+2. 检查 [PR #1](https://github.com/Aspeternity/SeekPulse/pull/1) 最新 HEAD、四项对应 GitHub Actions、Issue #2–#16、Ruleset、`main` SHA。
+3. 可运行 `python scripts/context_report.py --repo Aspeternity/SeekPulse` 辅助核对；若 GitHub 无法访问，将远端状态标为 UNKNOWN。
+4. 向用户报告核验结果并申请 **G0 阶段验收**。得到单独 S0 授权后才可进入技术可行性验证。
