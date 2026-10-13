@@ -23,6 +23,20 @@
 - 单次两个网页的请求时间和 ID 交集**不能衡量论坛→TG/RSS 的发布延迟或漏报率**，其结果字段明确写成 `UNMEASURED`。
 - GitHub Actions 如可访问公共网络，保存单次源采样工件，但外部网络失败不得被 CI 绿误称为“来源可行性通过”。
 
+
+## GitHub Actions 首次真实公网页面样本（已核实）
+
+2026-10-13 13:59:37 UTC，`S0 Public Source One-Shot (Diagnostic)` 在隔离的 GitHub Actions Runner 中完成首次实际采样。
+
+- 运行证据：[Run #38409533402](https://github.com/Aspeternity/SeekPulse/actions/runs/38409533402)。
+- 公开来源 JSON 工件：`s0-public-source-one-shot`（Artifact ID `11820157448`），并已由开发会话实际读取，不只看 CI 显示为绿色。
+- Telegram 公开 HTML：HTTP 200；共识别到 **38 个符合格式的链接**，去重后 **20 个不同帖子 ID**；HTTP 获取耗时约 **872 ms**。
+- RSS：HTTP 200；**20 个 RSS 条目**，解析出 **20 个不同帖子 ID**；HTTP 获取耗时约 **516 ms**。
+- 两组本次不同帖子 ID 的交集为 **20**；本次样本未见只在一边出现的帖子。
+- **绝不把以上请求耗时当作“论坛发帖 → TG/RSS 发布”的延迟**；这只是一次 HTTP 页面抓取，不能证明后续时间段同样完整、谁更快，或 MTProto 能稳定恢复。
+
+局部判断：**公开源 URL / 原帖 ID 可解析：PASS（20/20 重合的单次公开采样）**。**真实 Telethon 事件接收：UNVERIFIED；断线恢复：UNVERIFIED；24h+ 时效/覆盖：UNMEASURED。**
+
 ## 尚未验证，需后续实验
 
 1. 使用专门的测试 Telegram 账号，经用户自行控制的受信环境完成 Telethon 登录与订阅；不将 API ID、API Hash、登录验证码、Session 上传 GitHub/聊天。
