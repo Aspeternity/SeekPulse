@@ -19,6 +19,10 @@ SOURCE = "https://github.com/Aspeternity/SeekPulse"
 PLATFORMS = frozenset({"linux/amd64", "linux/arm64"})
 _SHA = re.compile(r"^sha256:([0-9a-f]{64})$")
 _REV = re.compile(r"^[0-9a-f]{40}$")
+_IMAGE_INDEX_TYPES = {
+    "application/vnd.oci.image.index.v1+json",
+    "application/vnd.docker.distribution.manifest.list.v2+json",
+}
 _IMAGE_MANIFEST_TYPES = {
     "application/vnd.oci.image.manifest.v1+json",
     "application/vnd.docker.distribution.manifest.v2+json",
@@ -173,7 +177,6 @@ def inspect_archive(
     _need(bool(re.fullmatch(r"[0-9A-Za-z][0-9A-Za-z._-]{0,63}", version)),
           "oci_invalid_expected_version")
     platform_set: set[str] = set()
-    verified_blobs: set[str] = set()
     with tarfile.open(path, "r:*") as archive:
         try:
             index_file = archive.extractfile("index.json")
@@ -184,6 +187,20 @@ def inspect_archive(
             index = _read_json(index_file)
         _need(index.get("schemaVersion") == 2, "oci_invalid_index_version")
         manifests = index.get("manifests")
+        _need(isinstance(manifests, list), "oci_invalid_layout_index")
+        # The OCI exporter may add one outer image-layout index descriptor
+        # pointing to the actual multi-platform image index (rather than
+        # listing platform manifests directly). Follow exactly one signed
+        # descriptor, verify its SHA and then enforce the SAME 2-platform rule.
+        verified_blobs: set[str] = set()
+        if (len(manifests) == 1 and isinstance(manifests[0], dict)
+                and manifests[0].get("mediaType") in _IMAGE_INDEX_TYPES):
+            wrapper = manifests[0]
+            embedded = _json_blob(archive, wrapper)
+            verified_blobs.add(wrapper["digest"])
+            _need(embedded.get("schemaVersion") == 2,
+                  "oci_invalid_nested_index_version")
+            manifests = embedded.get("manifests")
         _need(isinstance(manifests, list) and len(manifests) == 2,
               "oci_expected_exactly_two_platforms")
 
