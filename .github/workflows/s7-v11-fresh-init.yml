@@ -1,0 +1,111 @@
+name: S7 V1.1 Fresh Docker Initialization (Offline)
+
+on:
+  pull_request:
+    paths:
+      - 'app/fresh_init.py'
+      - 'app/v11_stores.py'
+      - 'app/v11_main.py'
+      - 'tests/test_s7_fresh_init.py'
+      - 'docs/decisions/ADR-0009-v11-fresh-docker-init.md'
+      - 'docs/deployment/V1.1-docker-offline.md'
+      - '.github/workflows/s7-v11-fresh-init.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: s7-fresh-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  regression:
+    name: Fresh init + entire regression / Python ${{ matrix.python-version }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.11', '3.12']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '${{ matrix.python-version }}'
+          cache: pip
+      - name: Install existing pinned S1-S5 dependencies
+        run: python -m pip install -r requirements-s5.txt
+      - name: Fresh initialization/atomic publishing/old database protection
+        run: python -m unittest discover -s tests -p 'test_s7_fresh_init.py' -v
+      - name: Run entire S1-S7 offline regression suite
+        run: python -m unittest discover -s tests -v
+      - name: Ruff, installed dependency compatibility and syntax
+        run: |
+          python -m pip install ruff==0.13.3
+          ruff check app/fresh_init.py app/v11_stores.py app/v11_main.py tests/test_s7_fresh_init.py
+          python -m pip check
+          python -m compileall -q app scripts tests
+
+  docker-fresh-smoke:
+    name: Isolated, network-disabled image fresh -> check -> deny repeat
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build local image only; never log in or push GHCR
+        run: docker build --file Dockerfile.v11 --tag "seekpulse-v11-fresh:${{ github.sha }}" .
+      - name: Fresh volume bootstrap in --network none container; never send
+        shell: bash
+        run: |
+          set -euo pipefail
+          image="seekpulse-v11-fresh:${{ github.sha }}"
+          data="${RUNNER_TEMP}/seekpulse-docker02-fresh"
+          # Make a temporary CI-only host folder writable by image UID 10001.
+          sudo install -d -m 0700 -o 10001 -g 10001 "$data"
+
+          common=(--rm --network none --read-only
+                  --tmpfs /tmp:rw,nosuid,nodev,noexec,size=32m
+                  -e SEEKPULSE_V11_ENABLE=1
+                  -e DATABASE_PATH=/app/data/bot.db
+                  --mount "type=bind,source=$data,target=/app/data")
+
+          if docker run "${common[@]}" "$image" --check >"${RUNNER_TEMP}/fresh-missing.log" 2>&1; then
+            echo "check unexpectedly accepted an absent database"; exit 1
+          fi
+          grep -q "v11_database_not_prepared" "${RUNNER_TEMP}/fresh-missing.log"
+
+          if docker run "${common[@]}" "$image" --init-fresh >"${RUNNER_TEMP}/fresh-no-confirm.log" 2>&1; then
+            echo "fresh bootstrap bypassed explicit confirmation"; exit 1
+          fi
+          grep -q "fresh_init_explicit_confirmation_required" "${RUNNER_TEMP}/fresh-no-confirm.log"
+          test ! -e "$data/bot.db"
+
+          docker run "${common[@]}" \
+            -e SEEKPULSE_FRESH_INIT_CONFIRM=CREATE_EMPTY_DATABASE \
+            "$image" --init-fresh | grep -qx "fresh_init_ready"
+
+          docker run "${common[@]}" "$image" --check | grep -qx "v11_database_ready"
+          before="$(sudo sha256sum "$data/bot.db" | cut -d ' ' -f1)"
+          if docker run "${common[@]}" \
+            -e SEEKPULSE_FRESH_INIT_CONFIRM=CREATE_EMPTY_DATABASE \
+            "$image" --init-fresh >"${RUNNER_TEMP}/fresh-repeated.log" 2>&1; then
+            echo "fresh init unexpectedly replaced existing SQLite"; exit 1
+          fi
+          grep -q "fresh_init_database_already_exists" "${RUNNER_TEMP}/fresh-repeated.log"
+          after="$(sudo sha256sum "$data/bot.db" | cut -d ' ' -f1)"
+          test "$before" = "$after"
+
+          # Even with explicit opt-in, missing credentials must NOT trigger an
+          # online Bot/Web flow during 'init' or 'check'. The isolated netns
+          # entirely prevents reaching NodeSeek, Telegram, Bark and ntfy.
+          docker run "${common[@]}" --entrypoint python "$image" -c '
+          import sqlite3
+          db = sqlite3.connect("/app/data/bot.db")
+          assert db.execute("SELECT COUNT(*) FROM users").fetchone()[0] == 0
+          assert db.execute("SELECT COUNT(*) FROM source_observations").fetchone()[0] == 0
+          assert db.execute("SELECT COUNT(*) FROM delivery_tasks").fetchone()[0] == 0
+          assert db.execute("SELECT last_observation_id FROM gate_b_dispatch_state").fetchone()[0] == 0
+          assert db.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
+          assert db.execute("PRAGMA foreign_key_check").fetchall() == []
+          '
