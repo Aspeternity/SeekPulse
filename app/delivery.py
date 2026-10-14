@@ -322,6 +322,18 @@ class CoreStore:
                      now, now + ttl_seconds, now, now),
                 )
                 inserted += cursor.rowcount
+                if cursor.rowcount == 0 and priority > 0:
+                    # A later matching urgent rule/source may raise priority,
+                    # but MUST NOT reset the task, TTL, attempts or delivery
+                    # result. Already leased/sent/suppressed tasks are sealed.
+                    await db.execute(
+                        """
+                        UPDATE delivery_tasks SET priority=1, updated_at=?
+                        WHERE user_id=? AND post_id=? AND target_id=?
+                          AND status IN ('pending','retry_wait') AND priority=0
+                        """,
+                        (now, user_id, post_id, target_id),
+                    )
             await db.commit()
             return inserted
 

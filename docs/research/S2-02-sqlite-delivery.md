@@ -7,7 +7,7 @@
 - 新模块 app/delivery.py 的 CoreStore 只访问本地 SQLite，不发任何网络请求，不接受 Telegram Session/Token；不接线到原版轮询器。调用者必须先初始化原有 Database，再初始化新 CoreStore。
 - SQLite 创建三个新业务表（canonical_posts、source_observations、delivery_tasks）和独立版本元数据，保持原 users、user_settings、targets、delivery_history、旧迁移记录不变。所有新表和索引通过 IF NOT EXISTS 建立；相同 schema version 的 init 重复运行幂等，版本不匹配时拒绝继续。**不会自动重发或自动把旧 delivery_history 转换成新任务**，因为无法证明哪个历史目标成功；未来正式迁移前须另外审查目标绑定与历史行为。
 - 来源观测 (source,event_id) 在 SQLite 内唯一；多来源以 post_id 关联同一 canonical_posts。BEGIN IMMEDIATE 短事务保证来源同一事件不会插出两条记录；冲突 post_id 拒绝。检索时按观测写入顺序重新构造 Domain CanonicalPost，保留首个字段来源和首次发现时间。
-- 投递任务严格唯一键 (user_id,post_id,target_id)。enqueue 只接受已观察帖子、当前用户自己启用的目标，跨用户目标整批拒绝。已创建任务不会被重复来源、第二次入队或更长 TTL 覆盖终态。同用户不同目标各自存状态。
+- 投递任务严格唯一键 (user_id,post_id,target_id)。enqueue 只接受已观察帖子、当前用户自己启用的目标，跨用户目标整批拒绝。已创建任务不会被重复来源、第二次入队或更长 TTL 覆盖终态。同用户不同目标各自存状态；同帖后到紧急规则可将尚未认领的普通任务优先级提升为紧急，但不能重置 TTL/次数，也不能撤回已认领或已发送任务。
 - 状态：pending -> leased -> sent / retry_wait / failed_permanent / suppressed / expired；retry_wait 可再次 leased。claim 使用 BEGIN IMMEDIATE、随机 lease_token、lease_until 与次数增加来防止并发 Worker 重复认领；晚到的过期 Worker token 不得覆盖新租约或已完成记录。
 - 启动/每次 claim 前可恢复 lease_until 已到的租约：次数未耗尽回 retry_wait，到最大次数记 failed_permanent。过期任务转 expired 并保留审计，已 sent 不重复发送。错误只能存白名单式短代码（例如 network、http_429），不写包含 Token 的异常文本。
 - 失败遵守有界指数退避，带 Retry-After 的请求以更长等待时间为准；永久失败不自动重试；超期等待立即 expired。suppress 仅撤销未认领的任务，已在发送中的 HTTP 无法撤回。检查用户和目标是否仍启用发生在认领时；**规则细节在 S4 发送前仍必须重新验证，不能仅靠这张表推断用户规则现状**。

@@ -65,6 +65,32 @@ class AtomicDeliveryContracts(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(len(tasks), 1)
         self.assertEqual(tasks[0].status, TaskStatus.PENDING)
 
+    async def test_later_urgent_route_upgrades_pending_without_duplication(self):
+        self.assertEqual(await self.store.enqueue(
+            self.user.id, 123, [self.target.id], now=TIME,
+            ttl_seconds=300, priority=0
+        ), 1)
+        first = (await self.store.list_tasks(self.user.id))[0]
+        self.assertEqual(first.priority, 0)
+        self.assertEqual(await self.store.enqueue(
+            self.user.id, 123, [self.target.id], now=TIME + 5,
+            ttl_seconds=900, priority=1
+        ), 0)
+        after = (await self.store.list_tasks(self.user.id))[0]
+        self.assertEqual(after.id, first.id)
+        self.assertEqual(after.expires_at, first.expires_at)
+        self.assertEqual(after.attempts, 0)
+        self.assertEqual(after.priority, 1)
+        leased = (await self.store.claim(now=TIME + 6))[0]
+        self.assertTrue(await self.store.mark_sent(
+            leased.id, leased.lease_token, now=TIME + 7
+        ))
+        self.assertEqual(await self.store.enqueue(
+            self.user.id, 123, [self.target.id], now=TIME + 8, priority=1
+        ), 0)
+        self.assertEqual((await self.store.list_tasks(self.user.id))[0].status,
+                         TaskStatus.SENT)
+
     async def test_two_targets_get_independent_terminal_states_and_no_redelivery(self):
         other = await self.second_target()
         self.assertEqual(await self.store.enqueue(
