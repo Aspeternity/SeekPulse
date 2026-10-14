@@ -60,6 +60,10 @@ class NodeSeekIdentityTests(unittest.TestCase):
             with self.subTest(url=url):
                 self.assertIsNone(post_id_from_url(url))
 
+    def test_unbounded_external_numeric_id_fails_closed(self):
+        long_link = "https://www.nodeseek.com/post-" + "9" * 5000 + "-1"
+        self.assertIsNone(post_id_from_url(long_link))
+
     def test_reject_invalid_post_ids(self):
         for value in (0, -1, True, "123", 2**63):
             with self.subTest(value=value):

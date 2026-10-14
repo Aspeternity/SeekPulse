@@ -41,7 +41,12 @@ def post_id_from_url(url: str) -> int | None:
     match = _POST_PATH.fullmatch(parts.path)
     if match is None:
         return None
-    post_id = int(match.group(1))
+    digits = match.group(1)
+    # Reject unbounded integers before int() (Python 3.11+ limits huge
+    # decimal conversions; outside input must fail closed, not raise).
+    if len(digits) > 19:
+        return None
+    post_id = int(digits)
     return post_id if 0 < post_id <= _MAX_POST_ID else None
 
 
