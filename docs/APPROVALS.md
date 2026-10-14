@@ -1,6 +1,6 @@
 # 审批及执行权限记录（人工可核实）
 
-> **最新（2026-10-14）：S1、S2、S3 均已分别验收及独立获批合并；用户明确批准启动 S4 / Issue #13 开发。** 下方 2026-10-13 关于“当前仅 G0”的段落是当时的历史状态，不能替代新授权。S4 合并、S5–S7、Release/Tag 及生产变更仍需单独审批。
+> **最新（2026-10-14）：S1–S4 已分别验收及独立获批合并；用户明确批准启动 S5 / Issue #14 开发。** 下方 2026-10-13 关于“当前仅 G0”的段落是历史状态，不能替代新授权。S5 合并、S6–S7、Release/Tag 及生产变更仍需单独审批。
 
 ## 2026-10-13：V1.1 方案批准，G0 授权
 
@@ -87,3 +87,13 @@
 - **已批架构约束：** 保留原 S2 投递唯一键，不制造假 Telegram chat_id、不读取或上传敏感密钥；Additive S4 策略/冷却表是本阶段路由配置的最小实现，详见 ADR-0004 及其生产迁移待办。
 - **未获准：** 合并 S4 PR、S5–S7、正式运行改造、旧历史迁移、真实 Telegram/Bark/ntfy 推送、Token/Session 上传、发布/Tag、生产部署。
 - 审批证据源于用户当前会话的明确原话和前后文，**不冒充独立 GitHub 用户审查签名**。后续仍以实时 GitHub PR/Issue HEAD、CI 及新的用户指令为准。
+
+## 2026-10-14：S4-01 离线验收并获独立合并授权；S5 / Issue #14 获开发授权
+
+用户明确原话「批准 S4-01 按目前已完成的离线开发范围验收通过 批准合并权限」，同时授权 S4-01 离线验收与 PR #25 合并。合并 [PR #25](https://github.com/Aspeternity/SeekPulse/pull/25) 的 main commit [6d5f078](https://github.com/Aspeternity/SeekPulse/commit/6d5f0787e6e3e8cae0364eb94d9a092701f0b5ed)，新 main [G0 CI #38550293273](https://github.com/Aspeternity/SeekPulse/actions/runs/38550293273) 4/4 PASS；Issue #13 已关闭。S4 完成是离线核心，不代表真实通知及非 Telegram 目标已上线。
+
+**本次 S5 开发授权原话**：「批准」。直接回应助手明确问题：“是否批准启动 S5 / Issue #14 开发？仍执行独立分支、Draft PR、完整 CI、阶段验收和单独合并审批，不擅自部署。”
+
+- **获准**：单独 S5 / Issue #14 开发，分支 feat/s5-01-admin-web，负责人 ChatGPT；FastAPI/Jinja2/HTMX 本地资源、管理员登录/Session/CSRF/XSS/回环限制、Web 与既有 SQLite/Telegram Bot 共享关键词/屏蔽/版块/现有目标/来源状态和历史/统计，离线 CI 与验收说明。
+- **未获准**：合并 S5 PR、启动 S6–S7、生产 Web、真实 Telegram/Bark/ntfy 发送、上传真实 Session、发布/Tag、生产迁移/部署。S4 尚待审批的非 Telegram 新目标正式注册/安全迁移不能借 S5 偷偷实现。
+- 授权摘要来自当前会话的用户原话及紧邻的审批请求，不冒充 GitHub 用户独立 Code Review；后续仍以精确 SHA 的 Issue/PR/CI 和用户新授权为准。

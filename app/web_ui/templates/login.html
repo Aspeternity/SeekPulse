@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>管理员登录 · SeekPulse</title>
+  <link rel="stylesheet" href="/assets/app.css">
+</head>
+<body class="login-page">
+  <main class="login-card">
+    <div class="login-icon">S</div>
+    <p class="eyebrow">仅限本机管理员</p>
+    <h1>登录 SeekPulse</h1>
+    <p class="muted">输入独立的 Web 管理员密码。此后台不会使用 Bot Token 登录。</p>
+    {% if error %}<p class="error" role="alert">{{ error }}</p>{% endif %}
+    <form action="/login" method="post" class="form-stack">
+      <input type="hidden" name="_csrf" value="{{ csrf }}">
+      <label for="password">管理员密码</label>
+      <input id="password" type="password" name="password" autocomplete="current-password" maxlength="512" required>
+      <button class="btn primary full" type="submit">安全登录</button>
+    </form>
+    <p class="muted small">仅支持 127.0.0.1 / localhost / ::1，本地访问或可信 SSH 隧道。</p>
+  </main>
+</body>
+</html>

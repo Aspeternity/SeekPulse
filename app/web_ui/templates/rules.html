@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}关键词{% endblock %}
+{% block heading %}关键词与规则{% endblock %}
+{% block content %}
+  <section class="panel">
+    <div class="panel-head"><h2>添加关键词</h2><span class="muted">多行规则之间为 OR，使用 + 表示 AND</span></div>
+    <form method="post" action="/rules/add" class="inline-form">
+      <input type="hidden" name="_csrf" value="{{ csrf }}">
+      <input name="keyword" maxlength="100" required placeholder="例如 DMIT + 补货" aria-label="新关键词">
+      <button type="submit" class="btn primary">添加规则</button>
+    </form>
+  </section>
+  <section class="panel">
+    <div class="panel-head"><h2>规则列表</h2><span class="muted">{{ keywords|length }} 项</span></div>
+    {% for rule in keywords %}
+      {% set routing = routes.get(rule.id) %}
+      <div class="rule-item">
+        <div class="rule-top"><div><strong>{{ rule.keyword }}</strong><span class="pill {{ 'green' if rule.enabled else 'gray' }}">{{ '已启用' if rule.enabled else '已暂停' }}</span></div>
+          <div class="inline-actions">
+            <form action="/rules/{{ rule.id }}/state" method="post">
+              <input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="enabled" value="{{ '0' if rule.enabled else '1' }}">
+              <button type="submit" class="btn subtle">{{ '暂停' if rule.enabled else '启用' }}</button>
+            </form>
+            <form action="/rules/{{ rule.id }}/delete" method="post">
+              <input type="hidden" name="_csrf" value="{{ csrf }}"><button type="submit" class="btn danger">删除</button>
+            </form>
+          </div>
+        </div>
+        <p class="muted small">命中 {{ rule.hit_count }} 次 · Bot 与 Web 共用该规则</p>
+        <form method="post" action="/rules/{{ rule.id }}/route" class="route-form">
+          <input type="hidden" name="_csrf" value="{{ csrf }}">
+          <label>优先级<select name="priority">
+            <option value="normal" {{ 'selected' if routing.priority.value == 0 else '' }}>普通</option>
+            <option value="urgent" {{ 'selected' if routing.priority.value == 1 else '' }}>紧急</option>
+          </select></label>
+          <label>通知目标<select name="override">
+            <option value="0" {{ 'selected' if routing.override_targets is none else '' }}>继承默认目标</option>
+            <option value="1" {{ 'selected' if routing.override_targets is not none else '' }}>仅使用以下勾选目标</option>
+          </select></label>
+          <fieldset class="target-choices"><legend>覆盖目标（继承模式下忽略）</legend>
+            {% for target in targets %}
+            <label class="check"><input type="checkbox" name="target_ids" value="{{ target.id }}" {{ 'checked' if routing.override_targets is not none and target.id in routing.override_targets else '' }}>{{ target.chat_title or target.chat_id }}</label>
+            {% else %}<span class="muted">暂无目标</span>{% endfor %}
+          </fieldset>
+          <button class="btn subtle" type="submit">保存路由</button>
+        </form>
+      </div>
+    {% else %}<p class="empty">还没有关键词。请先添加一条。</p>{% endfor %}
+  </section>
+  <section class="panel">
+    <div class="panel-head"><h2>屏蔽词</h2><span class="muted">命中屏蔽词会阻止推送</span></div>
+    <form method="post" action="/blocks/add" class="inline-form">
+      <input type="hidden" name="_csrf" value="{{ csrf }}">
+      <input name="keyword" maxlength="50" required placeholder="需要排除的词">
+      <button type="submit" class="btn primary">添加屏蔽词</button>
+    </form>
+    {% for block in blocks %}
+      <div class="row-line"><span>{{ block.keyword }}</span>
+        <form action="/blocks/{{ block.id }}/delete" method="post">
+          <input type="hidden" name="_csrf" value="{{ csrf }}">
+          <button class="btn danger" type="submit">移除</button>
+        </form>
+      </div>
+    {% endfor %}
+  </section>
+{% endblock %}

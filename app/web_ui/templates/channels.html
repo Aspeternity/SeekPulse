@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}目标{% endblock %}
+{% block heading %}通知目标{% endblock %}
+{% block content %}
+  <section class="panel">
+    <div class="panel-head"><h2>默认通知目标</h2><span class="muted">每用户、每目标独立记录状态</span></div>
+    <form action="/channels/defaults" method="post" class="form-stack">
+      <input type="hidden" name="_csrf" value="{{ csrf }}">
+      <label>目标策略
+        <select name="override">
+          <option value="0" {{ 'selected' if not default_override else '' }}>继承所有已启用目标</option>
+          <option value="1" {{ 'selected' if default_override else '' }}>仅使用勾选目标</option>
+        </select>
+      </label>
+      <fieldset class="target-choices"><legend>选择目标</legend>
+        {% for item in targets %}
+        <label class="check"><input type="checkbox" name="target_ids" value="{{ item.target.id }}" {{ 'checked' if item.target.id in defaults else '' }}>{{ item.target.chat_title or item.target.chat_id }}</label>
+        {% else %}<p class="muted">没有可用的 Telegram 目标，请先通过 Bot 添加。</p>{% endfor %}
+      </fieldset>
+      <button class="btn primary" type="submit">保存默认目标</button>
+    </form>
+  </section>
+  <section class="panel">
+    <div class="panel-head"><h2>已有目标及通道</h2><span class="muted">{{ targets|length }} 个目标</span></div>
+    {% for item in targets %}
+      <div class="rule-item">
+        <div class="rule-top"><strong>{{ item.target.chat_title or item.target.chat_id }}</strong>
+          <span class="pill {{ 'green' if item.target.enabled else 'gray' }}">{{ '已启用' if item.target.enabled else '已暂停' }}</span></div>
+        <p class="muted small">目标 ID {{ item.target.id }} · 通道 {{ item.channel }} · {{ '有受保护引用' if item.configured else '未配置' }}</p>
+        <form action="/channels/{{ item.target.id }}/bind" method="post" class="inline-form">
+          <input type="hidden" name="_csrf" value="{{ csrf }}">
+          <select name="channel">
+            <option value="telegram" {{ 'selected' if item.channel == 'telegram' else '' }}>Telegram</option>
+            <option value="bark" {{ 'selected' if item.channel == 'bark' else '' }}>Bark</option>
+            <option value="ntfy" {{ 'selected' if item.channel == 'ntfy' else '' }}>ntfy</option>
+          </select>
+          <input name="secret_ref" maxlength="64" placeholder="BARK_PRIMARY（非密钥本身）" aria-label="受保护配置引用">
+          <button class="btn subtle" type="submit">保存通道</button>
+        </form>
+        <form action="/channels/{{ item.target.id }}/state" method="post">
+          <input type="hidden" name="_csrf" value="{{ csrf }}">
+          <input type="hidden" name="enabled" value="{{ '0' if item.target.enabled else '1' }}">
+          <button class="btn subtle" type="submit">{{ '暂停目标' if item.target.enabled else '启用目标' }}</button>
+        </form>
+      </div>
+    {% else %}<p class="empty">暂无通知目标。</p>{% endfor %}
+  </section>
+  <p class="notice">重要：Web 只操作已存在、归属正确的目标 ID，不会虚构 Telegram chat ID，也不在页面存储 Bark/ntfy 设备密钥。正式创建非 Telegram 目标及实际通知发送尚未上线。</p>
+{% endblock %}

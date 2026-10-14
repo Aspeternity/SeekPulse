@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}概览{% endblock %}
+{% block heading %}运行概览{% endblock %}
+{% block content %}
+  <p class="section-lead">两种来源与投递任务的统一视图。数据来自 Bot 共用的 SQLite。</p>
+  <section id="summary" aria-label="任务摘要" hx-get="/fragments/summary" hx-trigger="every 30s" hx-swap="innerHTML">
+    {% include "_summary.html" %}
+  </section>
+  <div class="two-col">
+    <section class="panel">
+      <div class="panel-head"><h2>来源健康</h2><a href="/sources">查看设置 →</a></div>
+      {% for source in sources %}
+      <div class="row-line">
+        <div><strong>{{ '官方 RSS' if source.source.value == 'rss' else 'Telegram 频道' }}</strong>
+          <p class="muted small">{{ source.gap_code or '暂无数据缺口警告' }}</p></div>
+        <span class="pill {{ 'green' if source.enabled else 'gray' }}">{{ '已允许采集' if source.enabled else '已禁用' }}</span>
+      </div>
+      {% endfor %}
+    </section>
+    <section class="panel">
+      <div class="panel-head"><h2>投递状态</h2><a href="/history">查看历史 →</a></div>
+      {% for key, num in counts.items() %}
+      <div class="row-line"><span>{{ key }}</span><strong>{{ num }}</strong></div>
+      {% else %}<p class="empty">目前还没有 S2 队列任务。</p>{% endfor %}
+      <p class="muted small">现有主程序仍使用旧 FeedPoller；当前 S3/S4 核心尚未切换为生产链路。</p>
+    </section>
+  </div>
+{% endblock %}

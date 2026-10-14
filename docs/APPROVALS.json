@@ -156,6 +156,30 @@
       "user_instruction": "批准开发",
       "context": "Direct reply to question '是否批准启动 S4 / Issue #13 开发？' after S3-01 accepted, separately approved PR #24 squash-merged as f5c3f3c and post-merge CI 4/4 PASS.",
       "source": "Current ChatGPT user message and immediately preceding assistant request; cross-check Issue #13"
+    },
+    {
+      "event_id": "APPROVAL-2026-10-14-S5-AUTHORIZED",
+      "date": "2026-10-14",
+      "approved_plan": "SeekPulse V1.1",
+      "authorization_kind": "stage_development_only",
+      "accepted_stage": "S4-01",
+      "authorized_stage": "S5",
+      "issue": 14,
+      "authorized_actions": [
+        "S5 Issue #14 admin-only FastAPI+Jinja2+HTMX local Web development",
+        "S5 shared Bot/SQLite CRUD and source/target read-only admin health, security and integration tests",
+        "isolated feat/s5-01-admin-web branch and Draft PR with Python 3.11/3.12 CI"
+      ],
+      "not_authorized": [
+        "merge S5 PR to main",
+        "S6 or S7 development",
+        "start real Web server, Telegram/Bark/ntfy sends, or production cutover",
+        "creation/migration of non-Telegram target identities",
+        "Release/Tag or production deployment"
+      ],
+      "user_instruction": "批准",
+      "context": "Direct reply to assistant's explicit '是否批准启动 S5 / Issue #14 开发？' after S4-01 separate offline acceptance and PR #25 squash merge 6d5f078 with main G0 CI 4/4 PASS.",
+      "source": "Current ChatGPT message and immediately preceding question; cross-check GitHub Issue #14"
     }
   ]
 }

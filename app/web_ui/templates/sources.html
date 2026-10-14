@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}来源{% endblock %}
+{% block heading %}来源状态{% endblock %}
+{% block content %}
+  <p class="section-lead">RSS 与 Telegram 来源拥有独立的启停、游标、错误和缺口状态。</p>
+  <div class="two-col">
+    {% for source in sources %}
+    <section class="panel">
+      <div class="panel-head"><h2>{{ 'NodeSeek 官方 RSS' if source.source.value == 'rss' else '@nodeseekc Telegram' }}</h2>
+        <span class="pill {{ 'green' if source.enabled else 'gray' }}">{{ '允许' if source.enabled else '禁用' }}</span>
+      </div>
+      <dl class="details">
+        <div><dt>首次基线</dt><dd>{{ '完成' if source.initialized else '未初始化' }}</dd></div>
+        <div><dt>游标</dt><dd>{{ source.cursor }}</dd></div>
+        <div><dt>上次成功</dt><dd>{{ source.last_success_at|utc_time if source.last_success_at else '尚无记录' }}</dd></div>
+        <div><dt>错误次数</dt><dd>{{ source.failures }}</dd></div>
+        <div><dt>最近错误</dt><dd>{{ source.last_error_code or '无' }}</dd></div>
+        <div><dt>缺口警告</dt><dd>{{ source.gap_code or '无' }}</dd></div>
+      </dl>
+      <form method="post" action="/sources/{{ source.source.value }}/state">
+        <input type="hidden" name="_csrf" value="{{ csrf }}">
+        <input type="hidden" name="enabled" value="{{ '0' if source.enabled else '1' }}">
+        <button class="btn {{ 'subtle' if source.enabled else 'primary' }}" type="submit">{{ '禁用来源' if source.enabled else '允许来源' }}</button>
+      </form>
+    </section>
+    {% endfor %}
+  </div>
+  <p class="notice">当前主程序尚未接入 S3 新适配器：切换此处的持久化开关<strong>不会</strong>立即启动 Telegram Session 或替换旧 RSS Bot 轮询。</p>
+{% endblock %}
