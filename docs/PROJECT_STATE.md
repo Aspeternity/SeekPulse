@@ -11,7 +11,7 @@
 ## 当前唯一授权：Docker-05 / High CVE 离线修复开发
 
 - 用户在紧邻申请“**是否批准启动下一阶段的 High CVE 专项审查与离线修复开发？仍不发布 GHCR、不部署 NAS/PVE；完成修复和复测后再单独申请验收**”后回复“批准”。[Issue #40](https://github.com/Aspeternity/SeekPulse/issues/40)，唯一写入负责人 ChatGPT，独立分支 `feat/s7-docker-05-high-cve-remediation`、ADR-0012；最新 PR 和 commit SHA **必须实时在 GitHub 核实**，不能在文档中预记 PASS。
-- 已批准工作：只对 `Dockerfile.v11` 的最终镜像使用 `requirements-v11-security.txt` 修补 `aiohttp/jaraco.context/wheel` 已证实的 4 条 PyPI High 记录；旧版依赖和应用、数据库/Web/通知契约不动。Debian ncurses/systemd/acl/util-linux/Perl 的 8 个 High CVE 仍需准确分析，不擅自混装 Debian unstable 或添加 scanner 忽略/免责。新增两版 Python 回归及 AMD64/ARM64 QEMU/Trivy 复扫；**即使 PyPI 归零，剩余 OS High 仍阻断正式镜像发布**。
+- 已批准工作：只对 `Dockerfile.v11` 的最终镜像使用 `requirements-v11-security.txt` 修补 `aiohttp/jaraco.context/wheel` 已证实的 4 条 PyPI High 记录及 setuptools 内捆绑旧副本的额外 2 条 High，使用仅 V1.1 的 4 个精确版本（含 `setuptools==84.0.0`）；旧版依赖和应用、数据库/Web/通知契约不动。Debian ncurses/systemd/acl/util-linux/Perl 的 8 个 High CVE 仍需准确分析，不擅自混装 Debian unstable 或添加 scanner 忽略/免责。新增两版 Python 回归及 AMD64/ARM64 QEMU/Trivy 复扫；**即使 PyPI 归零，剩余 OS High 仍阻断正式镜像发布**。
 - 官方 Debian 稳定版多数暂无可直接引入的受支持修复或标注 no-dsa/postponed；只记录上游状态与运行时影响评估，不将 OS High 标记已修复。详见 ADR-0012 和实时扫描结果。
 
 ## 尚未授权 / 唯一下一步
