@@ -6,7 +6,6 @@ No test-only hooks are added to the application.
 
 from __future__ import annotations
 
-import asyncio
 import sqlite3
 import unittest
 from datetime import datetime, timedelta, timezone

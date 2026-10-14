@@ -22,7 +22,7 @@ from app.delivery import CoreStore
 from app.domain import Source, SourceObservation
 from app.maintenance import (
     DATABASE_NAME, MANIFEST_NAME, MaintenanceError, create_backup,
-    inspect_database, main, restore_new, verify_backup,
+    inspect_database, restore_new, verify_backup,
 )
 from app.route_store import Channel, RouteStore
 from app.source_state import SourceStore
