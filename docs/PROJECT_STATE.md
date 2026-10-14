@@ -1,10 +1,10 @@
-# SeekPulse — S5 / Issue #14 交接状态
+# SeekPulse — S6 / Issue #15 当前交接索引
 
-> 2026-10-14 快照。必须从实时 GitHub Issue #14、对应 Draft PR、main/branch HEAD 及最新 CI 更新状态，本文件不是审批证据。
+> 2026-10-14 快照。审批/PR/HEAD/CI 以实时 GitHub 和用户原话为准，本文件仅供新对话接续。
 
-- S1–S4 已分别用户阶段验收和独立获批合并：PR #21–#25；当前开工 main 6d5f0787e6e3e8cae0364eb94d9a092701f0b5ed；S4 合并后 G0 push #38550293273 为 4/4 PASS。
-- 最新用户指令为「批准」，直接回应“是否批准启动 S5 / Issue #14 开发？”，只批准 S5 开发。负责人 ChatGPT，独立分支 feat/s5-01-admin-web，必须使用 Draft PR，不擅自合并/发布/部署。
-- S5 功能：FastAPI/Jinja2/本地 HTMX 中文响应式管理员后台；与原 Telegram Bot 使用同一用户/规则/来源/目标/历史 SQLite，严格管理员 user id 作用域；scrypt 密码、Session/CSRF、loopback+Host DNS rebinding 防护和 Jinja2 autoescape/CSP 等安全测试。安全合同见 ADR-0005。
-- app/main.py、旧 FeedPoller、Dockerfile、requirements.txt、Compose 不修改。S5 web_cli 只供以后获得单独批准的本地预览；未执行真实账号登录/短信/邮件/推送/生产部署。S4 的非 Telegram 新目标正式注册/旧数据迁移仍未解决，不得造假目标。
-- S0 研究 Draft PR #17–#20 保持未合并；S6–S7、发布/Tag/部署及 S5 正式合并尚未批准。
-- 下一步：完成 S5 Draft PR，按精确 HEAD 完整检查 G0/S1/S2/S4/S5 和全量 Python 3.11/3.12，失败先查根因修复；CI 全绿后申请 S5-01 离线阶段用户验收，然后另行申请合并许可。
+- S1–S5 已分别用户阶段验收、独立获批合并：PR #21–#26。当前开发基线 main `9fe66d9db8330ac84ae14718eb413634560420d1`，合并后 G0 push [#38558377125](https://github.com/Aspeternity/SeekPulse/actions/runs/38558377125) 4/4 PASS；Issue #14 已关闭。
+- 最新用户针对“是否批准启动 S6 / Issue #15 开发？”明确回复「批准」，**只授权 S6 的开发与离线模拟 CI**。当前 Issue #15、负责人 ChatGPT、分支 `feat/s6-01-recovery-backup`、独立 Draft PR。S6 用户阶段验收及合并均需新的独立批准。
+- S6 主要新增 `app/maintenance.py` 离线维护 CLI：SQLite WAL 在线备份 API、私有快照目录、SHA-256/完整性/FK/已知 schema 版本验证、只恢复到新 DB 路径、敏感信息不输出；故障注入测试覆盖 ENOSPC/SQLITE_BUSY/长断网/Session 失效/429/旧租约失效。ADR-0006 限制禁止覆盖现役 DB、修改生产配置与真实迁移。
+- S1–S5 原主运行代码、`app/main.py`、旧 FeedPoller、Compose、Dockerfile、已锁定 requirements.txt 不修改。S4 非 TG 新目标正式注册和旧历史迁移仍未授权。
+- S0 研究 PR #17–#20 依旧 Draft、未合并。S6 未进行真实 VPS 演练；S7、Tag/Release、生产部署及真正消息通知均未授权。
+- 下一步：最新 HEAD 的 G0/S1/S6 全量 Python 3.11/3.12 CI；记录失败/修复并重新跑，再向用户**申请 S6-01 离线阶段验收**；通过后再单独申请合并。不得自行合并 main。
