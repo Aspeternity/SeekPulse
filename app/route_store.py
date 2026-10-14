@@ -115,8 +115,21 @@ class RouteStore:
                         ON DELETE CASCADE,
                     available_at INTEGER NOT NULL CHECK(available_at >= 0)
                 );
+                CREATE TABLE IF NOT EXISTS s4_schema_meta (
+                    key TEXT PRIMARY KEY,
+                    value TEXT NOT NULL
+                );
+                INSERT OR IGNORE INTO s4_schema_meta(key, value)
+                    VALUES ('routing_schema_version', '1');
                 """
             )
+            cursor = await db.execute(
+                """SELECT value FROM s4_schema_meta
+                   WHERE key='routing_schema_version'"""
+            )
+            row = await cursor.fetchone()
+            if row is None or row["value"] != "1":
+                raise RuntimeError("unsupported S4 routing schema version")
             await db.commit()
 
     @staticmethod

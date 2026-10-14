@@ -14,7 +14,7 @@ S2 的 delivery_tasks 唯一键为 (user_id,post_id,target_id)，target_id 引�
 2. 新增 `RouteStore` 四类职责所需的独立增量表：用户默认目标、规则路由覆盖与优先级、现有目标 ID → provider/受保护 secret 引用、目标限流冷却；所有目标/规则归属检查均使用当前用户身份，权限不可跨用户。
 3. 目标集合语义：默认继承现有启用的 targets；用户明确设置空集合表示不投递；规则层可以继承默认或完整覆盖。一个目标最终采用它命中规则中最高优先级，不制造两条同目标任务。规则不足字段时交由 S2 fail-closed 三态判断。
 4. **新 Bark/ntfy 目标 ID 的正式创建/旧 Telegram-only 表结构兼容是待审迁移项目。** S4 只允许将已有合法目标 ID 映射为通道用于隔离测试，禁止伪造 chat_id 或改写旧 targets 主键。S5/生产切换前须先设计并验收新的目标注册方案，不能把 S4 的原型映射当作可直接上线的完整多渠道配置。
-5. 目标秘密不写 SQLite：只存如 `BARK_PRIMARY` 的引用。运行时 Resolver 在受保护配置里取实际 Apprise URL；仅允许已审官方 host（Bark api.day.app、ntfy ntfy.sh）及 **Apprise 加密 HTTPS scheme `barks://`、`ntfys://`**；明确拒绝 `bark://`、`ntfy://` 明文 HTTP 形式，禁止任意 webhook/IP/内网、重定向及自动重试。自建服务器如需要须独立审核允许列表/防 SSRF 与网络路径。
+5. 目标秘密不写 SQLite：只存如 `BARK_PRIMARY` 的引用，且 S4 schema metadata 与版本必须校验，拒绝未知数据库版本。运行时 Resolver 在受保护配置里取实际 Apprise URL；仅允许已审官方 host（Bark api.day.app、ntfy ntfy.sh）及 **Apprise 加密 HTTPS scheme `barks://`、`ntfys://`**；明确拒绝 `bark://`、`ntfy://` 明文 HTTP 形式；每个 target 只允许一个设备/主题，拒绝 Apprise 多路径分发以保持目标级唯一任务及审计，禁止任意 webhook/IP/内网、重定向及自动重试。自建服务器如需要须独立审核允许列表/防 SSRF 与网络路径。
 6. Worker 为有限并发单进程；一次 claim 在本轮排除正在发送及处于持久冷却的目标，允许跨目标并发；每 5 次有一次正常任务优先轮次（但不破坏平台速率要求）。HTTP 429 延长目标冷却，原任务使用 S2 有界重试并保持所有终态可审计。
 7. 领取后的发送前，基于 SQLite 最新用户/关键词/屏蔽词/分类/目标重新计算路线；不匹配则以租约 token 做 `suppressed`。外部 API 调用时不保持 SQLite 写事务。API 接受 ≠ 手机显示；外部 API 接受后本地标记 sent 之前崩溃仍有极端重复风险（ADR-0002）。
 8. **S4 不修改或启动** `app/main.py`、旧 FeedPoller、真实 Bot Session、部署与旧历史迁移。通知 Worker 须由未来独立批准的切换过程启用。

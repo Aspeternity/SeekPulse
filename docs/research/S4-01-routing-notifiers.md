@@ -6,7 +6,7 @@
 
 - `app/routing.py`: RuleSet 三态门槛；默认目标、规则完整覆盖、普通/紧急层级合并；同目标优先级取最大，只有 matched 才能入 S2 任务队列。多来源重复由已有 (user,post,target) 唯一键保底。
 - `app/route_store.py`: 追加 S4 路由策略/通道映射/限流冷却表；目标/关键词必须归属用户，持久存储的是 `BARK_SECRET` 一类引用，不保存 URL/Token；无新目标注册 API。
-- `app/notifiers.py`: Bot 原生 send_message，HTML 安全编码；分类 RetryAfter/Forbidden/TimedOut。Bark/ntfy 使用仅允许固定官方 host 的 Apprise 2.0.1，强制单服务、停用 Apprise 自动重试/重定向，仅以布尔及逐服务结果认定成功。Apprise 未暴露确切 HTTP 状态时按可重试失败处理，S2 max_attempts/TTL 有界；不得编造 403 证据。
+- `app/notifiers.py`: Bot 原生 send_message，HTML 安全编码；分类 RetryAfter/Forbidden/TimedOut。Bark/ntfy 使用仅允许固定官方 host 的 Apprise 2.0.1，强制单服务和单设备/主题（拒绝 URL 多路径及编码斜线）、停用 Apprise 自动重试/重定向，仅以布尔及逐服务结果认定成功。Apprise 未暴露确切 HTTP 状态时按可重试失败处理，S2 max_attempts/TTL 有界；不得编造 403 证据。
 - `app/worker.py`: 尝试领取前避开 in-flight/cooldown 目标；每 5 个领取轮次至少尝试一次普通任务避免紧急消息饿死正常消息；跨目标并发；任务发送前从现有 SQLite 重新读取规则/目标，失效则 fenced suppress；发送后 API 接受才将 S2 标记 sent；失败独立重试并记录短安全代码。
 - `app/delivery.py`: **向后兼容**的 claim optional priority/exclusion 参数及 token 栅栏已租赁 suppress，旧 S2 逻辑不变。
 - `requirements-s4.txt`：沿用 `requirements-s3.txt`，另外固定 `apprise==2.0.1`；现有 `requirements.txt` 原样保留满足已验收 S1 契约。CI Python 3.11/3.12，S1/S2/G0 继承回归。

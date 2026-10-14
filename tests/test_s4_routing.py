@@ -6,6 +6,8 @@ import asyncio
 from datetime import datetime, timezone
 from pathlib import Path
 from tempfile import TemporaryDirectory
+
+import aiosqlite
 import unittest
 
 from app.db import Database
@@ -266,6 +268,17 @@ class SqliteRouteTests(unittest.IsolatedAsyncioTestCase):
                 await self.routes.bind_channel(
                     self.user.id, ids[1], Channel.BARK, bad
                 )
+
+    async def test_s4_schema_version_mismatch_blocks_unknown_upgrade(self):
+        async with aiosqlite.connect(self.path) as db:
+            await db.execute(
+                """UPDATE s4_schema_meta SET value='999'
+                   WHERE key='routing_schema_version'"""
+            )
+            await db.commit()
+        with self.assertRaisesRegex(RuntimeError, "unsupported S4"):
+            await RouteStore(self.path).init()
+        self.assertIsNotNone(await self.db.get_user_settings_by_tg_user(101))
 
     async def test_target_cooldown_extends_and_survives_restart(self):
         tid = self.targets[0].id

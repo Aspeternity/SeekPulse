@@ -142,6 +142,9 @@ class NotifierContracts(unittest.IsolatedAsyncioTestCase):
             (Channel.BARK, "http://api.day.app/device-key"),
             (Channel.BARK, "bark://api.day.app/device-key"),  # insecure
             (Channel.NTFY, "ntfy://ntfy.sh/topic"),  # insecure
+            (Channel.BARK, "barks://api.day.app/key1/key2"),  # multi-device
+            (Channel.NTFY, "ntfys://ntfy.sh/topic1/topic2"),  # multi-topic
+            (Channel.NTFY, "ntfys://ntfy.sh/topic%2Fhidden"),  # encoded slash
             (Channel.NTFY, "ntfys://ntfy.sh/../../private"),
         )
         for channel, url in rejected:

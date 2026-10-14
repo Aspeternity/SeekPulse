@@ -161,7 +161,9 @@ class AppriseNotifier:
             or not parts.path.strip("/")
             or parts.query or parts.fragment
             or "\\" in raw or any(c.isspace() for c in raw)
-            or "//" in parts.path or "/../" in parts.path
+            # Exactly one destination per S2 target; no second device/topic
+            # or encoded slash may slip under one target's delivery status.
+            or re.fullmatch(r"/[A-Za-z0-9._~-]{1,200}", parts.path) is None
         ):
             raise ValueError("push destination denied")
         try:
