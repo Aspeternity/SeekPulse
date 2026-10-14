@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}设置{% endblock %}
+{% block heading %}管理设置{% endblock %}
+{% block content %}
+  <section class="panel">
+    <h2>当前 Bot 用户状态</h2><p class="muted">Web 与 Bot 即时使用同一用户配置及数据库，不创建独立用户。</p>
+    <p><span class="pill {{ 'green' if owner.enabled else 'gray' }}">{{ '正常' if owner.enabled else '暂停' }}</span></p>
+    <form action="/settings/state" method="post">
+      <input type="hidden" name="_csrf" value="{{ csrf }}">
+      <input type="hidden" name="enabled" value="{{ '0' if owner.enabled else '1' }}">
+      <button class="btn primary" type="submit">{{ '暂停推送' if owner.enabled else '恢复推送' }}</button>
+    </form>
+  </section>
+  <section class="panel">
+    <h2>帖子版块过滤</h2><p class="muted">不选择任何版块表示不限制版块；需要版块但来源信息缺失时仍遵守三态规则。</p>
+    <form action="/settings/categories" method="post" class="form-stack">
+      <input type="hidden" name="_csrf" value="{{ csrf }}">
+      <fieldset class="category-grid"><legend>允许的版块</legend>
+        {% for slug, title in categories.items() %}
+        <label class="check"><input type="checkbox" name="categories" value="{{ slug }}" {{ 'checked' if slug in selected_categories else '' }}>{{ title }}</label>
+        {% endfor %}
+      </fieldset>
+      <button type="submit" class="btn primary">保存版块</button>
+    </form>
+  </section>
+  <p class="notice">Web 密码只能在服务器的受保护环境配置中设置，无法通过此界面读取、更换 Bot Token 或输入 Telegram Session。</p>
+{% endblock %}

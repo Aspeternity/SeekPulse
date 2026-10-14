@@ -1,0 +1,6 @@
+<div class="metric-grid">
+  <article class="metric"><span>关联帖子</span><strong>{{ count_posts }}</strong><small>管理员范围内</small></article>
+  <article class="metric"><span>任务总数</span><strong>{{ count_tasks }}</strong><small>去重后的每目标任务</small></article>
+  <article class="metric"><span>API 已接受</span><strong>{{ count_sent }}</strong><small>不等于手机已收到</small></article>
+  <article class="metric"><span>排队 / 重试</span><strong>{{ count_waiting }}</strong><small>最老等待 {{ oldest_wait_seconds }} 秒</small></article>
+</div>

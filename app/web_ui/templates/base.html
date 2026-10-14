@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>{% block title %}SeekPulse{% endblock %} · SeekPulse</title>
+  <link rel="stylesheet" href="/assets/app.css">
+  <script src="/assets/htmx.min.js" defer></script>
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <a class="brand" href="/" aria-label="SeekPulse 首页">
+        <span class="brand-mark">S</span><span><strong>SeekPulse</strong><small>NodeSeek Monitor</small></span>
+      </a>
+      <p class="sidebar-label">管理中心</p>
+      <nav aria-label="主导航" hx-boost="true">
+        <a href="/" class="{{ 'active' if active_page == 'dashboard.html' else '' }}">概览</a>
+        <a href="/rules" class="{{ 'active' if active_page == 'rules.html' else '' }}">关键词与规则</a>
+        <a href="/sources" class="{{ 'active' if active_page == 'sources.html' else '' }}">来源状态</a>
+        <a href="/channels" class="{{ 'active' if active_page == 'channels.html' else '' }}">通知目标</a>
+        <a href="/history" class="{{ 'active' if active_page == 'history.html' else '' }}">推送历史</a>
+        <a href="/settings" class="{{ 'active' if active_page == 'settings.html' else '' }}">设置</a>
+      </nav>
+      <div class="sidebar-bottom"><span class="dot"></span> 本地管理员模式</div>
+    </aside>
+    <div class="page">
+      <header class="topbar">
+        <div><p class="eyebrow">自托管管理后台</p><h1>{% block heading %}概览{% endblock %}</h1></div>
+        <form action="/logout" method="post">
+          <input type="hidden" name="_csrf" value="{{ csrf }}">
+          <button class="btn subtle" type="submit">退出登录</button>
+        </form>
+      </header>
+      <main class="content">
+        {% block content %}{% endblock %}
+      </main>
+      <footer>SeekPulse · API 接受不代表手机已经收到通知 · 仅供管理员本地访问</footer>
+    </div>
+  </div>
+</body>
+</html>

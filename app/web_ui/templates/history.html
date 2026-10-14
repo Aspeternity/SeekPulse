@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}推送历史{% endblock %}
+{% block heading %}推送历史{% endblock %}
+{% block content %}
+  <section class="panel">
+    <div class="panel-head"><h2>S2 持久化任务</h2><span class="muted">最近 50 条 · API 已接受 ≠ 手机收到</span></div>
+    <div class="table-scroll"><table>
+      <thead><tr><th>帖子</th><th>目标 ID</th><th>状态</th><th>优先级</th><th>尝试</th><th>错误码</th></tr></thead>
+      <tbody>
+      {% for task in tasks %}<tr>
+        <td><a href="https://www.nodeseek.com/post-{{ task.post_id }}-1" rel="noopener noreferrer" target="_blank">#{{ task.post_id }}</a></td>
+        <td>{{ task.target_id }}</td><td>{{ task.status }}</td>
+        <td>{{ '紧急' if task.priority else '普通' }}</td><td>{{ task.attempts }}</td>
+        <td>{{ task.last_error_code or '—' }}</td>
+      </tr>{% else %}<tr><td colspan="6" class="empty">暂无 S2 投递任务。</td></tr>{% endfor %}
+      </tbody>
+    </table></div>
+  </section>
+  <section class="panel">
+    <div class="panel-head"><h2>旧版 Bot 成功历史</h2><span class="muted">最近 40 条</span></div>
+    <div class="table-scroll"><table>
+      <thead><tr><th>标题</th><th>时间</th></tr></thead>
+      <tbody>
+        {% for item in legacy %}<tr><td>{{ item.title }} <small>{{ item.item_key }}</small></td><td>{{ item.delivered_at }}</td></tr>
+        {% else %}<tr><td colspan="2" class="empty">还没有旧版推送历史。</td></tr>{% endfor %}
+      </tbody>
+    </table></div>
+  </section>
+{% endblock %}

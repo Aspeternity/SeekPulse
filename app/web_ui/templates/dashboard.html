@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}概览{% endblock %}
+{% block heading %}运行概览{% endblock %}
+{% block content %}
+  <p class="section-lead">两种来源与投递任务的统一视图。数据来自 Bot 共用的 SQLite。</p>
+  <section id="summary" aria-label="任务摘要" hx-get="/fragments/summary" hx-trigger="every 30s" hx-swap="innerHTML">
+    {% include "_summary.html" %}
+  </section>
+  <section class="panel">
+    <div class="panel-head"><h2>首次观察 → 通知 API 接受</h2><span class="muted">仅统计管理员任务的最近 200 条有效样本</span></div>
+    <div class="metric-grid">
+      <article class="metric"><span>P50 延迟</span><strong>{{ source_api_p50_ms if source_api_p50_ms is not none else '—' }}</strong><small>毫秒 · API 接受口径</small></article>
+      <article class="metric"><span>P95 延迟</span><strong>{{ source_api_p95_ms if source_api_p95_ms is not none else '—' }}</strong><small>毫秒 · API 接受口径</small></article>
+      <article class="metric"><span>有效样本</span><strong>{{ latency_samples }}</strong><small>无样本时不推断延迟</small></article>
+      <article class="metric"><span>永久失败</span><strong>{{ count_failed }}</strong><small>仅该管理员的任务</small></article>
+    </div>
+    <p class="muted small">数据区间：来源首次观测到外部通知 API 返回接受，不能代表论坛发布时间或手机实际提醒；Web 尚未接管现有 Bot 的生产流程。</p>
+  </section>
+  <div class="two-col">
+    <section class="panel">
+      <div class="panel-head"><h2>来源健康</h2><a href="/sources">查看设置 →</a></div>
+      {% for source in sources %}
+      <div class="row-line">
+        <div><strong>{{ '官方 RSS' if source.source.value == 'rss' else 'Telegram 频道' }}</strong>
+          <p class="muted small">{{ source.gap_code or '暂无数据缺口警告' }}</p></div>
+        <span class="pill {{ 'green' if source.enabled else 'gray' }}">{{ '已允许采集' if source.enabled else '已禁用' }}</span>
+      </div>
+      {% endfor %}
+    </section>
+    <section class="panel">
+      <div class="panel-head"><h2>投递状态</h2><a href="/history">查看历史 →</a></div>
+      {% for key, num in counts.items() %}
+      <div class="row-line"><span>{{ key }}</span><strong>{{ num }}</strong></div>
+      {% else %}<p class="empty">目前还没有 S2 队列任务。</p>{% endfor %}
+      <p class="muted small">现有主程序仍使用旧 FeedPoller；当前 S3/S4 核心尚未切换为生产链路。</p>
+    </section>
+  </div>
+{% endblock %}

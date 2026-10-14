@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}初始化{% endblock %}
+{% block heading %}尚未找到管理员资料{% endblock %}
+{% block content %}
+  <section class="panel">
+    <h2>请先在 Telegram Bot 中完成 /start</h2>
+    <p>管理员登录已经成功，但指定的 Telegram 用户还没有在现有 SQLite 数据库中创建资料。为保证 Web/Bot 用户隔离，Web 不会自动创建第二份账户。</p>
+    <p class="muted">检查已授权的管理员 Telegram ID、数据库路径，以及 Bot 是否完成初始化。</p>
+  </section>
+{% endblock %}

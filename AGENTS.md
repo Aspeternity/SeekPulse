@@ -4,9 +4,9 @@
 
 ## 0. 当前授权边界（最高优先级）
 
-- 最新可核实的授权记录：[`docs/APPROVALS.md` / `docs/APPROVALS.json`](docs/APPROVALS.md) 与 GitHub Issues #8/#9 的用户批准上下文。**截至 2026-10-14：S1/S2/S3（PR #21–#24）已分别验收且各有独立合并授权，当前 main f5c3f3c。用户明确授权开发 S4 / Issue #13；S4 合并、S5–S7、发布/Tag、生产部署仍未授权。**
+- 最新可核实的授权记录：[`docs/APPROVALS.md` / `docs/APPROVALS.json`](docs/APPROVALS.md) 与 GitHub Issues #8/#9 的用户批准上下文。**截至 2026-10-14：S1–S4（PR #21–#25）已分别验收并单独获批合并；main 6d5f078，合并后 G0 CI 4/4 PASS。用户批准 S5 / Issue #14 独立开发。S5 合并、S6–S7、Release/Tag、生产部署均未授权。**
 - **G0 授权**：Fork / 新建项目的工程建档、文档、Issue/PR 模板、协作规范、基础 CI、非业务功能的验证脚手架、建档专用 Draft PR。
-- **目前授权**：S4 / Issue #13，基于已批准 V1.1 架构和 S2 CoreStore 开发默认/规则覆盖路由、普通/紧急优先级、Telegram 原生与 Bark/ntfy 受限通知适配、多目标独立退避限流及离线回归；独立分支、Draft PR、最新 SHA CI，完工请求用户阶段验收。**未授权**：合并 S4、启动 S5–S7、真实通知/Session、正式旧历史切换、生产部署或配置变更。
+- **目前授权**：S5 / Issue #14，基于已批准的 FastAPI/Jinja2/HTMX 设计，开发本地管理员 Web（共享现有 Bot 数据库）和完整认证/CSRF/XSS/回环限制、离线双端一致性测试；独立分支、Draft PR、完整 CI，完工请求用户 S5-01 阶段验收。**未授权**：合并 S5、S6–S7、真实 Web/通知上线、正式旧历史迁移、Release/Tag、生产部署或配置变更。
 - **明确禁止擅自执行**：合并 `main`、创建 Release / Tag 发布、修改生产环境、强制推送或覆盖既有工作。
 - 遇到授权边界不清、关键资料冲突或无法验证，先停止可能越权的操作并报告，不得推定默认获批。
 
