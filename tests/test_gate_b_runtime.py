@@ -16,6 +16,9 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 from app.db import Database
+from app.gate_b_targets import GateBTargetStore
+from app.main import _serve_locked
+from app.route_store import RouteStore
 from app.delivery import CoreStore
 from app.domain import Source
 from app.instance_lock import database_owner_lock
@@ -124,6 +127,23 @@ class RuntimeLifecycleContracts(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(stop.is_set())
         self.assertTrue(c.web_server.should_exit)
         self.assertIn("bot.shutdown", trace)
+
+    async def test_legacy_runner_refuses_cutover_database_before_bot_start(self):
+        with TemporaryDirectory() as td:
+            path = Path(td) / "legacy.db"
+            db = Database(path)
+            await db.init()
+            await CoreStore(path).init()
+            await RouteStore(path).init()
+            await GateBTargetStore(path).init()
+            with patch(
+                "app.main.build_application",
+                side_effect=AssertionError("must not start Bot or send"),
+            ):
+                with self.assertRaisesRegex(
+                    RuntimeError, "legacy_runner_denied_on_v11_database"
+                ):
+                    await _serve_locked(SimpleNamespace(database_path=path))
 
     async def test_enabled_runner_requires_explicit_operator_optin(self):
         with patch.dict(os.environ, {"SEEKPULSE_V11_ENABLE": ""}, clear=True):

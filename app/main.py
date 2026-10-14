@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import asyncio
 import logging
+
+import aiosqlite
 from contextlib import suppress
 
 from app.bot import build_application
@@ -30,6 +32,16 @@ async def serve() -> None:
 
 
 async def _serve_locked(settings: Settings) -> None:
+    # Do not run FeedPoller on a migrated V1.1 database. S2 sent tasks are
+    # intentionally not mirrored to legacy delivery_history; a rollback
+    # must use the verified pre-migration SQLite backup at a new path.
+    async with aiosqlite.connect(settings.database_path) as connection:
+        row = await (await connection.execute(
+            """SELECT 1 FROM sqlite_master WHERE type='table'
+               AND name='gate_b_schema_meta'"""
+        )).fetchone()
+        if row is not None:
+            raise RuntimeError("legacy_runner_denied_on_v11_database")
     db = Database(settings.database_path)
     await db.init()
 
