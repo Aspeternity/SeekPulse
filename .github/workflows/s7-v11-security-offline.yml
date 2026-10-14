@@ -120,6 +120,21 @@ jobs:
           PY
           docker run --rm --platform "linux/${{ matrix.arch }}" \
             --network none --entrypoint python "$image" -m pip check
+          # Check the final installed versions inside the actual local image.
+          docker run --rm --platform "linux/${{ matrix.arch }}" \
+            --network none --entrypoint python "$image" -c '
+          from importlib.metadata import version
+          approved = {
+              "aiohttp": "3.14.3",
+              "jaraco.context": "6.1.0",
+              "wheel": "0.46.2",
+          }
+          for name, patched in approved.items():
+              actual = version(name)
+              assert actual == patched, (name, actual, patched)
+          import aiohttp, app.v11_main
+          print("V11_PATCHED_IMAGE_RUNTIME=PASS")
+          '
       - name: Scan local OS+Python packages with current public vulnerability DB
         shell: bash
         run: |
@@ -167,5 +182,14 @@ jobs:
           assert report["release_authorized"] is False
           assert report["release_ready"] is False
           assert report["remote_index_digest"] is None
+          # Only real Trivy scan results can prove the PyPI High fixes.
+          language = report["findings"]["by_package_class"]["lang-pkgs"]
+          assert language["HIGH"] == 0
+          assert language["CRITICAL"] == 0
+          os_findings = report["findings"]["by_package_class"]["os-pkgs"]
+          if os_findings["HIGH"] or os_findings["CRITICAL"]:
+              assert report["vulnerability_gate"] == "BLOCKED_HIGH_OR_CRITICAL"
+          assert report["release_ready"] is False
+          print("PYPI_HIGH_AFTER_PATCH=0 OS_HIGH_REMAINS="+str(os_findings["HIGH"]))
           print("LOCAL_SECURITY_REPORT="+json.dumps(report,sort_keys=True))
           PY
