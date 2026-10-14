@@ -5,6 +5,7 @@ No real keys, API calls, VPS or production SQLite; isolated temp DB only.
 
 from __future__ import annotations
 
+import os
 import sqlite3
 import unittest
 from datetime import datetime, timezone
