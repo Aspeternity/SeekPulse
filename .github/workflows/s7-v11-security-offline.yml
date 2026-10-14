@@ -56,8 +56,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          base="$(sed -n 's/^FROM $(python:3\.11-slim@sha256:[0-9a-f]*$)$s*$$/$1/p' Dockerfile.v11)"
-          [[ "$base" =~ ^python:3[.]11-slim@sha256:[0-9a-f]{64}$$ ]]
+          base="$(awk '$1 == \"FROM\" {print $2}' Dockerfile.v11)"
+          [[ "$base" =~ ^python:3[.]11-slim@sha256:[0-9a-f]{64}$ ]]
           docker buildx imagetools inspect "$base" --raw > "${RUNNER_TEMP}/pinned-official-index.json"
           python - <<'PY'
           import json
