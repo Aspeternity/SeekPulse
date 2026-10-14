@@ -316,6 +316,25 @@ def create_web_app(
         ))
         return changed("/channels")
 
+    @app.post("/channels/push/add")
+    async def add_push_target(request: Request):
+        form = await form_with_csrf(request, protected(request))
+        await apply(service.add_push_target(
+            str(form.get("channel", "")),
+            str(form.get("name", "")),
+            str(form.get("secret_ref", "")),
+        ))
+        return changed("/channels")
+
+    @app.post("/channels/push/{target_id}/delete")
+    async def delete_push_target(request: Request, target_id: int):
+        form = await form_with_csrf(request, protected(request))
+        if str(form.get("confirm", "")) != "DELETE":
+            raise HTTPException(422, "explicit confirmation required")
+        if not await apply(service.delete_unused_push_target(target_id)):
+            raise HTTPException(404, "target not found")
+        return changed("/channels")
+
     @app.post("/channels/{target_id}/state")
     async def target_state(request: Request, target_id: int):
         form = await form_with_csrf(request, protected(request))

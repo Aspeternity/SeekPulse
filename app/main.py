@@ -7,6 +7,7 @@ from contextlib import suppress
 from app.bot import build_application
 from app.config import Settings
 from app.db import Database
+from app.instance_lock import database_owner_lock
 from app.poller import FeedPoller
 
 
@@ -23,7 +24,12 @@ def configure_logging(level: str) -> None:
 async def serve() -> None:
     settings = Settings.load()
     configure_logging(settings.log_level)
+    # Both upgraded legacy and V1.1 use the same Linux file lock.
+    with database_owner_lock(settings.database_path):
+        await _serve_locked(settings)
 
+
+async def _serve_locked(settings: Settings) -> None:
     db = Database(settings.database_path)
     await db.init()
 
