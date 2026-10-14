@@ -80,6 +80,9 @@ class FreshDatabaseContracts(unittest.IsolatedAsyncioTestCase):
                 self.assertEqual(db.execute(
                     "PRAGMA foreign_key_check"
                 ).fetchall(), [])
+                self.assertEqual(db.execute(
+                    "PRAGMA journal_mode"
+                ).fetchone()[0], "delete")
             leftovers = {p.name for p in Path(td).iterdir()}
             self.assertEqual(leftovers, {"bot.db", "bot.db.owner.lock"})
             self.assertEqual(path.stat().st_mode & 0o777, 0o600)
@@ -176,6 +179,18 @@ class FreshDatabaseContracts(unittest.IsolatedAsyncioTestCase):
                 side_effect=RuntimeError("injected_fresh_staging_failure")
             ):
                 with self.assertRaisesRegex(RuntimeError, "injected_fresh_staging_failure"):
+                    await self._fresh(path)
+            self.assertEqual(
+                {x.name for x in Path(td).iterdir()}, {"bot.db.owner.lock"}
+            )
+            self.assertFalse(path.exists())
+
+    async def test_failed_checkpoint_never_publishes_database(self):
+        with TemporaryDirectory() as td:
+            path = Path(td) / "bot.db"
+            with patch("app.fresh_init._checkpoint_private_staging",
+                       side_effect=RuntimeError("fresh_init_checkpoint_busy")):
+                with self.assertRaisesRegex(RuntimeError, "checkpoint_busy"):
                     await self._fresh(path)
             self.assertEqual(
                 {x.name for x in Path(td).iterdir()}, {"bot.db.owner.lock"}

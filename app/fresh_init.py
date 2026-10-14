@@ -112,6 +112,21 @@ def _fsync(path: Path) -> None:
         os.close(fd)
 
 
+def _checkpoint_private_staging(path: Path) -> None:
+    """Materialize a standalone DB; NEVER copy/link a live WAL-backed file.
+
+    This file is a unique new 0600 staging database, not an existing user DB.
+    We may change *its* journal mode only after all async store writers close.
+    """
+    with closing(sqlite3.connect(path, timeout=5.0)) as db:
+        checkpoint = db.execute("PRAGMA wal_checkpoint(TRUNCATE)").fetchone()
+        if checkpoint is None or checkpoint[0] != 0:
+            raise RuntimeError("fresh_init_checkpoint_busy")
+        mode = db.execute("PRAGMA journal_mode=DELETE").fetchone()
+        if mode is None or str(mode[0]).lower() != "delete":
+            raise RuntimeError("fresh_init_checkpoint_failed")
+
+
 async def initialize_empty_database(path: Path) -> int:
     """Stage, validate and atomically publish a fully primed NEW database.
 
@@ -140,6 +155,9 @@ async def initialize_empty_database(path: Path) -> int:
             watermark = await dispatcher.prime()
             if watermark != 0:
                 raise RuntimeError("fresh_init_nonempty_watermark")
+            # Commit any WAL pages back into the main private staging file
+            # and leave DELETE journal mode before atomic hardlink publish.
+            _checkpoint_private_staging(stage)
             check_prepared_database(stage)
             report = inspect_database(stage)
             # S6's deliberately redacted report omits the initialized bit.
