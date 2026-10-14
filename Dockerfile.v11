@@ -1,0 +1,30 @@
+# Opt-in V1.1 image: build-only until a separate GHCR publishing approval.
+# Do not modify the legacy Dockerfile or its default app.main entrypoint.
+FROM python:3.11-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
+
+WORKDIR /app
+
+# Each -r file contains approved direct pins; S5 includes S4/S3/upstream.
+COPY requirements.txt requirements-s3.txt requirements-s4.txt requirements-s5.txt ./
+RUN python -m pip install --no-cache-dir -r requirements-s5.txt \
+    && python -m pip check
+
+COPY app ./app
+
+# The image has no secrets or host data. A fresh bind volume must be writable
+# by this numeric uid/gid; do not add a root entrypoint that chowns user data.
+RUN groupadd --gid 10001 seekpulse \
+    && useradd --uid 10001 --gid 10001 --no-create-home \
+       --home-dir /tmp --shell /usr/sbin/nologin seekpulse \
+    && install -d -o 10001 -g 10001 -m 0700 /app/data
+
+USER 10001:10001
+
+# The existing runner checks SEEKPULSE_V11_ENABLE=1 and an explicit Prime.
+# It MUST fail closed when DB/credentials/cutover preconditions are missing.
+ENTRYPOINT ["python", "-m", "app.v11_main"]
+CMD ["--run"]

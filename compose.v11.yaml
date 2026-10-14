@@ -1,0 +1,45 @@
+# Linux Docker Compose (Portainer standalone Stack or Synology Container Manager).
+# DO NOT deploy until the user separately approves Gate D and the image exists.
+# A Linux host network keeps the existing Web security contract intact:
+# the app binds 127.0.0.1 ONLY and refuses non-loopback clients/Host headers.
+# No 'ports:' mapping and no Docker socket access. Access via SSH -L tunnel.
+services:
+  seekpulse:
+    image: "${SEEKPULSE_IMAGE:?Set a separately approved V1.1 image reference}"
+    # No build: deployment hosts pull an approved, preferably digest-pinned image.
+    command: ["--run"]
+    network_mode: host
+    init: true
+    restart: "no"  # Deliberately fail closed until Gate D accepts cutover.
+    user: "${SEEKPULSE_UID:-10001}:${SEEKPULSE_GID:-10001}"
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    stop_grace_period: 30s
+    tmpfs:
+      - /tmp:rw,nosuid,nodev,noexec,size=32m
+    environment:
+      SEEKPULSE_V11_ENABLE: "1"
+      DATABASE_PATH: /app/data/bot.db
+      BOT_TOKEN: "${BOT_TOKEN:?Provide a privately stored Telegram Bot token}"
+      ALLOWED_USER_IDS: "${ALLOWED_USER_IDS:?Explicit Bot user allowlist is required}"
+      SEEKPULSE_ADMIN_TG_USER_ID: "${SEEKPULSE_ADMIN_TG_USER_ID:?Provide the admin Telegram user ID}"
+      SEEKPULSE_WEB_PASSWORD_HASH: "${SEEKPULSE_WEB_PASSWORD_HASH:?Provide the scrypt admin password hash}"
+      SEEKPULSE_WEB_PORT: "${SEEKPULSE_WEB_PORT:-8765}"
+      RSS_URL: https://rss.nodeseek.com/
+      LOG_LEVEL: "${LOG_LEVEL:-INFO}"
+      SEEKPULSE_TG_API_ID: "${SEEKPULSE_TG_API_ID:-}"
+      SEEKPULSE_TG_API_HASH: "${SEEKPULSE_TG_API_HASH:-}"
+      SEEKPULSE_TG_SESSION: "${SEEKPULSE_TG_SESSION:-}"
+      # The examples below are OFF until enabled as authorized admin targets.
+      # Additional SEEKPULSE_PUSH_<REF> keys may be added in private Stack config.
+      SEEKPULSE_PUSH_BARK_PRIMARY: "${SEEKPULSE_PUSH_BARK_PRIMARY:-}"
+      SEEKPULSE_PUSH_NTFY_PRIMARY: "${SEEKPULSE_PUSH_NTFY_PRIMARY:-}"
+    volumes:
+      - type: bind
+        source: "${SEEKPULSE_DATA_DIR:?Set an existing private absolute data directory}"
+        target: /app/data
+        bind:
+          create_host_path: false
