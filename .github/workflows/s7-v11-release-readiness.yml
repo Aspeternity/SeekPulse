@@ -1,0 +1,151 @@
+name: S7 V1.1 Docker-03 Multiarch Release Readiness (No Publish)
+
+on:
+  pull_request:
+    paths:
+      - 'Dockerfile.v11'
+      - 'compose.v11.yaml'
+      - 'scripts/inspect_v11_oci.py'
+      - 'scripts/v11_release_policy.py'
+      - 'tests/test_s7_release_readiness.py'
+      - 'docs/decisions/ADR-0010-v11-multiarch-release-readiness.md'
+      - 'docs/deployment/V1.1-docker-offline.md'
+      - '.github/workflows/s7-v11-release-readiness.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: s7-release-readiness-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  policy-and-regression:
+    name: Offline release policy + all regressions / Python ${{ matrix.python-version }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.11', '3.12']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '${{ matrix.python-version }}'
+          cache: pip
+      - name: Install approved S1-S5 pinned dependencies
+        run: python -m pip install -r requirements-s5.txt
+      - name: Validate immutable refs and two-platform OCI release policy
+        run: python -m unittest discover -s tests -p 'test_s7_release_readiness.py' -v
+      - name: Complete offline regression suite
+        run: python -m unittest discover -s tests -v
+      - name: Ruff, compile and dependency integrity
+        run: |
+          python -m pip install ruff==0.13.3
+          ruff check scripts/inspect_v11_oci.py scripts/v11_release_policy.py tests/test_s7_release_readiness.py
+          python -m compileall -q app scripts tests
+          python -m pip check
+
+  local-multiarch-oci:
+    name: QEMU AMD64+ARM64 OCI archive verification (no login/push)
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Enable ARM64 QEMU emulation on ephemeral runner
+        uses: docker/setup-qemu-action@1f40c72289eff860ee54a304f1438e3cff362e0a # v4.3.0
+      - name: Configure isolated Docker Buildx multiarch builder
+        uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0
+      - name: Build local OCI archive with both supported platforms
+        shell: bash
+        run: |
+          set -euo pipefail
+          archive="${RUNNER_TEMP}/seekpulse-v11-docker03.oci.tar"
+          docker buildx inspect --bootstrap
+          docker buildx build --progress plain \
+            --file Dockerfile.v11 \
+            --platform linux/amd64,linux/arm64 \
+            --provenance=false --sbom=false \
+            --build-arg SEEKPULSE_BUILD_VERSION=0.0.0-ci \
+            --build-arg "SEEKPULSE_BUILD_REVISION=${GITHUB_SHA}" \
+            --output "type=oci,dest=${archive}" \
+            .
+          test -s "$archive"
+          python scripts/inspect_v11_oci.py \
+            --archive "$archive" \
+            --revision "${GITHUB_SHA}" \
+            --version 0.0.0-ci > "${RUNNER_TEMP}/seekpulse-v11-oci-verified.json"
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          report = json.loads(
+              (Path(os.environ["RUNNER_TEMP"]) /
+               "seekpulse-v11-oci-verified.json").read_text()
+          )
+          assert report["platforms"] == ["linux/amd64", "linux/arm64"]
+          assert report["remote_ghcr_digest"] is None
+          assert report["release_authorized"] is False
+          assert report["status"] == "LOCAL_OCI_VERIFIED_NOT_PUBLISHED"
+          print("LOCAL_MULTIPLATFORM_OCI_VALIDATED=PASS")
+          PY
+      - name: Generate unpublished SemVer proposal only
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/v11_release_policy.py plan \
+            --version v1.1.0-rc.1 \
+            --revision "${GITHUB_SHA}" > "${RUNNER_TEMP}/unpublished-plan.json"
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          plan = json.loads(
+              (Path(os.environ["RUNNER_TEMP"]) / "unpublished-plan.json").read_text()
+          )
+          assert plan["status"] == "NOT_AUTHORIZED_NOT_PUBLISHED"
+          assert plan["remote_index_digest"] is None
+          assert plan["approved_compose_reference"] is None
+          assert plan["requires_separate_user_approval"] is True
+          print("NO_REGISTRY_OR_RELEASE_ACTION=PASS")
+          PY
+      - name: Load ARM64 to ephemeral runner and test CLI without networking
+        shell: bash
+        run: |
+          set -euo pipefail
+          local_image="seekpulse-docker03:arm64-local-only"
+          docker buildx build --progress plain \
+            --file Dockerfile.v11 \
+            --platform linux/arm64 --load \
+            --provenance=false --sbom=false \
+            --build-arg SEEKPULSE_BUILD_VERSION=0.0.0-ci \
+            --build-arg "SEEKPULSE_BUILD_REVISION=${GITHUB_SHA}" \
+            --tag "$local_image" \
+            .
+          docker run --rm --platform linux/arm64 --network none \
+            --entrypoint python "$local_image" -m pip check
+          docker run --rm --platform linux/arm64 --network none \
+            --entrypoint python "$local_image" -c '
+          import os, platform
+          from pathlib import Path
+          import app.v11_main
+          assert platform.machine() in ("aarch64", "arm64")
+          assert os.getuid() == 10001 and os.getgid() == 10001
+          assert Path("/app/app/web_ui/templates/login.html").is_file()
+          assert Path("/app/app/web_ui/static").is_dir()
+          assert not Path("/app/.env").exists()
+          assert not Path("/app/data/bot.db").exists()
+          '
+          docker run --rm --platform linux/arm64 --network none \
+            "$local_image" --help >/dev/null
+          if docker run --rm --platform linux/arm64 --network none \
+            "$local_image" > "${RUNNER_TEMP}/arm64-no-optin.txt" 2>&1; then
+            echo "ARM64 runtime bypassed the opt-in gate"
+            exit 1
+          fi
+          grep -q "v11_not_explicitly_enabled" "${RUNNER_TEMP}/arm64-no-optin.txt"
+          echo "ARM64_QEMU_NO_NETWORK_SMOKE=PASS"

@@ -1,6 +1,6 @@
 # 审批及执行权限记录（人工可核实）
 
-> **最新（2026-10-14）：S1–S6 已分别验收合并；S7-01 规划 PR #28 已验收且单独获批合并（main `36aa8a1`，新 G0 4/4）。用户现已单独批准 Gate B / Issue #29 仅 B01/B02/B03 设计与离线开发，PR #30 尚未验收/合并。真实 VPS、生产迁移/Session/消息/48–72h、Tag/Release/部署均未授权。** 历史阶段记录不能替代最新授权。
+> **最新（2026-10-15）**：Docker-01 #32/PR #33、Docker-02 #34/PR #35 已分别离线验收并经独立授权合并；main `d39761f`，新 G0 #38623045093 4/4 PASS。用户目前**仅批准 Docker-03 / Issue #36 的双架构 GHCR 镜像发布准备、版本/安全/Digest 策略、Portainer/群晖说明的离线开发与 CI**（Draft PR #37），未批准该 PR 阶段验收/合并、GHCR 发布、Tag/Release、NAS/PVE 部署或真实通知。下方旧审批仅为历史记录，最新 Issue/PR/CI/用户原话优先。
 
 ## 2026-10-13：V1.1 方案批准，G0 授权
 
@@ -133,3 +133,13 @@ S7-01 文档规划经用户回复「批准」验收后，用户另行回复「�
 - **未获准**：PR #30 合并 main、Gate B 阶段验收、真实 VPS 预检/操作、生产 DB/Schema/Session/Key/通知/Worker 切换、真实手机到达、48–72h、第二 AI 真运行、Tag/Release 或部署。
 - **下一审批**：以最新 GateB PR HEAD 双 Python 版本 CI 证据完成离线回归，向用户申请 Gate B-01 **仅离线开发范围阶段验收**；通过后再独立申请 PR #30 合并。Issue #16 仍未整体关闭。
 - 用户原话及其紧邻请求可在当前 ChatGPT 对话与 Issue #29 核对；本记录不冒充 GitHub 用户独立 Reviewer 签署。
+
+
+## 2026-10-15：Docker-01/02 分别验收与合并；Docker-03 仅获离线开发授权
+
+1. **Docker-01 / #32**：用户先批准独立离线开发，在明确询问仅 Docker-01 离线阶段验收时答复“批准”，再在明确询问 [PR #33](https://github.com/Aspeternity/SeekPulse/pull/33) HEAD `f452a51` Squash 合并时单独答复“批准”。合并后的 `main 7a14e467`、[G0 #38617213789](https://github.com/Aspeternity/SeekPulse/actions/runs/38617213789) **4/4 PASS**。这不是 GHCR 推送或真实 Docker 部署授权。
+2. **Docker-02 / #34**：用户先批准新空卷 init/check/run 安全流程的离线开发、再分别答复“批准”完成离线阶段验收和 [PR #35](https://github.com/Aspeternity/SeekPulse/pull/35) HEAD `af45f734` 的独立 Squash 合并。合并后 `main d39761f47aa44ebc5a521a79338a35f166f9edf0`、[G0 #38623045093](https://github.com/Aspeternity/SeekPulse/actions/runs/38623045093) **4/4 PASS**；实机 Docker 及生产 SQLite/Session/通知仍未授权。
+3. **当前最新明确授权为 Docker-03 / #36**：ChatGPT 问“是否批准启动 Docker-03 的开发和离线 CI 验证？此次仍不推送 GHCR 镜像、不部署 NAS/PVE。真正发布镜像时再单独申请授权。”用户回答“**批准**”。仅允许独立 `feat/s7-docker-03-image-release-readiness` / [Draft PR #37](https://github.com/Aspeternity/SeekPulse/pull/37)、ChatGPT 唯一写入、临时 GitHub runner 的 `linux/amd64` + `linux/arm64` 本地 OCI 构建与镜像安全核验、完整 SemVer/rc 规划、远端 Digest 将来验证规则、Portainer/群晖说明及脱敏 CI。**阶段验收、PR 合并 main、GHCR 推送/Release/Tag、NAS/PVE/群晖实机访问、Bot/TG/Bark/ntfy Secret/真实通知与 Gate D–G 均未授权**。
+4. 用户明确已有 NAS/群晖 Docker 和 PVE/Portainer，**无须专门 VPS 预检**；原 [Issue #31](https://github.com/Aspeternity/SeekPulse/issues/31) 已关闭为 `not_planned`。取消 VPS 体检不等于允许连接或更改家庭网络/容器。
+
+以上是当前聊天用户原话及紧邻审批问题的审计摘要，**不等于独立 GitHub Reviewer 签名**。跨会话恢复请先核对 [Issue #36](https://github.com/Aspeternity/SeekPulse/issues/36)、[PR #37](https://github.com/Aspeternity/SeekPulse/pull/37)、父 [#16](https://github.com/Aspeternity/SeekPulse/issues/16) 的最新 SHA、CI、阶段验收和后续授权。

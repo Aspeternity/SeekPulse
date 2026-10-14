@@ -251,6 +251,70 @@
       "user_instruction": "批准",
       "context": "Direct reply to explicit '是否批准启动 Gate B 的设计与离线开发？' asked after S7-01 planning PR #28 squash merged to main 36aa8a1 with G0 push #38578973921 4/4 PASS. Real VPS/deployment explicitly excluded.",
       "source": "Current ChatGPT user reply and direct prior approval request; Issue #29"
+    },
+    {
+      "event_id": "APPROVAL-2026-10-15-DOCKER01-OFFLINE-ACCEPT-MERGE",
+      "date": "2026-10-15",
+      "approved_plan": "SeekPulse V1.1",
+      "authorization_kind": "offline_acceptance_then_separate_squash_merge",
+      "authorized_stage": "S7-Docker-01",
+      "issue": 32,
+      "pr": 33,
+      "authorized_actions": [
+        "V1.1 Dockerfile/Compose offline adaptation and tests",
+        "Separate user offline acceptance and PR #33 Squash merge of approved f452a51 to main 7a14e467",
+        "New main G0 run 38617213789 4/4 success"
+      ],
+      "not_authorized": [
+        "GHCR publish, Release/Tag",
+        "NAS/PVE deployment, live DB, Sessions or notifications"
+      ],
+      "user_instruction": "批准（仅离线验收）; 批准（独立 PR #33 合并）",
+      "source": "Issue #32 and PR #33 approval audit; direct replies to separately scoped requests"
+    },
+    {
+      "event_id": "APPROVAL-2026-10-15-DOCKER02-OFFLINE-ACCEPT-MERGE",
+      "date": "2026-10-15",
+      "approved_plan": "SeekPulse V1.1",
+      "authorization_kind": "offline_acceptance_then_separate_squash_merge",
+      "authorized_stage": "S7-Docker-02",
+      "issue": 34,
+      "pr": 35,
+      "authorized_actions": [
+        "Fresh-empty-volume init/check/run offline safety tests",
+        "Separate user offline acceptance and PR #35 Squash merge of approved af45f734 to main d39761f",
+        "New main G0 run 38623045093 4/4 success"
+      ],
+      "not_authorized": [
+        "GHCR publish, Release/Tag",
+        "NAS/PVE deployment, live DB, Sessions or notifications"
+      ],
+      "user_instruction": "批准（仅离线验收）; 批准（独立 PR #35 合并）",
+      "source": "Issue #34 and PR #35 approval audit; direct replies to separately scoped requests"
+    },
+    {
+      "event_id": "APPROVAL-2026-10-15-DOCKER03-OFFLINE-DEV-ONLY",
+      "date": "2026-10-15",
+      "approved_plan": "SeekPulse V1.1",
+      "authorization_kind": "stage_development_only",
+      "authorized_stage": "S7-Docker-03",
+      "issue": 36,
+      "pr": 37,
+      "authorized_actions": [
+        "Local QEMU/Buildx linux/amd64 + linux/arm64 OCI archive/metadata integrity and image security CI",
+        "Strict SemVer/rc version and immutable GHCR digest release readiness policy; no remote registry actions",
+        "Portainer/Synology deployment guidance, ADR and Draft PR with latest head CI",
+        "Request separate Docker-03 offline stage acceptance after successful tests"
+      ],
+      "not_authorized": [
+        "Treat CI success as user acceptance or merge PR #37",
+        "GHCR login/push, package publication, Git Tag/Release, remote cache push",
+        "NAS/PVE/Portainer/Synology/VPS access, live DB/Session/Token, actual Telegram/Bark/ntfy notifications",
+        "Gate D-G or 48-72h observation"
+      ],
+      "user_instruction": "批准",
+      "context": "Direct reply to explicit '是否批准启动 Docker-03 的开发和离线 CI 验证？此次仍不推送 GHCR 镜像、不部署 NAS/PVE。真正发布镜像时再单独申请授权。'",
+      "source": "This ChatGPT conversation and GitHub Issue #36; not a separate user signature"
     }
   ]
 }

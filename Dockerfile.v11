@@ -2,6 +2,17 @@
 # Do not modify the legacy Dockerfile or its default app.main entrypoint.
 FROM python:3.11-slim
 
+# Offline CI uses 0.0.0-ci; a real version/tag needs a separate approval.
+# Labels are traceability only; they are NOT a GHCR release or digest.
+ARG SEEKPULSE_BUILD_VERSION=0.0.0-ci
+ARG SEEKPULSE_BUILD_REVISION=unknown
+LABEL org.opencontainers.image.title="SeekPulse" \
+      org.opencontainers.image.description="SeekPulse opt-in V1.1 Docker runtime" \
+      org.opencontainers.image.source="https://github.com/Aspeternity/SeekPulse" \
+      org.opencontainers.image.licenses="MIT" \
+      org.opencontainers.image.version="${SEEKPULSE_BUILD_VERSION}" \
+      org.opencontainers.image.revision="${SEEKPULSE_BUILD_REVISION}"
+
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1
