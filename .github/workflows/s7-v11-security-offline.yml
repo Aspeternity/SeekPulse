@@ -182,14 +182,23 @@ jobs:
           assert report["release_authorized"] is False
           assert report["release_ready"] is False
           assert report["remote_index_digest"] is None
+          # Keep public package/CVE evidence visible BEFORE asserting.
+          # Runner's private raw scan and SBOM never leave the runner.
+          print("LOCAL_SECURITY_REPORT="+json.dumps(report,sort_keys=True))
           # Only real Trivy scan results can prove the PyPI High fixes.
           language = report["findings"]["by_package_class"]["lang-pkgs"]
-          assert language["HIGH"] == 0
-          assert language["CRITICAL"] == 0
+          if language["HIGH"] or language["CRITICAL"]:
+              matching = [
+                  item for item in report["findings"]["high_critical_package_sample"]
+                  if item["source"] == "lang-pkgs"
+              ]
+              print("PYPI_HIGH_REMAINS="+json.dumps(matching,sort_keys=True))
+          assert language["HIGH"] == 0, "real_trivy_pypi_high_not_cleared"
+          assert language["CRITICAL"] == 0, "real_trivy_pypi_critical_not_cleared"
           os_findings = report["findings"]["by_package_class"]["os-pkgs"]
           if os_findings["HIGH"] or os_findings["CRITICAL"]:
               assert report["vulnerability_gate"] == "BLOCKED_HIGH_OR_CRITICAL"
           assert report["release_ready"] is False
           print("PYPI_HIGH_AFTER_PATCH=0 OS_HIGH_REMAINS="+str(os_findings["HIGH"]))
-          print("LOCAL_SECURITY_REPORT="+json.dumps(report,sort_keys=True))
+
           PY
