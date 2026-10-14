@@ -4,7 +4,8 @@
 
 ## 0. 当前授权边界（最高优先级）
 
-- 最新可核实的授权记录：[`docs/APPROVALS.md` / `docs/APPROVALS.json`](docs/APPROVALS.md) 与 GitHub Issues #8/#9 的用户批准上下文。**截至 2026-10-14：S1–S6 均已离线验收并分别获准合并；S7-01 规划文档 PR #28 已独立验收、合并；main `36aa8a1`，新 G0 #38578973921 为 4/4 PASS。用户又独立批准 Gate B / Issue #29 的 B01/B02/B03 设计与离线开发；Gate B 阶段验收、PR #30 合并、真实 VPS、Session、真实发信、48–72h、Release/Tag 和部署均未授权。**
+- **最新授权摘要（2026-10-15）**：实时 GitHub Issues/PR、当前对话的用户明确批准、完整 CI 和最新 SHA 优先于本静态摘要。S1–S6、S7-01、Gate B、Docker-01（#32/PR #33）、Docker-02（#34/PR #35）均已分别离线验收和独立合并。main `d39761f47aa44ebc5a521a79338a35f166f9edf0`，新 [G0 #38623045093](https://github.com/Aspeternity/SeekPulse/actions/runs/38623045093) 4/4 PASS。用户已取消单独 VPS 预检 #31，未来 PVE/Portainer 或群晖 Docker 只在另行授权后选择。
+- **当前仅获离线开发授权**：Docker-03 / [Issue #36](https://github.com/Aspeternity/SeekPulse/issues/36)，唯一写入负责人 ChatGPT，分支 `feat/s7-docker-03-image-release-readiness` / [Draft PR #37](https://github.com/Aspeternity/SeekPulse/pull/37)。用户仅批准本地 AMD64/ARM64 OCI 构建验证、镜像安全/版本/Digest 策略、Portainer/群晖说明和 GitHub CI；**不包括用户阶段验收、PR 合并、GHCR push/Tag/Release、访问 NAS/PVE/Session/Token/生产 DB、真实通知或 S7 实机执行**。详见 #36 和审批上下文。
 - **G0 授权**：Fork / 新建项目的工程建档、文档、Issue/PR 模板、协作规范、基础 CI、非业务功能的验证脚手架、建档专用 Draft PR。
 - **目前授权**：Gate B / Issue #29（父 S7 Issue #16）的 **B01 单实例 opt-in 运行入口、B02 正式 Bark/ntfy 目标独立身份/版本化迁移、B03 原旧链安全切换** 的设计与离线开发。唯一写入负责人 ChatGPT；分支 `feat/gate-b-01-v11-runtime-cutover`、Draft PR #30；精确 HEAD CI、用户离线阶段验收与独立合并审批。保留默认旧 Docker/Compose 启动。**未授权**：Gate B PR 合并、真实数据库/服务器操作、输入或使用真实 Session/Token、真实通知、部署、S7 现场执行与最终验收、Tag/Release。详见 Issue #29 与 ADR-0007。
 - **明确禁止擅自执行**：合并 `main`、创建 Release / Tag 发布、修改生产环境、强制推送或覆盖既有工作。
