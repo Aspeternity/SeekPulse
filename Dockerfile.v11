@@ -23,8 +23,11 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /app
 
 # Each -r file contains approved direct pins; S5 includes S4/S3/upstream.
-COPY requirements.txt requirements-s3.txt requirements-s4.txt requirements-s5.txt ./
+# V1.1-only fixed-version security patches, applied in the same image layer.
+COPY requirements.txt requirements-s3.txt requirements-s4.txt requirements-s5.txt \
+     requirements-v11-security.txt ./
 RUN python -m pip install --no-cache-dir -r requirements-s5.txt \
+    && python -m pip install --no-cache-dir --upgrade -r requirements-v11-security.txt \
     && python -m pip check
 
 COPY app ./app
