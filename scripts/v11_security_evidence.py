@@ -46,8 +46,12 @@ def _db_freshness(metadata: dict[str, Any], now: datetime) -> dict[str, str]:
     updated = _timestamp(metadata.get("UpdatedAt"), field="db_updated")
     downloaded = _timestamp(metadata.get("DownloadedAt"), field="db_downloaded")
     next_update = _timestamp(metadata.get("NextUpdate"), field="db_next_update")
-    for date in (updated, downloaded, next_update):
+    # NextUpdate is intentionally a *future deadline*, not a past event.
+    # Only UpdatedAt and DownloadedAt must be at/before the current clock.
+    for date in (updated, downloaded):
         _require(date <= now + _MAX_CLOCK_SKEW, "db_clock_in_future")
+    _require(next_update >= updated, "db_inconsistent_update_deadline")
+    _require(next_update <= now + timedelta(days=7), "db_unreasonable_update_deadline")
     _require(
         now - updated <= _MAX_DB_AGE and now - downloaded <= _MAX_DB_AGE,
         "vulnerability_db_outdated",
