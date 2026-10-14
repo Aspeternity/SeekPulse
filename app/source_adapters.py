@@ -8,6 +8,8 @@ from __future__ import annotations
 
 import asyncio
 import re
+from email.utils import parsedate_to_datetime
+from math import ceil
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any, Callable
@@ -117,7 +119,7 @@ def telegram_observation(message: Any, observed_at: datetime) -> SourceObservati
     )
 
 
-def _error_code(error: Exception) -> tuple[str, int]:
+def _error_code(error: Exception, *, now: int | None = None) -> tuple[str, int]:
     status = getattr(error, "status", None)
     if status == 403:
         return "http_403", 3600
@@ -125,10 +127,16 @@ def _error_code(error: Exception) -> tuple[str, int]:
         headers = getattr(error, "headers", None) or {}
         value = headers.get("Retry-After", "")
         try:
-            delay = max(0, min(int(value), 86400))
+            delay = int(value)
         except (TypeError, ValueError):
-            delay = 0
-        return "http_429", delay
+            try:
+                when = parsedate_to_datetime(value)
+                if when.tzinfo is None or now is None:
+                    raise ValueError("invalid HTTP Retry-After date")
+                delay = ceil(when.timestamp() - now)
+            except (TypeError, ValueError, OverflowError):
+                delay = 0
+        return "http_429", max(0, min(delay, 86400))
     if type(status) is int and 400 <= status <= 599:
         return "http_error", 0
     if isinstance(error, (TimeoutError, asyncio.TimeoutError)):
@@ -199,7 +207,7 @@ class RSSSource:
             except asyncio.CancelledError:
                 raise
             except Exception as error:
-                code, retry_after = _error_code(error)
+                code, retry_after = _error_code(error, now=now)
                 await self.state.mark_failure(
                     Source.RSS, code, now=now, retry_after_seconds=retry_after
                 )
@@ -403,9 +411,10 @@ class SourceSupervisor:
                                 if not connected and hasattr(tg.client, "connect"):
                                     await tg.client.connect()
                                     connected = True
-                                await tg.sync_once()
+                                outcome = await tg.sync_once()
                                 status = await tg.state.status(Source.TELEGRAM)
-                                if (status.initialized and not attached
+                                if (outcome.outcome in {"ok", "baseline"}
+                                        and status.initialized and not attached
                                         and hasattr(tg.client, "add_event_handler")):
                                     # Attach after the baseline; reconcile again
                                     # to recover updates arriving in the gap.

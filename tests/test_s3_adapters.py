@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+from email.utils import format_datetime
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -15,7 +16,7 @@ from app.domain import RuleOutcome, RuleSet, Source, evaluate_rules
 from app.rss import FeedEntry, FeedFetchResult
 from app.source_adapters import (
     RSSSource, SourceSupervisor, TelegramSource,
-    rss_observation, telegram_observation,
+    telegram_observation,
 )
 from app.source_state import SourceStore
 
@@ -82,9 +83,11 @@ class FakeTelegram:
         self.history_calls = 0
         self.baseline_calls = 0
         self.called = asyncio.Event()
+        self.auth_called = asyncio.Event()
         self.error = None
 
     async def is_user_authorized(self):
+        self.auth_called.set()
         return self.authorized
 
     async def get_messages(self, channel, limit):
@@ -389,6 +392,40 @@ class SourceAdapterContracts(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(len((await self.core.get_post(10)).observations), 2)
         user = await self.db.ensure_user_profile(123, 456, None, "U", None, "private")
         self.assertEqual(await self.core.list_tasks(user.id), [])
+
+    async def test_rss_http_date_retry_after_respected(self):
+        future = format_datetime(NOW + timedelta(seconds=450), usegmt=True)
+        rss = self.reader(HttpError(429, future), batch())
+        self.assertEqual((await rss.poll_once()).outcome, "error")
+        self.assertEqual(
+            (await self.state.status(Source.RSS)).retry_at,
+            int(NOW.timestamp()) + 450,
+        )
+        self.clock.advance(449)
+        self.assertEqual((await rss.poll_once()).outcome, "backoff")
+        self.clock.advance(1)
+        self.assertEqual((await rss.poll_once()).outcome, "baseline")
+
+    async def test_supervisor_never_attaches_expired_session(self):
+        tg = await self.tg([message(1, 10)])
+        await tg.sync_once()
+        tg.client.auth_called.clear()
+        tg.client.authorized = False
+        callbacks = []
+        tg.client.add_event_handler = lambda *args: callbacks.append(args)
+        rss = self.reader(batch())
+        stop = asyncio.Event()
+        task = asyncio.create_task(SourceSupervisor(rss, tg).run_forever(stop))
+        try:
+            await asyncio.wait_for(tg.client.auth_called.wait(), timeout=3)
+        finally:
+            stop.set()
+            await asyncio.wait_for(task, timeout=3)
+        self.assertEqual(callbacks, [])
+        self.assertEqual(
+            (await self.state.status(Source.TELEGRAM)).last_error_code,
+            "auth_required",
+        )
 
     async def test_sibling_source_runs_when_rss_throws(self):
         tg = await self.tg([message(1, 10)])
