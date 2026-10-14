@@ -7,6 +7,7 @@ explicitly deferred to the separately authorized S3/S4 stages.
 
 from __future__ import annotations
 
+import asyncio
 import re
 import secrets
 from contextlib import asynccontextmanager
@@ -89,9 +90,20 @@ class CoreStore:
 
     def __init__(self, path: Path) -> None:
         self.path = Path(path)
+        # SQLite permits only one writer. In the one-process service, keep
+        # writes serial per CoreStore instance instead of making dozens of
+        # BEGIN IMMEDIATE connections compete until busy_timeout expires.
+        # DB transactions still fence writers in other connections/processes.
+        self._write_lock = asyncio.Lock()
+
+    @asynccontextmanager
+    async def _write_db(self):
+        async with self._write_lock:
+            async with _db(self.path) as db:
+                yield db
 
     async def init(self) -> None:
-        async with _db(self.path) as db:
+        async with self._write_db() as db:
             await db.executescript(
                 """
                 PRAGMA journal_mode = WAL;
@@ -166,7 +178,7 @@ class CoreStore:
 
     async def observe(self, observation: SourceObservation) -> CanonicalPost:
         """Idempotently insert a source event under BEGIN IMMEDIATE."""
-        async with _db(self.path) as db:
+        async with self._write_db() as db:
             await db.execute("BEGIN IMMEDIATE")
             cursor = await db.execute(
                 "SELECT post_id FROM source_observations WHERE source=? AND event_id=?",
@@ -266,7 +278,7 @@ class CoreStore:
             _positive("target_id", target_id)
         if not targets:
             return 0
-        async with _db(self.path) as db:
+        async with self._write_db() as db:
             await db.execute("BEGIN IMMEDIATE")
             cursor = await db.execute(
                 "SELECT enabled FROM user_settings WHERE user_id=?", (user_id,)
@@ -352,7 +364,7 @@ class CoreStore:
     async def recover(self, *, now: int) -> RecoveryCounts:
         """Recover expired leases/old tasks after restart; no external send."""
         _clock(now)
-        async with _db(self.path) as db:
+        async with self._write_db() as db:
             await db.execute("BEGIN IMMEDIATE")
             result = await self._recover_locked(db, now)
             await db.commit()
@@ -366,7 +378,7 @@ class CoreStore:
         _positive("limit", limit)
         if limit > 100:
             raise ValueError("claim limit must be <=100")
-        async with _db(self.path) as db:
+        async with self._write_db() as db:
             await db.execute("BEGIN IMMEDIATE")
             await self._recover_locked(db, now)
             cursor = await db.execute(
@@ -408,7 +420,7 @@ class CoreStore:
         _clock(now)
         if not token:
             return False
-        async with _db(self.path) as db:
+        async with self._write_db() as db:
             cursor = await db.execute(
                 """
                 UPDATE delivery_tasks
@@ -441,7 +453,7 @@ class CoreStore:
         _positive("backoff_cap", backoff_cap)
         if not token:
             return None
-        async with _db(self.path) as db:
+        async with self._write_db() as db:
             await db.execute("BEGIN IMMEDIATE")
             cursor = await db.execute(
                 """
@@ -501,7 +513,7 @@ class CoreStore:
             "UPDATE delivery_tasks SET status='suppressed', updated_at=?, "
             "last_error_code='rule_suppressed' WHERE " + " AND ".join(clauses)
         )
-        async with _db(self.path) as db:
+        async with self._write_db() as db:
             cursor = await db.execute(sql, (now, *args))
             await db.commit()
             return cursor.rowcount
