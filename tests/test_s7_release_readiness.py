@@ -30,6 +30,7 @@ def _json(data: dict) -> bytes:
 
 def _make_oci(
     archive: Path, *, edit_config=None, edit_index=None, corrupt_blob=False,
+    wrap_index=False, corrupt_wrapper=False,
 ) -> None:
     """Create synthetic two-platform OCI with real SHA-256 descriptors."""
     blobs = {}
@@ -89,6 +90,18 @@ def _make_oci(
     if corrupt_blob:
         digest = manifests[0]["digest"].split(":", 1)[1]
         blobs[digest] = b"X" * len(blobs[digest])
+    if wrap_index:
+        wrapped = add(_json(index))
+        index = {
+            "schemaVersion": 2,
+            "manifests": [{
+                **wrapped,
+                "mediaType": "application/vnd.oci.image.index.v1+json",
+            }],
+        }
+        if corrupt_wrapper:
+            digest = wrapped["digest"].split(":", 1)[1]
+            blobs[digest] = b"Z" * len(blobs[digest])
     paths = {
         "oci-layout": b'{"imageLayoutVersion":"1.0.0"}',
         "index.json": _json(index),
@@ -192,12 +205,16 @@ class ReleaseNamingPolicy(unittest.TestCase):
 
 
 class LocalOCIArchive(unittest.TestCase):
-    def _inspect(self, *, edit_config=None, edit_index=None, corrupt=False):
+    def _inspect(
+        self, *, edit_config=None, edit_index=None,
+        corrupt=False, wrap_index=False, corrupt_wrapper=False,
+    ):
         with TemporaryDirectory() as td:
             filename = Path(td) / "test.oci.tar"
             _make_oci(
                 filename, edit_config=edit_config,
                 edit_index=edit_index, corrupt_blob=corrupt,
+                wrap_index=wrap_index, corrupt_wrapper=corrupt_wrapper,
             )
             return inspect_archive(
                 filename, revision=REVISION, version=VERSION
@@ -211,6 +228,21 @@ class LocalOCIArchive(unittest.TestCase):
         self.assertGreater(result["validated_blobs"], 3)
         self.assertIsNone(result["remote_ghcr_digest"])
         self.assertFalse(result["release_authorized"])
+
+    def test_buildx_wrapped_layout_index_preserves_two_platform_validation(self):
+        result = self._inspect(wrap_index=True)
+        self.assertEqual(result["platforms"], ["linux/amd64", "linux/arm64"])
+        self.assertIsNone(result["remote_ghcr_digest"])
+
+    def test_reject_corrupted_buildx_nested_index(self):
+        with self.assertRaisesRegex(OCIValidationError, "checksum_mismatch"):
+            self._inspect(wrap_index=True, corrupt_wrapper=True)
+
+    def test_reject_nested_index_with_extra_manifest(self):
+        def extra(index):
+            index["manifests"].append(dict(index["manifests"][0]))
+        with self.assertRaisesRegex(OCIValidationError, "exactly_two"):
+            self._inspect(wrap_index=True, edit_index=extra)
 
     def test_reject_missing_or_duplicate_platform(self):
         with self.assertRaisesRegex(OCIValidationError, "exactly_two"):
