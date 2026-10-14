@@ -1,0 +1,40 @@
+name: S3 Dual Sources
+
+on:
+  pull_request:
+    paths:
+      - 'app/source_*.py'
+      - 'app/rss.py'
+      - 'tests/test_s3_*.py'
+      - '.github/workflows/s3-sources.yml'
+      - 'requirements-s3.txt'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: s3-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  offline:
+    name: S3 offline / Python ${{ matrix.python-version }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.11', '3.12']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '${{ matrix.python-version }}'
+          cache: pip
+      - name: Install pinned upstream and source dependencies
+        run: python -m pip install -r requirements-s3.txt
+      - name: Offline source adapters and interruption recovery
+        run: python -m unittest discover -s tests -p 'test_s3_*.py' -v
+      - name: Compile source and all regressions
+        run: python -m compileall -q app scripts tests
