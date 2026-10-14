@@ -1,0 +1,3 @@
+# S4 opt-in dependency set; keep S1 upstream requirements.txt unchanged.
+-r requirements-s3.txt
+apprise==2.0.1
