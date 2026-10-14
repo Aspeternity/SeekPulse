@@ -65,6 +65,49 @@
       "user_instruction": "批准",
       "context": "Direct reply to explicit question whether to accept S0-04 conditional Go and formally authorize S1 (Issue #9).",
       "source": "User message in this ChatGPT conversation; cross-check Issue #8/#9 and later instructions"
+    },
+    {
+      "event_id": "APPROVAL-2026-10-14-S1-ACCEPTED-MERGE21",
+      "date": "2026-10-14",
+      "approved_plan": "SeekPulse V1.1",
+      "authorization_kind": "stage_acceptance_and_specific_merge_authorization",
+      "accepted_stage": "S1-01",
+      "authorized_stage": "S1",
+      "authorized_actions": [
+        "accept S1-01 regression baseline",
+        "merge only PR #21 into main via normal protection checks"
+      ],
+      "not_authorized": [
+        "merge S0 PRs #17-#20 or any other PR",
+        "S2-S7 until separate approval",
+        "release/tag",
+        "production deployment"
+      ],
+      "user_instruction": "S1-01 验收通过；批准",
+      "context": "User accepted S1-01 then separately replied to explicit question whether to merge PR #21; GitHub confirms PR #21 merged as 94f26d2 and post-merge CI 4/4 PASS.",
+      "source": "User messages in this ChatGPT conversation, GitHub PR #21 and Issue #9"
+    },
+    {
+      "event_id": "APPROVAL-2026-10-14-S2-AUTHORIZED",
+      "date": "2026-10-14",
+      "approved_plan": "SeekPulse V1.1",
+      "authorization_kind": "next_stage_authorization",
+      "authorized_stage": "S2",
+      "authorized_actions": [
+        "implement S2-01 canonical post, source observation and three-state rules Issue #10",
+        "implement S2-02 SQLite atomic per-target tasks and lease/retry state Issue #11",
+        "create independent development branches and Draft PRs; run corresponding CI and request acceptance"
+      ],
+      "not_authorized": [
+        "merge any S2 or research PR without separate explicit user approval",
+        "S3-S7 implementation",
+        "release/tag",
+        "production deployment, real Telegram sessions or notifications",
+        "change V1.1 product scope"
+      ],
+      "user_instruction": "批准",
+      "context": "Direct reply to assistant's explicit question '是否批准开始 S2 开发？' naming Issues #10 and #11 after S1 PR #21 merge and main green CI.",
+      "source": "User message in this ChatGPT conversation; see GitHub Issues #10/#11"
     }
   ]
 }
