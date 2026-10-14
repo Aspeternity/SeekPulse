@@ -9,6 +9,7 @@
 | 分组 | 测试对象 | 已有上游行为 |
 |---|---|---|
 | RSS 与文本 | app.rss、app.bot、app.categories、app.utils | RSS/Atom 解析、分类别名、未知类别、HTML 与长度处理；普通独立关键词 OR、组合规则 AND、大小写不敏感、输入去重 |
+| Bot 命令入口 | app.bot 的 BotHandlers（所有 Update/Context 均为模拟） | /addkw、/combo、/block、/scope、暂停/恢复、白名单、关键词上限、菜单录入以及显式绑定频道时的用户/机器人管理员校验 |
 | SQLite / 用户 | app.db | 每用户关键词、屏蔽词和目标隔离；跨用户改动拒绝；启停；按用户+帖子已有唯一历史；数据库重复初始化/重启 |
 | RSS 到 Telegram | app.poller + app.db | 首次旧帖标记 read 不补推；屏蔽优先；分类限制；独立用户和多目标；同帖去重；暂停用户；Forbidden 禁用目标；全部目标失败可下一轮再试 |
 | 依赖 | requirements.txt、importlib.metadata | 当前五个上游发行包精确 pin 和安装版本契约，不在本阶段擅自升级 |
