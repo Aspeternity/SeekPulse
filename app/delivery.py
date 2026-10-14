@@ -383,13 +383,36 @@ class CoreStore:
             return result
 
     async def claim(self, *, now: int, lease_seconds: int = 30,
-                    limit: int = 10) -> list[DeliveryTask]:
-        """Atomic fenced lease claims; never wait for HTTP under this lock."""
+                    limit: int = 10, priority: int | None = None,
+                    exclude_target_ids: Sequence[int] = ()) -> list[DeliveryTask]:
+        """Atomic fenced lease claims; never wait for HTTP under this lock.
+
+        Optional S4 scheduling filters preserve the S2 default. Exclusions
+        avoid claiming a target during per-target rate limits/in-flight sends,
+        while explicit priority permits fair urgent/normal scheduling.
+        """
         _clock(now)
         _positive("lease_seconds", lease_seconds)
         _positive("limit", limit)
         if limit > 100:
             raise ValueError("claim limit must be <=100")
+        if priority is not None and (type(priority) is not int or priority not in (0, 1)):
+            raise ValueError("priority must be 0, 1 or None")
+        excluded = sorted(set(exclude_target_ids))
+        if len(excluded) > 400:
+            raise ValueError("too many excluded targets")
+        for target_id in excluded:
+            _positive("target_id", target_id)
+        priority_sql = " AND dt.priority=?" if priority is not None else ""
+        excluded_sql = (
+            " AND dt.target_id NOT IN (" + ",".join("?" for _ in excluded) + ")"
+            if excluded else ""
+        )
+        params = [now, now]
+        if priority is not None:
+            params.append(priority)
+        params.extend(excluded)
+        params.append(limit)
         async with self._write_db() as db:
             await db.execute("BEGIN IMMEDIATE")
             await self._recover_locked(db, now)
@@ -402,10 +425,11 @@ class CoreStore:
                   AND dt.available_at <= ? AND dt.expires_at > ?
                   AND dt.attempts < dt.max_attempts
                   AND us.enabled=1 AND t.enabled=1
+                """ + priority_sql + excluded_sql + """
                 ORDER BY dt.priority DESC, dt.created_at ASC, dt.id ASC
                 LIMIT ?
                 """,
-                (now, now, limit),
+                params,
             )
             ids = [row["id"] for row in await cursor.fetchall()]
             results: list[DeliveryTask] = []
@@ -442,6 +466,31 @@ class CoreStore:
                   AND lease_until > ? AND expires_at > ?
                 """,
                 (now, now, task_id, token, now, now),
+            )
+            await db.commit()
+            return cursor.rowcount == 1
+
+    async def suppress_leased(self, task_id: int, token: str, *, now: int) -> bool:
+        """S4 send-time rule/target recheck; fenced, before external send.
+
+        Ordinary suppress() only cancels unclaimed work. This operation is
+        deliberately token- and deadline-fenced to allow a claimed worker
+        to suppress its OWN not-yet-sent task without mislabeling it failed.
+        """
+        _positive("task_id", task_id)
+        _clock(now)
+        if not token:
+            return False
+        async with self._write_db() as db:
+            cursor = await db.execute(
+                """
+                UPDATE delivery_tasks
+                SET status='suppressed', lease_token=NULL, lease_until=NULL,
+                    updated_at=?, last_error_code='rule_suppressed'
+                WHERE id=? AND status='leased' AND lease_token=?
+                  AND lease_until > ? AND expires_at > ?
+                """,
+                (now, task_id, token, now, now),
             )
             await db.commit()
             return cursor.rowcount == 1

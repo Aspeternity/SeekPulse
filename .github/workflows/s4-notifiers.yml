@@ -1,0 +1,45 @@
+name: S4 Routing and Notifiers
+
+on:
+  pull_request:
+    paths:
+      - 'app/routing.py'
+      - 'app/route_store.py'
+      - 'app/notifiers.py'
+      - 'app/worker.py'
+      - 'app/delivery.py'
+      - 'tests/test_s4_*.py'
+      - 'requirements-s4.txt'
+      - '.github/workflows/s4-notifiers.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: s4-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  offline:
+    name: S4 offline / Python ${{ matrix.python-version }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.11', '3.12']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '${{ matrix.python-version }}'
+          cache: pip
+      - name: Install pinned upstream, S3 and S4 dependencies
+        run: python -m pip install -r requirements-s4.txt
+      - name: Offline S4 routing, privacy, failure and concurrency contracts
+        run: python -m unittest discover -s tests -p 'test_s4_*.py' -v
+      - name: Regress S2 durable queue after additive claim filters
+        run: python -m unittest discover -s tests -p 'test_s2_*.py' -v
+      - name: Compile entire application and regression suite
+        run: python -m compileall -q app scripts tests
