@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from importlib import metadata
+import os
 from pathlib import Path
 import unittest
 
@@ -33,7 +34,14 @@ class PinnedDependencyContract(unittest.TestCase):
         self.assertEqual(found, REQUIRED_DISTRIBUTIONS)
 
     def test_ci_imports_exact_upstream_installed_versions(self):
-        for name, expected in REQUIRED_DISTRIBUTIONS.items():
+        # Baseline CI remains strictly pinned. Docker-05's explicitly
+        # named opt-in V1.1 security job alone checks the patched aiohttp.
+        mode = os.environ.get("SEEKPULSE_S7_V11_SECURITY_TEST")
+        self.assertIn(mode, (None, "1"), "unsupported_dependency_test_mode")
+        expected_versions = dict(REQUIRED_DISTRIBUTIONS)
+        if mode == "1":
+            expected_versions["aiohttp"] = "3.14.3"
+        for name, expected in expected_versions.items():
             with self.subTest(distribution=name):
                 self.assertEqual(metadata.version(name), expected)
 
