@@ -52,7 +52,7 @@ class BlockKeywordRecord:
 class TargetRecord:
     id: int
     user_id: int
-    chat_id: int
+    chat_id: int | None
     chat_title: str | None
     chat_type: str | None
     enabled: bool
@@ -668,7 +668,7 @@ class Database:
     async def count_targets_by_user_id(self, user_id: int) -> int:
         async with self._connect() as db:
             cursor = await db.execute(
-                "SELECT COUNT(*) FROM targets WHERE user_id = ?",
+                "SELECT COUNT(*) FROM targets WHERE user_id = ? AND chat_id IS NOT NULL",
                 (user_id,),
             )
             row = await cursor.fetchone()
@@ -681,7 +681,7 @@ class Database:
                 SELECT COUNT(*)
                 FROM targets t
                 JOIN users u ON u.id = t.user_id
-                WHERE u.tg_user_id = ?
+                WHERE u.tg_user_id = ? AND t.chat_id IS NOT NULL
                 """,
                 (tg_user_id,),
             )
@@ -734,7 +734,9 @@ class Database:
             chat_type=chat_type,
         )
 
-    async def list_targets_by_tg_user(self, tg_user_id: int) -> list[TargetRecord]:
+    async def list_targets_by_tg_user(
+        self, tg_user_id: int, *, include_push: bool = False
+    ) -> list[TargetRecord]:
         async with self._connect() as db:
             cursor = await db.execute(
                 """
@@ -742,9 +744,10 @@ class Database:
                 FROM targets t
                 JOIN users u ON u.id = t.user_id
                 WHERE u.tg_user_id = ?
+                  AND (? = 1 OR t.chat_id IS NOT NULL)
                 ORDER BY t.id ASC
                 """,
-                (tg_user_id,),
+                (tg_user_id, int(include_push)),
             )
             rows = await cursor.fetchall()
         return [TargetRecord(*row) for row in rows]
@@ -754,7 +757,7 @@ class Database:
             cursor = await db.execute(
                 """
                 DELETE FROM targets
-                WHERE id = ?
+                WHERE id = ? AND chat_id IS NOT NULL
                   AND user_id = (SELECT id FROM users WHERE tg_user_id = ?)
                 """,
                 (target_id, tg_user_id),
@@ -842,7 +845,7 @@ class Database:
                     """
                     SELECT id, user_id, chat_id, chat_title, chat_type, enabled
                     FROM targets
-                    WHERE user_id = ? AND enabled = 1
+                    WHERE user_id = ? AND enabled = 1 AND chat_id IS NOT NULL
                     ORDER BY id ASC
                     """,
                     (user.id,),

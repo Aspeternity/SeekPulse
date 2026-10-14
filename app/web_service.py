@@ -18,6 +18,7 @@ import aiosqlite
 
 from app.categories import CATEGORY_LABELS
 from app.db import Database, UserSettingsRecord
+from app.gate_b_targets import GateBTargetStore
 from app.delivery import CoreStore
 from app.domain import Source
 from app.route_store import Channel, RouteStore
@@ -39,6 +40,7 @@ class WebService:
         self.core = CoreStore(self.path)
         self.sources = SourceStore(self.path)
         self.routes = RouteStore(self.path)
+        self.push_targets = GateBTargetStore(self.path)
 
     async def ensure_schema(self) -> None:
         """Idempotent initialization; does not replay or send notifications."""
@@ -61,7 +63,9 @@ class WebService:
             "keywords": await self.db.list_keywords_by_tg_user(self.admin_tg_id),
             "blocks": await self.db.list_block_keywords_by_tg_user(self.admin_tg_id),
             "routes": {r.keyword_id: r for r in policy.rules},
-            "targets": await self.db.list_targets_by_tg_user(self.admin_tg_id),
+            "targets": await self.db.list_targets_by_tg_user(
+                self.admin_tg_id, include_push=True
+            ),
         }
 
     async def sources_view(self) -> dict:
@@ -73,7 +77,9 @@ class WebService:
 
     async def channels(self) -> dict:
         owner = await self._owner()
-        targets = await self.db.list_targets_by_tg_user(self.admin_tg_id)
+        targets = await self.db.list_targets_by_tg_user(
+            self.admin_tg_id, include_push=True
+        )
         policy = await self.routes.load_policy(owner.user_id)
         result = []
         for item in targets:
@@ -260,15 +266,56 @@ class WebService:
         except ValueError as exc:
             raise ValueError("invalid notification channel") from exc
         # Config values must be references only. Never accept a service URL.
-        if not re.fullmatch(r"[A-Z][A-Z0-9_]{0,63}", secret_ref) and choice is not Channel.TELEGRAM:
+        if (choice is not Channel.TELEGRAM
+                and not re.fullmatch(r"[A-Z][A-Z0-9_]{0,63}", secret_ref)):
             raise ValueError("notification secret must be configured outside Web")
+        async with aiosqlite.connect(self.path) as conn:
+            ready = await (await conn.execute(
+                """SELECT 1 FROM sqlite_master WHERE type='table'
+                   AND name='gate_b_schema_meta'"""
+            )).fetchone()
+            if ready:
+                target = await (await conn.execute(
+                    "SELECT chat_id FROM targets WHERE id=? AND user_id=?",
+                    (target_id, owner.user_id),
+                )).fetchone()
+                if target is None:
+                    raise ValueError("unknown target")
+                if (choice is Channel.TELEGRAM) != (target[0] is not None):
+                    raise ValueError("channel identity mismatch")
         await self.routes.bind_channel(
             owner.user_id, target_id, choice,
             None if choice is Channel.TELEGRAM else secret_ref,
         )
 
+    async def add_push_target(
+        self, channel: str, name: str, secret_ref: str,
+    ) -> int:
+        owner = await self._owner()
+        try:
+            choice = Channel(channel)
+        except ValueError as exc:
+            raise ValueError("invalid push channel") from exc
+        return await self.push_targets.register(
+            owner.user_id, choice, name, secret_ref
+        )
+
+    async def delete_unused_push_target(self, target_id: int) -> bool:
+        owner = await self._owner()
+        return await self.push_targets.delete_unused(owner.user_id, target_id)
+
     async def update_target(self, target_id: int, enabled: bool) -> bool:
         owner = await self._owner()
+        async with aiosqlite.connect(self.path) as db:
+            row = await (await db.execute(
+                "SELECT chat_id FROM targets WHERE id=? AND user_id=?",
+                (target_id, owner.user_id),
+            )).fetchone()
+        if row is not None and row[0] is None:
+            return await self.push_targets.set_push_enabled(
+                owner.user_id, target_id, enabled,
+                resolver=lambda reference: os.getenv("SEEKPULSE_PUSH_" + reference),
+            )
         return await self.db.set_target_enabled(owner.user_id, target_id, enabled)
 
     async def set_source(self, source: str, enabled: bool) -> None:

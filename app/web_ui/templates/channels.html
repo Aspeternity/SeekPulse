@@ -21,6 +21,19 @@
     </form>
   </section>
   <section class="panel">
+    <h2>新建 Bark / ntfy 独立目标</h2>
+    <p class="muted small">仅提供名称和受保护环境变量引用，不输入设备 Key、URL 或 Telegram chat ID。新目标默认暂停。</p>
+    <form action="/channels/push/add" method="post" class="form-stack">
+      <input type="hidden" name="_csrf" value="{{ csrf }}">
+      <label>目标名称<input name="name" maxlength="64" required placeholder="例如：我的手机"></label>
+      <label>通知平台
+        <select name="channel"><option value="bark">Bark</option><option value="ntfy">ntfy</option></select>
+      </label>
+      <label>受保护配置引用<input name="secret_ref" maxlength="64" required placeholder="例如 BARK_PRIMARY（不填实际密钥）"></label>
+      <button class="btn primary" type="submit">添加目标（默认暂停）</button>
+    </form>
+  </section>
+  <section class="panel">
     <div class="panel-head"><h2>已有目标及通道</h2><span class="muted">{{ targets|length }} 个目标</span></div>
     {% for item in targets %}
       <div class="rule-item">
@@ -30,9 +43,12 @@
         <form action="/channels/{{ item.target.id }}/bind" method="post" class="inline-form">
           <input type="hidden" name="_csrf" value="{{ csrf }}">
           <select name="channel">
-            <option value="telegram" {{ 'selected' if item.channel == 'telegram' else '' }}>Telegram</option>
+            {% if item.target.chat_id is none %}
             <option value="bark" {{ 'selected' if item.channel == 'bark' else '' }}>Bark</option>
             <option value="ntfy" {{ 'selected' if item.channel == 'ntfy' else '' }}>ntfy</option>
+            {% else %}
+            <option value="telegram" {{ 'selected' if item.channel == 'telegram' else '' }}>Telegram</option>
+            {% endif %}
           </select>
           <input name="secret_ref" maxlength="64" placeholder="BARK_PRIMARY（非密钥本身）" aria-label="受保护配置引用">
           <button class="btn subtle" type="submit">保存通道</button>
@@ -42,8 +58,15 @@
           <input type="hidden" name="enabled" value="{{ '0' if item.target.enabled else '1' }}">
           <button class="btn subtle" type="submit">{{ '暂停目标' if item.target.enabled else '启用目标' }}</button>
         </form>
+        {% if item.target.chat_id is none and not item.target.enabled %}
+        <form action="/channels/push/{{ item.target.id }}/delete" method="post" class="inline-form">
+          <input type="hidden" name="_csrf" value="{{ csrf }}">
+          <input name="confirm" required maxlength="6" placeholder="输入 DELETE 确认删除" aria-label="删除确认">
+          <button class="btn danger" type="submit">删除未使用的目标</button>
+        </form>
+        {% endif %}
       </div>
     {% else %}<p class="empty">暂无通知目标。</p>{% endfor %}
   </section>
-  <p class="notice">重要：Web 只操作已存在、归属正确的目标 ID，不会虚构 Telegram chat ID，也不在页面存储 Bark/ntfy 设备密钥。正式创建非 Telegram 目标及实际通知发送尚未上线。</p>
+  <p class="notice">重要：非 Telegram 目标需要已批准的 Gate B SQLite 迁移；不虚构 Telegram chat ID，不保存设备密钥/URL。正式主流程/真实通知尚未部署，目标删除仅允许无历史且已暂停的目标。</p>
 {% endblock %}

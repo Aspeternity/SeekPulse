@@ -4,9 +4,9 @@
 
 ## 0. 当前授权边界（最高优先级）
 
-- 最新可核实的授权记录：[`docs/APPROVALS.md` / `docs/APPROVALS.json`](docs/APPROVALS.md) 与 GitHub Issues #8/#9 的用户批准上下文。**截至 2026-10-14：S1–S6（PR #21–#27）已各自完成阶段验收并获独立合并批准；main 12ce325，合并后 G0 CI #38567964267 为 4/4 PASS。用户仅批准 S7 / Issue #16 的验收规划与准备；真实 VPS、生产集成改造、S7 现场执行、合并 S7 PR、Release/Tag 和生产部署均未授权。**
+- 最新可核实的授权记录：[`docs/APPROVALS.md` / `docs/APPROVALS.json`](docs/APPROVALS.md) 与 GitHub Issues #8/#9 的用户批准上下文。**截至 2026-10-14：S1–S6 均已离线验收并分别获准合并；S7-01 规划文档 PR #28 已独立验收、合并；main `36aa8a1`，新 G0 #38578973921 为 4/4 PASS。用户又独立批准 Gate B / Issue #29 的 B01/B02/B03 设计与离线开发；Gate B 阶段验收、PR #30 合并、真实 VPS、Session、真实发信、48–72h、Release/Tag 和部署均未授权。**
 - **G0 授权**：Fork / 新建项目的工程建档、文档、Issue/PR 模板、协作规范、基础 CI、非业务功能的验证脚手架、建档专用 Draft PR。
-- **目前授权**：S7 / Issue #16 **仅验收规划和准备**，负责人 ChatGPT，编写 48–72h 真实验收指标、单实例接入/历史迁移前置阻断、匿名观测模板与第二 AI 无旧对话接续规程；使用独立文档分支与 Draft PR，最新 HEAD 的 CI 必须验证。**未授权**：开始真实 VPS 访问或观测、部署/启用 S3/S4/S5、修复生产主入口或变更 DB/目标 schema、发送真实通知、触碰 Telegram Session、合并此 PR、S7 最终验收或 Release/Tag。详见 Issue #16 和 `docs/research/S7-01-vps-final-acceptance-plan.md`。
+- **目前授权**：Gate B / Issue #29（父 S7 Issue #16）的 **B01 单实例 opt-in 运行入口、B02 正式 Bark/ntfy 目标独立身份/版本化迁移、B03 原旧链安全切换** 的设计与离线开发。唯一写入负责人 ChatGPT；分支 `feat/gate-b-01-v11-runtime-cutover`、Draft PR #30；精确 HEAD CI、用户离线阶段验收与独立合并审批。保留默认旧 Docker/Compose 启动。**未授权**：Gate B PR 合并、真实数据库/服务器操作、输入或使用真实 Session/Token、真实通知、部署、S7 现场执行与最终验收、Tag/Release。详见 Issue #29 与 ADR-0007。
 - **明确禁止擅自执行**：合并 `main`、创建 Release / Tag 发布、修改生产环境、强制推送或覆盖既有工作。
 - 遇到授权边界不清、关键资料冲突或无法验证，先停止可能越权的操作并报告，不得推定默认获批。
 

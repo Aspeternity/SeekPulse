@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from calendar import timegm
 from dataclasses import dataclass
 
 import aiohttp
@@ -20,6 +21,7 @@ class FeedEntry:
     category_slug: str | None
     category_name: str
     summary_known: bool = True
+    published_epoch: int | None = None  # Parsed feed UTC; None means unknown.
 
 
 @dataclass(slots=True)
@@ -91,6 +93,10 @@ class FeedClient:
                     category_slug=category_slug,
                     category_name=category_label(category_slug),
                     summary_known=summary_known,
+                    published_epoch=(
+                        timegm(item.published_parsed)
+                        if item.get('published_parsed') else None
+                    ),
                 )
             )
 

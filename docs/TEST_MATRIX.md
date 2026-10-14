@@ -23,6 +23,9 @@
 | S5-T01 | S5 | Web/Bot 同时编辑 | 配置一致、无权限越界 | **离线已验收合并**（PR #26，真实 Web/VPS 未验） |
 | S5-T02 | S5 | Web 身份与安全 | 认证、CSRF、XSS、SSRF 边界 | **离线已验收合并**（PR #26） |
 | S6-T01 | S6 | WAL 快照、故障注入、恢复/回滚流程 | WAL、ENOSPC、busy、Session、长断网/429 与独占恢复可验证 | **离线已验收并合并**（PR #27，main G0 4/4；真实 DB 未演练） |
+| GB-T01 | Gate B | opt-in 单进程生命周期与并发互斥 | 旧 Docker 默认不切换、单 Bot/SourceSupervisor/Worker/Web、安全退出和锁、未 Prime 不启发送 | **Gate B 离线开发已授权，待新 HEAD CI 与用户验收；实机未授权** |
+| GB-T02 | Gate B | Bark/ntfy 正式独立目标与 Schema 迁移 | 原 TG chat_id/target_id/FK 保持；新 chat_id=NULL，默认 disabled，独立归属/密钥引用/防跨用户/安全回滚 | **Gate B 离线开发已授权；生产 DB 迁移未授权** |
+| GB-T03 | Gate B | RSS/TG 观察→目标持久分发 | 显式 Prime 不历史补发、异常不越游标、旧帖过期、双来源同帖不重复任务、故障可审计 | **Gate B 离线开发已授权；真实发送未授权** |
 | S7-T01 | S7 | 48–72h 真实运行 | 1 vCPU/1 GiB 上已批准 V1.1 完整链路，观察有效时间/延迟/P95/覆盖/资源/故障与回滚 | **仅规划授权；实机 BLOCKED**（主入口尚未集成 S3/S4/S5，非 TG 目标未完成） |
 | S7-T02 | S7 | 跨 AI 独立接续 | 无旧对话的第二 AI 从 GitHub 实时确定 HEAD/CI/授权、运行阻断与安全下一步，零凭据与越权 | **规程已规划，独立 AI 尚未执行** |
 

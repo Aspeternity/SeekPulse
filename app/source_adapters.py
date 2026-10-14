@@ -149,7 +149,13 @@ class RSSSource:
         self, feed: FeedClient, core: CoreStore, state: SourceStore, *,
         url: str = "https://rss.nodeseek.com/",
         clock: Callable[[], datetime] = utc_now,
+        max_entry_age_seconds: int | None = None,
     ):
+        if (max_entry_age_seconds is not None
+                and (type(max_entry_age_seconds) is not int
+                     or max_entry_age_seconds < 60)):
+            raise ValueError("invalid RSS freshness window")
+        self.max_entry_age_seconds = max_entry_age_seconds
         self.url = _rss_url(url)
         self.feed = feed
         self.core = core
@@ -172,6 +178,15 @@ class RSSSource:
                 valid: list[SourceObservation] = []
                 skipped = 0
                 for entry in entries:
+                    if self.max_entry_age_seconds is not None:
+                        published = getattr(entry, "published_epoch", None)
+                        if (type(published) is not int
+                                or published > now + 60
+                                or now - published > self.max_entry_age_seconds):
+                            # Unverifiable/old RSS timestamps never become new
+                            # V1.1 tasks after a long outage.
+                            skipped += 1
+                            continue
                     item = rss_observation(entry, observed_at)
                     if item is None:
                         skipped += 1
@@ -231,7 +246,13 @@ class TelegramSource:
         self, client: Any, core: CoreStore, state: SourceStore, *,
         channel: str = _CHANNEL, backfill_limit: int = 500,
         clock: Callable[[], datetime] = utc_now,
+        max_message_age_seconds: int | None = None,
     ):
+        if (max_message_age_seconds is not None
+                and (type(max_message_age_seconds) is not int
+                     or max_message_age_seconds < 60)):
+            raise ValueError("invalid TG freshness window")
+        self.max_message_age_seconds = max_message_age_seconds
         if channel != _CHANNEL:
             raise ValueError("only official @nodeseekc is supported")
         if type(backfill_limit) is not int or not 1 <= backfill_limit <= 5000:
@@ -241,6 +262,16 @@ class TelegramSource:
         self._sync_lock = asyncio.Lock()
         self._handler: Any = None
         self._event_builder: Any = None
+
+    def _fresh(self, message: Any, at: datetime) -> bool:
+        if self.max_message_age_seconds is None:
+            return True
+        posted = getattr(message, "date", None)
+        if (not isinstance(posted, datetime) or posted.tzinfo is None
+                or posted.utcoffset() is None):
+            return False
+        age = (at - posted.astimezone(timezone.utc)).total_seconds()
+        return -60 <= age <= self.max_message_age_seconds
 
     async def sync_once(self) -> PollReport:
         async with self._sync_lock:
@@ -287,6 +318,9 @@ class TelegramSource:
                 ingested = 0
                 skipped = 0
                 for msg in ordered:
+                    if not self._fresh(msg, observed_at):
+                        skipped += 1
+                        continue
                     item = telegram_observation(msg, observed_at)
                     if item is None:
                         skipped += 1
@@ -322,6 +356,11 @@ class TelegramSource:
         if not status.enabled or not status.initialized:
             return False
         try:
+            if not self._fresh(message, observed_at):
+                await self.state.mark_gap(
+                    Source.TELEGRAM, "tg_stale_or_unknown_date"
+                )
+                return False
             item = telegram_observation(message, observed_at)
             if item is None:
                 return False

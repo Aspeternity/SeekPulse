@@ -333,6 +333,16 @@ class RouteStore:
         if row is None or not row["enabled"]:
             return None
         channel = Channel(row["channel"] or Channel.TELEGRAM.value)
+        async with _connection(self.path) as db:
+            mode = await (await db.execute(
+                """SELECT 1 FROM sqlite_master
+                   WHERE type='table' AND name='gate_b_schema_meta'"""
+            )).fetchone()
+        if mode is not None:
+            # Enforce actual channel identity after the versioned Gate B migration;
+            # the previous offline S4 prototype allowed reusing TG chat IDs.
+            if ((channel is Channel.TELEGRAM) != (row["chat_id"] is not None)):
+                return None
         return ChannelTarget(
             target_id, user_id, channel,
             row["chat_id"] if channel is Channel.TELEGRAM else None,
