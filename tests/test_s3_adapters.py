@@ -220,6 +220,10 @@ class SourceAdapterContracts(unittest.IsolatedAsyncioTestCase):
         result = await rss.poll_once()
         self.assertEqual(result.observed, 1)
         self.assertEqual(result.skipped, 1)
+        self.assertEqual(
+            (await self.state.status(Source.RSS)).gap_code,
+            "rss_unrecognized_entry",
+        )
         self.assertIsNone(await self.core.get_post(4))
         self.assertEqual((await self.core.get_post(3)).url,
                          "https://www.nodeseek.com/post-3-1")
@@ -346,6 +350,27 @@ class SourceAdapterContracts(unittest.IsolatedAsyncioTestCase):
         await self.state.set_enabled(Source.TELEGRAM, True)
         self.assertEqual((await tg.sync_once()).observed, 1)
         self.assertIsNotNone(await self.core.get_post(101))
+
+    async def test_unknown_telegram_format_leaves_a_durable_gap_flag(self):
+        tg = await self.tg([message(10, 100)])
+        await tg.sync_once()
+        tg.client.messages.append(
+            message(11, 0, raw="https://nodeseek.com.evil.invalid/post-5-1")
+        )
+        result = await tg.sync_once()
+        self.assertEqual(result.skipped, 1)
+        self.assertEqual(result.observed, 0)
+        self.assertEqual((await self.state.status(Source.TELEGRAM)).cursor, 11)
+        self.assertEqual(
+            (await SourceStore(self.path).status(Source.TELEGRAM)).gap_code,
+            "tg_unrecognized_message",
+        )
+        tg.client.messages.append(message(12, 102))
+        self.assertEqual((await tg.sync_once()).observed, 1)
+        self.assertEqual(
+            (await self.state.status(Source.TELEGRAM)).gap_code,
+            "tg_unrecognized_message",
+        )
 
     async def test_telegram_hidden_link_and_untrusted_links(self):
         hidden = message(1, 0, raw="DMIT sale", entity_url="https://nodeseek.com/post-42-1")

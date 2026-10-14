@@ -177,6 +177,10 @@ class RSSSource:
                         skipped += 1
                     else:
                         valid.append(item)
+                if skipped:
+                    # The official feed changed shape or exposed an unsafe ID.
+                    # Keep a durable warning instead of silently discarding it.
+                    await self.state.mark_gap(Source.RSS, "rss_unrecognized_entry")
 
                 if not status.initialized:
                     # Initial RSS feed window is a baseline, never a backlog.
@@ -289,6 +293,12 @@ class TelegramSource:
                         continue
                     await self.core.observe(item)
                     ingested += 1
+                if skipped:
+                    # Persist an auditable format-warning BEFORE advancing
+                    # history. Operator can inspect it after a restart.
+                    await self.state.mark_gap(
+                        Source.TELEGRAM, "tg_unrecognized_message"
+                    )
                 if ordered:
                     await self.state.advance_telegram(int(ordered[-1].id))
                 await self.state.mark_success(Source.TELEGRAM, now=now)
