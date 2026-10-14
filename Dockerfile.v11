@@ -1,6 +1,9 @@
 # Opt-in V1.1 image: build-only until a separate GHCR publishing approval.
 # Do not modify the legacy Dockerfile or its default app.main entrypoint.
-FROM python:3.11-slim
+# Docker-04 official multi-platform index digest, verified (amd64 + arm64)
+# from docker.io/library/python:3.11-slim by no-login GitHub runner
+# workflow #38632803851. Re-pin only after renewed supply-chain review.
+FROM python:3.11-slim@sha256:e88e9763f943ec1834f992a4b51e0f24500486803e8bc534e5767af9ea65f6ce
 
 # Offline CI uses 0.0.0-ci; a real version/tag needs a separate approval.
 # Labels are traceability only; they are NOT a GHCR release or digest.

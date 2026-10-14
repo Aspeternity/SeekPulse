@@ -1,0 +1,171 @@
+name: S7 V1.1 Docker-04 CVE, SBOM and Pinned Base (No Publish)
+
+on:
+  pull_request:
+    paths:
+      - 'Dockerfile.v11'
+      - 'scripts/v11_security_evidence.py'
+      - 'tests/test_s7_security_evidence.py'
+      - 'docs/decisions/ADR-0011-v11-release-security.md'
+      - 'docs/deployment/V1.1-docker-offline.md'
+      - '.github/workflows/s7-v11-security-offline.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: s7-docker04-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  evidence-contract:
+    name: Security gate and full regression / Python ${{ matrix.python-version }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.11', '3.12']
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: '${{ matrix.python-version }}'
+          cache: pip
+      - name: Install unchanged S1-S5 dependencies
+        run: python -m pip install -r requirements-s5.txt
+      - name: Reject stale, incomplete or forged security evidence
+        run: python -m unittest discover -s tests -p 'test_s7_security_evidence.py' -v
+      - name: Entire existing S1-S7 + Docker-04 offline regression
+        run: python -m unittest discover -s tests -v
+      - name: Ruff, compile and pip compatibility
+        run: |
+          python -m pip install ruff==0.13.3
+          ruff check scripts/v11_security_evidence.py tests/test_s7_security_evidence.py
+          python -m compileall -q app scripts tests
+          python -m pip check
+
+  verify-pinned-base:
+    name: Read-only official Python base digest and platform contract
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Verify pinned Dockerfile base resolves to official multiarch index
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="$(awk '$1 == "FROM" {print $2}' Dockerfile.v11)"
+          [[ "$base" =~ ^python:3[.]11-slim@sha256:[0-9a-f]{64}$ ]]
+          docker buildx imagetools inspect "$base" --raw > "${RUNNER_TEMP}/pinned-official-index.json"
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          index = json.loads(
+              (Path(os.environ["RUNNER_TEMP"]) / "pinned-official-index.json").read_text()
+          )
+          assert index["schemaVersion"] == 2
+          platforms = {
+              f"{d['platform']['os']}/{d['platform']['architecture']}"
+              for d in index["manifests"] if "platform" in d
+          }
+          assert {"linux/amd64", "linux/arm64"}.issubset(platforms), platforms
+          print("PINNED_OFFICIAL_BASE_AMD64_ARM64_VERIFIED=PASS")
+          PY
+
+  scan-local-platform:
+    name: Trivy OS+PyPI and CycloneDX / linux/${{ matrix.arch }} (local only)
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: ['amd64', 'arm64']
+    env:
+      # Job-level env cannot access runner.temp; hosted Linux runner is ephemeral.
+      TRIVY_CACHE_DIR: /tmp/seekpulse-docker04-trivy-cache
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Enable ARM64 emulation only in the ephemeral runner
+        uses: docker/setup-qemu-action@1f40c72289eff860ee54a304f1438e3cff362e0a # v4.3.0
+      - name: Configure Buildx for local builds only
+        uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0
+      - name: Install a fixed Trivy scanner version from pinned action
+        uses: aquasecurity/setup-trivy@e07451d2e059ed86c2870430ea286b3a9e0bf241
+        with:
+          version: v0.75.0
+          cache: false
+      - name: Build strictly local image, never login/push
+        shell: bash
+        run: |
+          set -euo pipefail
+          image="seekpulse-security-local:${{ matrix.arch }}"
+          docker buildx build --file Dockerfile.v11 \
+            --platform "linux/${{ matrix.arch }}" \
+            --provenance=false --sbom=false --load \
+            --build-arg SEEKPULSE_BUILD_VERSION=0.0.0-ci \
+            --build-arg "SEEKPULSE_BUILD_REVISION=${GITHUB_SHA}" \
+            --tag "$image" .
+          mkdir -p "${RUNNER_TEMP}/security"
+          docker image inspect "$image" > "${RUNNER_TEMP}/security/inspect-array.json"
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          p = Path(os.environ["RUNNER_TEMP"]) / "security"
+          images = json.loads((p / "inspect-array.json").read_text())
+          assert len(images) == 1
+          (p / "inspect.json").write_text(json.dumps(images[0]))
+          PY
+          docker run --rm --platform "linux/${{ matrix.arch }}" \
+            --network none --entrypoint python "$image" -m pip check
+      - name: Scan local OS+Python packages with current public vulnerability DB
+        shell: bash
+        run: |
+          set -euo pipefail
+          trivy --version
+          image="seekpulse-security-local:${{ matrix.arch }}"
+          root="${RUNNER_TEMP}/security"
+          trivy image --image-src docker --scanners vuln \
+            --pkg-types os,library \
+            --timeout 20m --no-progress \
+            --format json --output "$root/vulnerabilities.json" "$image"
+          test -s "$root/vulnerabilities.json"
+          test -s "${TRIVY_CACHE_DIR}/db/metadata.json"
+      - name: Create CycloneDX SBOM from same local image (no upload)
+        shell: bash
+        run: |
+          set -euo pipefail
+          image="seekpulse-security-local:${{ matrix.arch }}"
+          trivy image --image-src docker \
+            --timeout 20m --no-progress \
+            --format cyclonedx \
+            --output "${RUNNER_TEMP}/security/sbom.cdx.json" "$image"
+          test -s "${RUNNER_TEMP}/security/sbom.cdx.json"
+      - name: Require fresh DB, complete OS+PyPI inventory and independent CVE verdict
+        shell: bash
+        run: |
+          set -euo pipefail
+          image="seekpulse-security-local:${{ matrix.arch }}"
+          root="${RUNNER_TEMP}/security"
+          python scripts/v11_security_evidence.py \
+            --scan "$root/vulnerabilities.json" \
+            --sbom "$root/sbom.cdx.json" \
+            --db-metadata "${TRIVY_CACHE_DIR}/db/metadata.json" \
+            --inspect "$root/inspect.json" \
+            --platform "linux/${{ matrix.arch }}" \
+            --image "$image" \
+            --output "$root/report.json"
+          # Report is local-only and deliberately release_authorized=false.
+          # A real High/Critical CVE is reported as BLOCKED; do not wash CI green.
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          path=Path(os.environ["RUNNER_TEMP"])/"security"/"report.json"
+          report=json.loads(path.read_text())
+          assert report["release_authorized"] is False
+          assert report["release_ready"] is False
+          assert report["remote_index_digest"] is None
+          print("LOCAL_SECURITY_REPORT="+json.dumps(report,sort_keys=True))
+          PY
