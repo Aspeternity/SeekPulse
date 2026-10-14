@@ -40,6 +40,31 @@
       "user_instruction": "批准",
       "context": "Immediately follows a G0 completion report requesting user G0 acceptance, explicitly stating S0 requires separate approval and main will not be merged",
       "source": "User message in current ChatGPT conversation; check later instructions before interpreting as current"
+    },
+    {
+      "event_id": "APPROVAL-2026-10-14-S0-04-ACCEPTED-S1-AUTHORIZED",
+      "date": "2026-10-14",
+      "approved_plan": "SeekPulse V1.1",
+      "authorization_kind": "stage_acceptance_and_next_stage_authorization",
+      "accepted_stage": "S0-04",
+      "authorized_stage": "S1",
+      "authorized_actions": [
+        "accept S0-04 conditional-Go feasibility report",
+        "develop S1 Issue #9 upstream deterministic behavior tests",
+        "review Python 3.11/3.12 pinned dependencies and CI",
+        "create isolated S1 branch and Draft PR; request separate acceptance"
+      ],
+      "not_authorized": [
+        "S2-S7 implementation",
+        "merge any PR to main",
+        "Release or Tag publication",
+        "production deployment or changes",
+        "real notification pushes or credential uploads",
+        "unapproved behavior changes"
+      ],
+      "user_instruction": "批准",
+      "context": "Direct reply to explicit question whether to accept S0-04 conditional Go and formally authorize S1 (Issue #9).",
+      "source": "User message in this ChatGPT conversation; cross-check Issue #8/#9 and later instructions"
     }
   ]
 }

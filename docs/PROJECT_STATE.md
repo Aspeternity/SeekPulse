@@ -1,37 +1,35 @@
-# SeekPulse 当前项目状态（G0 交接索引）
+# SeekPulse 实时开发交接索引（S1）
 
-> 更新：2026-10-13。**这是已核实事实的时间快照，不是实时 GitHub 状态。** 新会话必须先按 `AGENTS.md` 重新检查远端提交、PR、Issues、对应 SHA 的 CI 和用户审批，冲突时暂停操作。
+> 快照日期：2026-10-14。此文件仅为参考索引；新对话必须重新核对 GitHub Issues、PR、main/分支 SHA、最新 CI 与用户审批。
 
-## 审批与开发边界
+## 授权边界
 
-- 用户正式批准 **SeekPulse V1.1 开发方案**，并于 2026-10-13 **确认 G0 验收通过**；目前仍**只存在 G0 阶段授权**。
-- **S0–S7 均未获执行授权**。创建这些阶段的 Issue 仅是规划，不意味着可以开始。
-- **明确禁止未经额外授权**：合并 `main`、发布版本或 Tag、修改生产环境、覆盖已有分支。
-- G0 最终用户验收：**已确认通过**（2026-10-13 用户在 G0 验收报告后回复“批准”）；G0 PR 仍为 Draft，**未获合并授权**。
+- V1.1 方案已批准：RSS + 官方 Telegram 频道为两个可独立启停的来源。不承诺 TG 比 10 秒 RSS 更快。
+- G0 已验收；S0-04 条件式 Go 已由用户于 2026-10-14 验收，见 [Issue #8](https://github.com/Aspeternity/SeekPulse/issues/8)。
+- 用户在明确询问是否验收 S0-04 并正式授权 S1（Issue #9）后回复“批准”；[S1 Issue #9](https://github.com/Aspeternity/SeekPulse/issues/9) 已获开发授权，范围仅为原版行为回归、依赖与 CI。
+- 未授权：S2–S7、合并任何 PR 到 main、Release/Tag、生产部署、真实通知推送、擅自改上游业务行为、上传凭据/Session/私有数据库。
 
-## GitHub 核验入口
+## GitHub 工作入口
 
-| 项目 | 截至本次记录的核验结果 |
+| 对象 | 创建 S1 时的记录（新会话必须重新核对） |
 |---|---|
-| 仓库 | <https://github.com/Aspeternity/SeekPulse>，由 AI-XMLY 上游 Fork，保留 MIT 与 Git 历史 |
-| `main` 基准 | `8107b18e99148127bc6c993ac8384959ac871f6d`（本次核实时仍未改变） |
-| G0 工作分支 | `chore/g0-engineering-foundation`（**从 GitHub 读取最新 HEAD，不使用本文的旧提交号**） |
-| G0 Draft PR | [#1](https://github.com/Aspeternity/SeekPulse/pull/1)，目标 `main`，未合并 |
-| 保护规则 | [Protect main](https://github.com/Aspeternity/SeekPulse/rules/25001077)：Active；默认分支、必经 PR、禁止删除和强推、要求目标分支最新与四项 CI |
-| G0 实际任务 | [#2](https://github.com/Aspeternity/SeekPulse/issues/2)、[#3](https://github.com/Aspeternity/SeekPulse/issues/3)、[#4](https://github.com/Aspeternity/SeekPulse/issues/4) |
-| S0 已规划任务 | [#5–#8](https://github.com/Aspeternity/SeekPulse/issues)；带 `status:blocked`，**未授权** |
-| S1–S7 已规划任务 | [#9–#16](https://github.com/Aspeternity/SeekPulse/issues)；带 `status:blocked`，**未授权** |
-| 已创建的 Issue | 共 15 个，稳定标识 G0-01～03、S0-01～04、S1-01～S7-01 |
-| 历史 CI 证据 | [PR Run #38403905292](https://github.com/Aspeternity/SeekPulse/actions/runs/38403905292) 对 `241375139a4d58ce7c821c2d5357500fe1d20799` 四项全绿；**本次验收记录提交会产生更新的 HEAD，必须重新检查最新 SHA 的 CI** |
+| 仓库 | https://github.com/Aspeternity/SeekPulse |
+| main | 4900a52eef1583804b44bcd00145767df7fc1e26 |
+| S0-01 | #5 / Draft PR #17 / 54dc579，保持未合并 |
+| S0-02 | #6 / stacked Draft PR #19 / 60dbaf5，保持未合并 |
+| S0-03 | #7 / Draft PR #18 / 38b8c79，保持未合并 |
+| S0-04 | #8 验收通过 / Draft PR #20 / 900815e，报告仍未合并 |
+| S1-01 | #9 / 写入负责人 ChatGPT / 分支 test/s1-01-upstream-regression-baseline / PR HEAD 与 CI 以 Issue 最新记录为准 |
+| CI | G0 原有 Python 3.11/3.12 + 基础工程检查；S1 增加独立无网回归检查 |
 
-## 新 AI 的唯一接续流程
+## 技术结论与风险
 
-1. **注意：G0 文件目前只在工作分支和 Draft PR 中，尚未合并 main。** 先读取 `chore/g0-engineering-foundation` 分支的 `AGENTS.md`、`docs/APPROVALS.md` 和本文件；不要从 `main` 找这些未合并文档。
-2. 读取 GitHub Issue #2～#16 和 Draft PR #1，核对真实状态、当前写入负责人及分支提交。
-3. 核对四项 GitHub Actions 必需检查对 **当前 PR HEAD SHA** 的结果，不能沿用本文件提到的历史运行。
-4. 确认 `main` 仍保留基线，并核验审批记录：**G0 已验收通过；S0 尚未授权**。若有更新授权，应核对原文和上下文。
-5. 唯一下一步：**确认当前 PR HEAD 的最新 CI，保持 Draft PR，向用户单独申请 S0 授权；未经明确合并授权不得修改 main。**
+- RSS 60s：累计 65min，有效配对 24，TG 先 19，RSS 先 5；RSS 相对 TG P50 +12.209s。
+- RSS 10s：累计 195.02min，有效配对 33，TG 先 18，RSS 先 15，P50 +0.154s；P95 +1408.214s。用户在 3h 运行中调试多次网络且记不清时段，不能把 P95 当作稳定 RSS 延迟。
+- Apprise 2.0.1 的 Bark/ntfy 回环模拟 10/10 PASS，受限 CI 容器 10/10 PASS；真实手机/APNs、全栈 VPS 容量尚未验证。
+- 上游 FeedPoller 当前按每用户+帖子记录送达，只要一个目标发送成功，其他失败目标不会独立重试。这是明确的遗留风险，不是 V1.1 目标；S2/S4 需要用户另行授权重构。
+- 上游首次 RSS 轮询只标记旧帖已读，普通关键词独立 OR、组合关键词 AND、屏蔽优先、分类过滤，以及多用户数据隔离，均是 S1 回归对象。
 
-## 事实权威顺序
+## 唯一下一步
 
-批准范围：`docs/APPROVALS.md` / `docs/APPROVALS.json` 与后续真实用户指令；代码：Git SHA；任务：GitHub Issues；审查：PR；CI：当前 SHA 对应检查；用户验收：明确的用户确认。本文仅是索引。
+查看 [S1 #9](https://github.com/Aspeternity/SeekPulse/issues/9) 所指最新 Draft PR/HEAD/CI，验证隔离回归后向用户申请 S1 验收，不自动合并 main 或进入 S2。

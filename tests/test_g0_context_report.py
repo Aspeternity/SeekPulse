@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+from pathlib import Path
 import unittest
 
 from scripts.context_report import (
@@ -27,7 +29,16 @@ class RemoteTests(unittest.TestCase):
     def test_offline_never_claims_remote_green(self) -> None:
         report = collect_report(offline=True)
         self.assertEqual(report["github"]["verification"], "UNKNOWN")
-        self.assertIn("stage G0", report["recorded_approval"]["summary"])
+        # Phase authorization advances over time; offline handoff must show
+        # the latest *recorded* event, without claiming live GitHub verification.
+        approval_path = Path(__file__).resolve().parents[1] / "docs/APPROVALS.json"
+        last = json.loads(approval_path.read_text(encoding="utf-8"))["events"][-1]
+        recorded = report["recorded_approval"]
+        self.assertEqual(recorded["state"], "RECORDED_ONLY")
+        self.assertEqual(recorded["event_id"], last["event_id"])
+        self.assertIn("stage " + last["authorized_stage"], recorded["summary"])
+        self.assertIn("NOT authorized:", recorded["summary"])
+        self.assertIn("merge", recorded["summary"].lower())
         content = render_markdown(report)
         self.assertIn("UNKNOWN", content)
         self.assertIn("不得自动开发", content)
