@@ -55,8 +55,8 @@ class FreshDatabaseContracts(unittest.IsolatedAsyncioTestCase):
             report = inspect_database(path)
             self.assertEqual(report["users"], 0)
             self.assertEqual(report["tasks"], {})
-            self.assertEqual(report["sources"]["rss"]["initialized"], False)
-            self.assertEqual(report["sources"]["telegram"]["initialized"], False)
+            self.assertEqual(report["sources"]["rss"]["enabled"], True)
+            self.assertEqual(report["sources"]["telegram"]["enabled"], False)
             with sqlite3.connect(path) as db:
                 self.assertEqual(db.execute(
                     "SELECT COUNT(*) FROM source_observations"
@@ -70,6 +70,9 @@ class FreshDatabaseContracts(unittest.IsolatedAsyncioTestCase):
                 self.assertEqual(db.execute(
                     "SELECT last_observation_id FROM gate_b_dispatch_state"
                 ).fetchone()[0], 0)
+                self.assertEqual(dict(db.execute(
+                    "SELECT source, initialized FROM s3_source_status"
+                ).fetchall()), {"rss": 0, "telegram": 0})
                 self.assertEqual(db.execute(
                     "SELECT value FROM gate_b_schema_meta "
                     "WHERE key='target_schema_version'"
@@ -240,10 +243,10 @@ class FreshDatabaseContracts(unittest.IsolatedAsyncioTestCase):
                 **_OPTIN, "DATABASE_PATH": str(path),
             }, clear=True):
                 with redirect_stdout(StringIO()) as out:
-                    self.assertEqual(main(["--init-fresh"]), 0)
+                    self.assertEqual(await asyncio.to_thread(main, ["--init-fresh"]), 0)
                 self.assertEqual(out.getvalue().strip(), "fresh_init_ready")
                 with redirect_stdout(StringIO()) as out:
-                    self.assertEqual(main(["--check"]), 0)
+                    self.assertEqual(await asyncio.to_thread(main, ["--check"]), 0)
                 self.assertEqual(out.getvalue().strip(), "v11_database_ready")
             other = Path(td) / "legacy.db"
             with patch.dict(os.environ, {
@@ -252,7 +255,7 @@ class FreshDatabaseContracts(unittest.IsolatedAsyncioTestCase):
                 "BOT_TOKEN": "offline_dummy_not_used",
             }, clear=True):
                 with self.assertRaisesRegex(RuntimeError, "verified_backup_bundle_required"):
-                    main(["--prepare"])
+                    await asyncio.to_thread(main, ["--prepare"])
             self.assertFalse(other.exists())
 
 
