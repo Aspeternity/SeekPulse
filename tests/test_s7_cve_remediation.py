@@ -16,6 +16,7 @@ PATCHED = {
     "aiohttp": "3.14.3",
     "jaraco.context": "6.1.0",
     "wheel": "0.46.2",
+    "setuptools": "84.0.0",
 }
 
 
@@ -24,7 +25,7 @@ def read(path: str) -> str:
 
 
 class NarrowSecurityOverrides(unittest.TestCase):
-    def test_exactly_three_targeted_version_pins(self):
+    def test_exactly_four_targeted_version_pins(self):
         content = read("requirements-v11-security.txt")
         actual = [
             line.strip() for line in content.splitlines()
