@@ -180,6 +180,30 @@
       "user_instruction": "批准",
       "context": "Direct reply to assistant's explicit '是否批准启动 S5 / Issue #14 开发？' after S4-01 separate offline acceptance and PR #25 squash merge 6d5f078 with main G0 CI 4/4 PASS.",
       "source": "Current ChatGPT message and immediately preceding question; cross-check GitHub Issue #14"
+    },
+    {
+      "event_id": "APPROVAL-2026-10-14-S6-AUTHORIZED",
+      "date": "2026-10-14",
+      "approved_plan": "SeekPulse V1.1",
+      "authorization_kind": "stage_development_only",
+      "accepted_stage": "S5-01",
+      "authorized_stage": "S6",
+      "issue": 15,
+      "authorized_actions": [
+        "Develop S6 offline WAL-consistent SQLite backup, integrity and schema verification, restore exclusively to new DB path, and documented manual rollback",
+        "Offline fault-injection tests for SQLITE_BUSY/ENOSPC/Session lost/long outages/source 429 and recovery without legacy duplicate notifications",
+        "Independent feat/s6-01-recovery-backup branch, Draft PR, Python 3.11/3.12 CI, phase handoff and later user acceptance"
+      ],
+      "not_authorized": [
+        "merge S6 PR to main or start S7",
+        "replace or alter any running production DB or its WAL and sessions",
+        "perform real VPS backup/restore or cut over runtime and configuration",
+        "send real Telegram/Bark/ntfy notifications or deploy Web",
+        "Release, Tag, publish or production deployment"
+      ],
+      "user_instruction": "批准",
+      "context": "Direct reply to explicit request '是否批准启动 S6 / Issue #15 开发？', following distinct S5-01 offline acceptance and PR #26 Squash merge 9fe66d9 with main push G0 #38558377125 4/4 PASS.",
+      "source": "Current ChatGPT user message and immediate assistant approval request; cross-check Issue #15"
     }
   ]
 }

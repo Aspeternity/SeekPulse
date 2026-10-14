@@ -1,6 +1,6 @@
 # 审批及执行权限记录（人工可核实）
 
-> **最新（2026-10-14）：S1–S4 已分别验收及独立获批合并；用户明确批准启动 S5 / Issue #14 开发。** 下方 2026-10-13 关于“当前仅 G0”的段落是历史状态，不能替代新授权。S5 合并、S6–S7、Release/Tag 及生产变更仍需单独审批。
+> **最新（2026-10-14）：S1–S5 均分别验收、获独立合并授权并合入 main；用户明确批准启动 S6 / Issue #15 开发。** 下方旧阶段授权是历史记录，不替代本次 S6 指令。S6 合并、S7、Release/Tag 及生产变更仍需单独审批。
 
 ## 2026-10-13：V1.1 方案批准，G0 授权
 
@@ -97,3 +97,14 @@
 - **获准**：单独 S5 / Issue #14 开发，分支 feat/s5-01-admin-web，负责人 ChatGPT；FastAPI/Jinja2/HTMX 本地资源、管理员登录/Session/CSRF/XSS/回环限制、Web 与既有 SQLite/Telegram Bot 共享关键词/屏蔽/版块/现有目标/来源状态和历史/统计，离线 CI 与验收说明。
 - **未获准**：合并 S5 PR、启动 S6–S7、生产 Web、真实 Telegram/Bark/ntfy 发送、上传真实 Session、发布/Tag、生产迁移/部署。S4 尚待审批的非 Telegram 新目标正式注册/安全迁移不能借 S5 偷偷实现。
 - 授权摘要来自当前会话的用户原话及紧邻的审批请求，不冒充 GitHub 用户独立 Code Review；后续仍以精确 SHA 的 Issue/PR/CI 和用户新授权为准。
+
+
+## 2026-10-14：S5-01 离线验收、PR #26 单独合并；授权 S6 / Issue #15 开发
+
+用户先对 S5-01 限定的离线阶段请求回复「验收通过」，后对明确“是否批准将已验收的 S5-01 / PR #26（9b9805c）通过 Squash 合并至 main？本次授权仅包含 PR 合并及合并后 CI，不包含 S6、发布或部署”的独立申请回复「批准」。PR #26 [Squash 合并 commit 9fe66d9](https://github.com/Aspeternity/SeekPulse/commit/9fe66d9db8330ac84ae14718eb413634560420d1)；main 新 [G0 CI #38558377125](https://github.com/Aspeternity/SeekPulse/actions/runs/38558377125) **4/4 PASS**，Issue #14 已关闭。已验收仅为离线 Web 核心，不代表真实浏览器或 VPS 上线。
+
+**本次 S6 独立开发授权原话**：「批准」。直接回应助手明确请求：“是否批准启动 S6 / Issue #15 开发？仍遵循独立分支、Draft PR、完整 CI、阶段验收和单独合并审批流程，不擅自部署。”
+
+- **获准**：S6 / Issue #15、ChatGPT 唯一写入负责人，独立分支 `feat/s6-01-recovery-backup` 与 Draft PR；以现有 S1–S5 SQLite/WAL 及 ADR-0002 为基线，开发只读体检、在线一致性备份/校验、仅恢复至不存在新数据库路径、停机人工切换/回滚指南，测试磁盘不足/锁定/长时间断线/Session 失效/429，资源及依赖风险核对。后续以实际最新 SHA 全绿再申请用户阶段验收。
+- **未获准**：合并 S6 PR、S7、真实 VPS 备份/恢复/覆盖运行中主数据库、生产服务或 DB 环境变量修改、真实 Telegram/Bark/ntfy/Web、正式非 TG 新目标注册与历史迁移、Release/Tag/部署。
+- 此记录为用户当前对话原话与紧邻的阶段授权请求的摘要，不冒充 Github 签署的独立 Review；可在 Issue #15、Draft PR 及 CI 核验最新状态。
