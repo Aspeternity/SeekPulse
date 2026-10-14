@@ -130,8 +130,11 @@ class AtomicDeliveryContracts(unittest.IsolatedAsyncioTestCase):
 
     async def test_atomic_claim_two_workers_do_not_receive_same_task(self):
         await self.store.enqueue(self.user.id, 123, [self.target.id], now=TIME)
+        # A second independent store has its own in-process lock. This test
+        # proves SQLite BEGIN IMMEDIATE is still the cross-instance fence.
+        other_instance = CoreStore(self.path)
         a, b = await asyncio.gather(
-            self.store.claim(now=TIME), self.store.claim(now=TIME)
+            self.store.claim(now=TIME), other_instance.claim(now=TIME)
         )
         self.assertEqual(len(a) + len(b), 1)
         claimed = (a or b)[0]
