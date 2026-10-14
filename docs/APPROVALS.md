@@ -1,6 +1,6 @@
 # 审批及执行权限记录（人工可核实）
 
-> **最新（2026-10-14）：S1–S5 均分别验收、获独立合并授权并合入 main；用户明确批准启动 S6 / Issue #15 开发。** 下方旧阶段授权是历史记录，不替代本次 S6 指令。S6 合并、S7、Release/Tag 及生产变更仍需单独审批。
+> **最新（2026-10-14）：S1–S6 已分别验收、获独立合并授权并合入 main `12ce325`；用户只批准 S7 / Issue #16 的**验收规划与准备**。** 真实 VPS、正式主流程集成/数据迁移、真实发信、S7 PR 合并、Release/Tag 和生产变更仍需另外授权。下方旧阶段是历史授权记录，不能覆盖本次边界。
 
 ## 2026-10-13：V1.1 方案批准，G0 授权
 
@@ -108,3 +108,16 @@
 - **获准**：S6 / Issue #15、ChatGPT 唯一写入负责人，独立分支 `feat/s6-01-recovery-backup` 与 Draft PR；以现有 S1–S5 SQLite/WAL 及 ADR-0002 为基线，开发只读体检、在线一致性备份/校验、仅恢复至不存在新数据库路径、停机人工切换/回滚指南，测试磁盘不足/锁定/长时间断线/Session 失效/429，资源及依赖风险核对。后续以实际最新 SHA 全绿再申请用户阶段验收。
 - **未获准**：合并 S6 PR、S7、真实 VPS 备份/恢复/覆盖运行中主数据库、生产服务或 DB 环境变量修改、真实 Telegram/Bark/ntfy/Web、正式非 TG 新目标注册与历史迁移、Release/Tag/部署。
 - 此记录为用户当前对话原话与紧邻的阶段授权请求的摘要，不冒充 Github 签署的独立 Review；可在 Issue #15、Draft PR 及 CI 核验最新状态。
+
+
+## 2026-10-14：S6-01 已验收/独立合并；S7 / Issue #16 仅获规划准备授权
+
+用户先明确批准 S6-01 限定离线验收，随后另行回复「批准」，针对已验收的 PR #27（HEAD `387ff1f`）Squash 合并 main 及合并后 CI 核验。 [PR #27](https://github.com/Aspeternity/SeekPulse/pull/27) 合并 commit [`12ce325`](https://github.com/Aspeternity/SeekPulse/commit/12ce325f4ab09b3e596398d515ab5e7704d89729)；主分支 [G0 push #38567964267](https://github.com/Aspeternity/SeekPulse/actions/runs/38567964267) **4/4 SUCCESS**，Issue #15 已关闭。S6 的成果仍限离线可靠性测试，未执行真实生产备份/恢复。
+
+**S7 当前用户原话**：「批准」。其紧邻的具体申请是：“**是否批准启动 S7 / Issue #16 的验收规划与准备？真实 VPS 操作、部署和正式发布仍需另行审批，不会因为启动 S7 就自动执行。**” 本批准不等于完整 S7 阶段执行授权，不代表实机测试启动、结果通过或用户已验收。
+
+- **仅获准**：ChatGPT 独立 S7 验收规划准备；基于 `main 12ce325` 和 `docs/s7-01-acceptance-readiness` 创建仅文档 Draft PR，更新验收门槛、已知运行形态差距、时间窗/指标、脱敏证据模板、跨 AI 交接测试规程、GitHub CI 和 Issue #16 的阶段记录。
+- **关键阻断**：现有 `app/main.py` 只启动旧 `FeedPoller`/Telegram Bot，Docker 只安装上游 `requirements.txt`；S3 双源、S4 多渠道 Worker、S5 Web 尚未接入正式进程；没有 Bark/ntfy 新目标正式注册与旧历史安全切换。以上都需要**新的集成开发方案与单独审批**，不能以旧 RSS Bot 连续运行 72 小时冒充 V1.1 全链路验收。
+- **未获准**：真实 VPS 登录、只读实机预检、现场 48–72h 运行、凭据/Session、真实消息、生产镜像/配置/数据库写入或备份/迁移、功能代码和 schema 改造、停机/回滚演练、合并本 Draft PR、最终验收、Tag/Release 或部署。
+- **下一闸门**：文档 Draft PR 的最新 HEAD CI 与规划审阅通过后，先针对上述生产集成阻断单独征求开发授权；真实 VPS 预检与灰度又是后续独立授权。所有未观测状态明确记 `NOT_STARTED`、`BLOCKED` 或 `UNKNOWN`。
+- 这是用户当前会话明确指令的摘要，**不是**用户在 GitHub UI 签署的 Reviewer 审查，不自动改变既有分支合并权限。
