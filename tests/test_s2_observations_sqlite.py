@@ -113,6 +113,27 @@ class DurableObservationContracts(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(len(post.observations), 2)
             self.assertEqual(post.title, "same title")
 
+        # Two sources have observed each post, but one user+target gets exactly
+        # one queued task per post, even after a second concurrent route pass.
+        user = await Database(self.file).ensure_user_profile(
+            101, 1101, None, "A", None, "private",
+        )
+        target = (await Database(self.file).list_targets_by_tg_user(101))[0]
+
+        async def plan(post_id):
+            async with gate:
+                return await self.store.enqueue(
+                    user.id, post_id, [target.id], now=1000,
+                )
+
+        first_route = await asyncio.gather(*(plan(i) for i in range(1, 1001)))
+        second_route = await asyncio.gather(*(plan(i) for i in range(1, 1001)))
+        self.assertEqual(sum(first_route), 1000)
+        self.assertEqual(sum(second_route), 0)
+        tasks = await self.store.list_tasks(user.id)
+        self.assertEqual(len(tasks), 1000)
+        self.assertEqual(len({(t.user_id, t.post_id, t.target_id) for t in tasks}), 1000)
+
     async def test_additive_migration_keeps_legacy_tables_and_history(self):
         db = Database(self.file)
         user = await db.ensure_user_profile(101, 1101, None, "A", None, "private")
