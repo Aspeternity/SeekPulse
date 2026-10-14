@@ -10,6 +10,7 @@ import unittest
 from datetime import datetime, timezone
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from unittest.mock import patch
 
 from app.db import Database
 from app.delivery import CoreStore
@@ -268,10 +269,31 @@ class WebRegistrationContracts(unittest.IsolatedAsyncioTestCase):
         page = await self.client.get("/channels")
         self.assertIn("平板", page.text)
         self.assertNotIn("ntfys://", page.text)
-        enabled = await self.client.post(
+        # A push endpoint must never be enabled without a valid environment
+        # secret, and validation never makes a real HTTP request.
+        missing = await self.client.post(
             f"/channels/{row.id}/state",
             data={"enabled": "1", "_csrf": self.csrf},
         )
+        self.assertEqual(missing.status_code, 422)
+        self.assertFalse(next(t for t in await self.db.list_targets_by_tg_user(
+            1001, include_push=True
+        ) if t.id == row.id).enabled)
+        with patch.dict(os.environ, {
+            "SEEKPULSE_PUSH_NTFY_MAIN": "ntfys://127.0.0.1/safe-test"
+        }):
+            blocked = await self.client.post(
+                f"/channels/{row.id}/state",
+                data={"enabled": "1", "_csrf": self.csrf},
+            )
+            self.assertEqual(blocked.status_code, 422)
+        with patch.dict(os.environ, {
+            "SEEKPULSE_PUSH_NTFY_MAIN": "ntfys://ntfy.sh/safe-test"
+        }):
+            enabled = await self.client.post(
+                f"/channels/{row.id}/state",
+                data={"enabled": "1", "_csrf": self.csrf},
+            )
         self.assertEqual(enabled.status_code, 303)
         self.assertEqual((await self.routes.channel_for(
             self.admin.id, row.id

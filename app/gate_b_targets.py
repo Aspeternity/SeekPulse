@@ -181,6 +181,64 @@ class GateBTargetStore:
                     await db.rollback()
                     raise
 
+    async def set_push_enabled(
+        self, user_id: int, target_id: int, enabled: bool, resolver=None,
+    ) -> bool:
+        """Update only an owned push target; validate secret before activation.
+
+        Lookup, configuration validation and state update share one write
+        transaction so a simultaneous channel edit cannot change the target.
+        """
+        _owner_id(user_id)
+        _owner_id(target_id)
+        if type(enabled) is not bool:
+            raise ValueError("enabled must be a boolean")
+        async with self._lock:
+            async with aiosqlite.connect(self.path, timeout=5.0) as db:
+                await db.execute("PRAGMA foreign_keys=ON")
+                await db.execute("PRAGMA busy_timeout=5000")
+                await db.execute("BEGIN IMMEDIATE")
+                try:
+                    await self._require_schema(db)
+                    row = await (await db.execute(
+                        """SELECT c.channel,c.secret_ref FROM targets t
+                           JOIN s4_target_channels c ON c.target_id=t.id
+                           WHERE t.id=? AND t.user_id=? AND t.chat_id IS NULL
+                             AND t.chat_type='push'""",
+                        (target_id, user_id),
+                    )).fetchone()
+                    if row is None:
+                        raise ValueError("unknown or invalid push target")
+                    if enabled:
+                        channel, secret_ref = row
+                        if (channel not in ("bark", "ntfy")
+                                or not isinstance(secret_ref, str)
+                                or not _REF.fullmatch(secret_ref)
+                                or not callable(resolver)):
+                            raise ValueError("push target configuration unavailable")
+                        from app.notifiers import AppriseNotifier
+
+                        try:
+                            AppriseNotifier.validated_url(
+                                Channel(channel), resolver(secret_ref)
+                            )
+                        except ValueError as exc:
+                            raise ValueError("invalid protected push config") from exc
+                    await db.execute(
+                        """UPDATE targets SET enabled=?,updated_at=?
+                           WHERE id=? AND user_id=?""",
+                        (
+                            int(enabled),
+                            datetime.now(timezone.utc).isoformat(),
+                            target_id, user_id,
+                        ),
+                    )
+                    await db.commit()
+                    return True
+                except BaseException:
+                    await db.rollback()
+                    raise
+
     async def delete_unused(self, user_id: int, target_id: int) -> bool:
         """Permanently delete only a disabled push target with ZERO task history."""
         _owner_id(user_id)

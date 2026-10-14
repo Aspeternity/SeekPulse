@@ -24,7 +24,7 @@ from app.source_adapters import RSSSource, TelegramSource
 from app.source_state import SourceStore
 
 try:
-    from app.v11_main import GateBComponents, main, push_secret, supervise
+    from app.v11_main import GateBComponents, _run_live, main, push_secret, supervise
 except ModuleNotFoundError:
     GateBComponents = None
 
@@ -129,6 +129,33 @@ class RuntimeLifecycleContracts(unittest.IsolatedAsyncioTestCase):
         with patch.dict(os.environ, {"SEEKPULSE_V11_ENABLE": ""}, clear=True):
             with self.assertRaisesRegex(RuntimeError, "not_explicitly_enabled"):
                 main(["--run"])
+
+    async def test_telegram_session_has_its_own_lock_across_db_paths(self):
+        with TemporaryDirectory() as td:
+            session = Path(td) / "user.session"
+            session.write_bytes(b"offline-mock-session")
+            database = Path(td) / "secondary.sqlite"
+            settings = SimpleNamespace(database_path=database)
+            with (database_owner_lock(session),
+                  patch.dict(os.environ, {"SEEKPULSE_TG_SESSION": str(session)}),
+                  patch("app.v11_main.build_components",
+                        side_effect=AssertionError("must not build or send"))):
+                with self.assertRaisesRegex(RuntimeError, "instance_already_running"):
+                    await _run_live(settings)
+            with database_owner_lock(database):
+                pass
+
+    async def test_noncanonical_or_missing_session_file_is_denied(self):
+        with TemporaryDirectory() as td:
+            raw = Path(td) / "tg"
+            raw.write_bytes(b"offline-session")
+            settings = SimpleNamespace(database_path=Path(td) / "bot.sqlite")
+            with patch.dict(os.environ, {"SEEKPULSE_TG_SESSION": str(raw)}):
+                with self.assertRaisesRegex(RuntimeError, "session_file_invalid"):
+                    await _run_live(settings)
+            with patch.dict(os.environ, {"SEEKPULSE_TG_SESSION": str(raw) + ".session"}):
+                with self.assertRaisesRegex(RuntimeError, "session_file_invalid"):
+                    await _run_live(settings)
 
     async def test_push_resolver_never_reads_bot_token(self):
         with patch.dict(os.environ, {

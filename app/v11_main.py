@@ -12,7 +12,7 @@ import asyncio
 import os
 import re
 import time
-from contextlib import suppress
+from contextlib import ExitStack, suppress
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -42,6 +42,20 @@ def push_secret(reference: str) -> str | None:
     if not isinstance(reference, str) or not _REF.fullmatch(reference):
         return None
     return os.getenv("SEEKPULSE_PUSH_" + reference)
+
+
+def _telegram_session_lock_path() -> Path | None:
+    """Lock the actual Telethon SQLite file, even across different DB paths."""
+    raw = os.getenv("SEEKPULSE_TG_SESSION")
+    if not raw:
+        return None
+    # Telethon appends .session when omitted. Require the explicit real name
+    # so alternate spellings cannot acquire distinct lock-file identities.
+    path = Path(raw)
+    if (not raw.endswith(".session") or path.is_symlink()
+            or not path.is_file()):
+        raise RuntimeError("telegram_session_file_invalid")
+    return path
 
 
 @dataclass(frozen=True, slots=True)
@@ -154,7 +168,7 @@ async def build_components(settings: Settings) -> GateBComponents:
     if any((api_id, api_hash, session)):
         if (not all((api_id, api_hash, session))
                 or not api_id.isascii() or not api_id.isdecimal()
-                or not Path(session).is_file()):
+                or _telegram_session_lock_path() is None):
             raise RuntimeError("telegram_session_configuration_incomplete")
         from telethon import TelegramClient
 
@@ -195,7 +209,11 @@ async def build_components(settings: Settings) -> GateBComponents:
 
 
 async def _run_live(settings: Settings) -> None:
-    with database_owner_lock(settings.database_path):
+    with ExitStack() as locks:
+        locks.enter_context(database_owner_lock(settings.database_path))
+        session = _telegram_session_lock_path()
+        if session is not None:
+            locks.enter_context(database_owner_lock(session))
         components = await build_components(settings)
         await supervise(components, asyncio.Event())
 

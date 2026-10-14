@@ -306,6 +306,16 @@ class WebService:
 
     async def update_target(self, target_id: int, enabled: bool) -> bool:
         owner = await self._owner()
+        async with aiosqlite.connect(self.path) as db:
+            row = await (await db.execute(
+                "SELECT chat_id FROM targets WHERE id=? AND user_id=?",
+                (target_id, owner.user_id),
+            )).fetchone()
+        if row is not None and row[0] is None:
+            return await self.push_targets.set_push_enabled(
+                owner.user_id, target_id, enabled,
+                resolver=lambda reference: os.getenv("SEEKPULSE_PUSH_" + reference),
+            )
         return await self.db.set_target_enabled(owner.user_id, target_id, enabled)
 
     async def set_source(self, source: str, enabled: bool) -> None:

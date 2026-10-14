@@ -8,8 +8,8 @@ B01：app.main 仍只启动旧 FeedPoller 和 Telegram Bot；S3 双来源、S4 W
 
 ## 决定
 
-1. **旧入口保留默认**：Dockerfile、Compose、requirements.txt 不改变；app.main 继续旧流程。新 app.v11_main 作为 **显式启用**的 opt-in 单 asyncio 进程入口。新旧 Python 版本均使用相同的 Linux flock 运行互斥锁；但无法控制尚未升级、未实现锁的旧镜像，生产切换前必须人工确认旧实例已停止并核实 Session 独占。
-2. **版本化目标身份迁移**：仅在显式 opt-in V1.1 数据初始化路径，使用 SQLite 单事务安全重建 targets.chat_id 为 nullable，保存原 id/user/chat_id、索引与 S2/S4 外键；chat_id NULL 的行必须 chat_type='push'。s7_schema_meta 记录 schema 版本；PRAGMA foreign_key_check 和 rollback 为强制条件。新 push 目标没有 Telegram chat_id，新建时 disabled、在同一事务内绑定 Bark/ntfy 及大写 safe secret_ref。正式数据库迁移须另获批准、在停止旧服务后从 S6 一致性备份中具备可回滚状态。
+1. **旧入口保留默认**：Dockerfile、Compose、requirements.txt 不改变；app.main 继续旧流程。新 app.v11_main 作为 **显式启用**的 opt-in 单 asyncio 进程入口。新旧 Python 版本均使用相同的 Linux flock 数据库运行互斥锁，V1.1 还对规范化的现有 .session 文件获取第二把锁（不同数据库路径亦拒绝共享 Session）；但无法控制尚未升级、未实现锁的旧镜像，生产切换前必须人工确认旧实例已停止并核实 Session 独占。
+2. **版本化目标身份迁移**：仅在显式 opt-in V1.1 数据初始化路径，使用 SQLite 单事务安全重建 targets.chat_id 为 nullable，保存原 id/user/chat_id、索引与 S2/S4 外键；chat_id NULL 的行必须 chat_type='push'。s7_schema_meta 记录 schema 版本；PRAGMA foreign_key_check 和 rollback 为强制条件。新 push 目标没有 Telegram chat_id，新建时 disabled、在同一事务内绑定 Bark/ntfy 及大写 safe secret_ref；管理员启用时先在同一写事务内验证受保护配置存在并指向官方 HTTPS 目标，不能误启缺失或未验证的目标。正式数据库迁移须另获批准、在停止旧服务后从 S6 一致性备份中具备可回滚状态。
 3. **秘钥和通道隔离**：现有 Web 管理员仅可注册自己名下 push 目标，禁止任意 URL、跨用户 ID、冒充 Telegram ID；Web/S4 数据库仅存 secret_ref，不保存通知 URL/Token/Key。真实受保护参数仅从 SEEKPULSE_PUSH_<REF> 环境名读取，受现有 AppriseNotifier 的 HTTPS 官方主机与单设备/主题约束。旧 Bot 列表、旧 Poller 和 TG 目标配额只看 chat_id 非空；S4 旧试验性“Telegram chat_id 绑 Bark”在 V1.1 新入口禁止进入 live 模式，人工重新配置，不能偷发。
 4. **显式 Prime 与 durable enqueue**：新 gate_b_dispatch_state 中记录 source_observations.id 高水位。用户将来明确批准生产切换、先确认旧 Poller 停机后执行 Prime；在 Prime 之前新 runner **必须拒绝启动**。Prime 只记录历史观测高水位，不向已存在帖子补发通知。新事件按有界行数逐条读取，按已初始化/启用用户与 S4 当前规则持久 enqueue 进 S2，只有**完成该事件所有用户入队后**推进游标；进程崩溃可重新扫描，S2 任务唯一键去重。失败时 fail closed 不前进游标。
 5. **年龄与恢复**：超过 30 分钟的来源观察只审计不补推；RSS 发帖时间不可靠/缺失，不可把首次观察称为论坛发帖时间。TG 历史补查需要严格按 message.date 防旧帖在长离线恢复时被当成新帖；若平台时间不可核实则安全跳过并记录来源缺口。S2 既有 lease/recover/RetryAfter、S3 独立退避、S4 每目标限流继续复用，不再造第二套任务表。
