@@ -34,4 +34,4 @@ Issue/PR 必须写明：阶段、任务唯一编号、负责人、已完成、�
 
 ## 6. G0 后的跨 AI 验收
 
-G0 至少验证报告工具能安全处理缺失远端和工作区未提交情况；S7 完整跨 AI 验收需由无旧对话上下文的第二种 AI 独立判断 SHA/PR/CI/验收/审批和唯一下一动作。
+G0 至少验证报告工具能安全处理缺失远端和工作区未提交情况；S7 完整跨 AI 验收需由无旧对话上下文的第二种 AI 独立判断 SHA/PR/CI/验收/审批和唯一下一动作。**S7 规划材料**：[`docs/research/S7-02-independent-ai-handoff.md`](research/S7-02-independent-ai-handoff.md)；该规程尚未实际运行，不能声称跨 AI 验收通过。

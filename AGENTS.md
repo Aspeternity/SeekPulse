@@ -4,9 +4,9 @@
 
 ## 0. 当前授权边界（最高优先级）
 
-- 最新可核实的授权记录：[`docs/APPROVALS.md` / `docs/APPROVALS.json`](docs/APPROVALS.md) 与 GitHub Issues #8/#9 的用户批准上下文。**截至 2026-10-14：S1–S5（PR #21–#26）已分别验收、单独获批合并；main 9fe66d9，合并后 G0 CI 4/4 PASS。用户明确批准 S6 / Issue #15 独立开发。S6 合并、S7、Release/Tag、生产部署均未授权。**
+- 最新可核实的授权记录：[`docs/APPROVALS.md` / `docs/APPROVALS.json`](docs/APPROVALS.md) 与 GitHub Issues #8/#9 的用户批准上下文。**截至 2026-10-14：S1–S6（PR #21–#27）已各自完成阶段验收并获独立合并批准；main 12ce325，合并后 G0 CI #38567964267 为 4/4 PASS。用户仅批准 S7 / Issue #16 的验收规划与准备；真实 VPS、生产集成改造、S7 现场执行、合并 S7 PR、Release/Tag 和生产部署均未授权。**
 - **G0 授权**：Fork / 新建项目的工程建档、文档、Issue/PR 模板、协作规范、基础 CI、非业务功能的验证脚手架、建档专用 Draft PR。
-- **目前授权**：S6 / Issue #15，开展 SQLite WAL 一致性备份/核验/安全恢复至新的 DB 路径、备份和迁移回滚规程、磁盘不足/数据库占锁/Telegram Session 失效/长期断网/429 的离线故障注入和低风险硬化。独立分支、Draft PR、最新 SHA 的完整 CI，完工申请用户 S6-01 阶段验收。**未授权**：合并 S6、S7、自动原地覆盖运行中的数据库、生产 Web/采集/通知上线、真实 VPS 恢复/部署、Release/Tag 或正式迁移。
+- **目前授权**：S7 / Issue #16 **仅验收规划和准备**，负责人 ChatGPT，编写 48–72h 真实验收指标、单实例接入/历史迁移前置阻断、匿名观测模板与第二 AI 无旧对话接续规程；使用独立文档分支与 Draft PR，最新 HEAD 的 CI 必须验证。**未授权**：开始真实 VPS 访问或观测、部署/启用 S3/S4/S5、修复生产主入口或变更 DB/目标 schema、发送真实通知、触碰 Telegram Session、合并此 PR、S7 最终验收或 Release/Tag。详见 Issue #16 和 `docs/research/S7-01-vps-final-acceptance-plan.md`。
 - **明确禁止擅自执行**：合并 `main`、创建 Release / Tag 发布、修改生产环境、强制推送或覆盖既有工作。
 - 遇到授权边界不清、关键资料冲突或无法验证，先停止可能越权的操作并报告，不得推定默认获批。
 

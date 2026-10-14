@@ -1,10 +1,12 @@
-# SeekPulse — S6 / Issue #15 当前交接索引
+# SeekPulse — S7 / Issue #16 规划阶段交接快照
 
-> 2026-10-14 快照。审批/PR/HEAD/CI 以实时 GitHub 和用户原话为准，本文件仅供新对话接续。
+> 截至 2026-10-14：本文件只是检索索引，不取代用户授权、实时 GitHub、准确 SHA/CI 或实机证据。
 
-- S1–S5 已分别用户阶段验收、独立获批合并：PR #21–#26。当前开发基线 main `9fe66d9db8330ac84ae14718eb413634560420d1`，合并后 G0 push [#38558377125](https://github.com/Aspeternity/SeekPulse/actions/runs/38558377125) 4/4 PASS；Issue #14 已关闭。
-- 最新用户针对“是否批准启动 S6 / Issue #15 开发？”明确回复「批准」，**只授权 S6 的开发与离线模拟 CI**。当前 Issue #15、负责人 ChatGPT、分支 `feat/s6-01-recovery-backup`、独立 Draft PR。S6 用户阶段验收及合并均需新的独立批准。
-- S6 主要新增 `app/maintenance.py` 离线维护 CLI：SQLite WAL 在线备份 API、私有快照目录、SHA-256/完整性/FK/已知 schema 版本验证、只恢复到新 DB 路径、敏感信息不输出；故障注入测试覆盖 ENOSPC/SQLITE_BUSY/长断网/Session 失效/429/旧租约失效。ADR-0006 限制禁止覆盖现役 DB、修改生产配置与真实迁移。
-- S1–S5 原主运行代码、`app/main.py`、旧 FeedPoller、Compose、Dockerfile、已锁定 requirements.txt 不修改。S4 非 TG 新目标正式注册和旧历史迁移仍未授权。
-- S0 研究 PR #17–#20 依旧 Draft、未合并。S6 未进行真实 VPS 演练；S7、Tag/Release、生产部署及真正消息通知均未授权。
-- 下一步：最新 HEAD 的 G0/S1/S6 全量 Python 3.11/3.12 CI；记录失败/修复并重新跑，再向用户**申请 S6-01 离线阶段验收**；通过后再单独申请合并。不得自行合并 main。
+- **仓库与基线：** https://github.com/Aspeternity/SeekPulse。S1–S6 已分别离线阶段验收、独立获得合并授权并入 main：PR #21–#27。S6 squash 后 `main`=`12ce325f4ab09b3e596398d515ab5e7704d89729`，其 G0 push [#38567964267](https://github.com/Aspeternity/SeekPulse/actions/runs/38567964267) **4/4 PASS**，Issue #15 closed。新会话应再次实时确认。
+- **最新用户批准**：「批准」，紧邻问题是“是否批准启动 S7 / Issue #16 的验收规划与准备？真实 VPS 操作、部署和正式发布仍需另行审批”。**只准做规划、只读代码审查、脱敏模板、跨 AI 交接规程、独立文档 Draft PR + CI。**不准启动 S7 真实运行、触碰 VPS/Session/DB、合并或发布。
+- **当前任务**：Issue [#16](https://github.com/Aspeternity/SeekPulse/issues/16)，唯一负责者 ChatGPT（文档规划），工作分支 `docs/s7-01-acceptance-readiness`，本次变更只应为治理和 S7 验收文档；PR HEAD 与 CI 必须重新在 GitHub 精确核验。S0 研究 PR #17–#20 仍 Draft/未合并。
+- **BLOCKER B01**：现有 `app/main.py` 只启动旧 RSS `FeedPoller` 和 Bot，Dockerfile 只安装旧 `requirements.txt`；S3 双来源、S4 多渠道 Worker、S5 Web 尚未集成进正式入口。**不能**把运行旧 Bot 48–72h 声称为 V1.1 全功能验收。
+- **BLOCKER B02/B03**：Bark/ntfy 非 TG 新目标的正式身份注册/迁移和安全的旧 FeedPoller→S2/S3/S4 切换尚无独立批准的可部署实现；重复发送、单 TG Session 所有权和历史基线需单独审查和批准。
+- **BLOCKER B04**：真实 VPS/账号、真正 Telegram/Bark/ntfy 发送、SQLite/WAL 备份/切换、48–72h 计时和资源/延迟测试尚未授权，**现场验收 NOT_STARTED**。
+- **规划交付：** `docs/research/S7-01-vps-final-acceptance-plan.md`（Gate A–G、48–72h 与指标）、`docs/research/S7-02-independent-ai-handoff.md`（无旧对话 AI B）、`docs/research/S7-03-observation-template.md`（空白、脱敏、不虚构数据）。
+- **唯一下一步**：完成本 docs-only Draft PR CI 并申请用户确认 S7 规划是否可作为后续验收依据；真实集成缺口需**另行批准设计/开发**，VPS 只读预检、灰度真发信、连续观测、故障恢复/部署、最终验收/Release 也各自另行授权。禁止擅自合并 main。

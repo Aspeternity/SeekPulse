@@ -204,6 +204,29 @@
       "user_instruction": "批准",
       "context": "Direct reply to explicit request '是否批准启动 S6 / Issue #15 开发？', following distinct S5-01 offline acceptance and PR #26 Squash merge 9fe66d9 with main push G0 #38558377125 4/4 PASS.",
       "source": "Current ChatGPT user message and immediate assistant approval request; cross-check Issue #15"
+    },
+    {
+      "event_id": "APPROVAL-2026-10-14-S7-PLANNING-ONLY",
+      "date": "2026-10-14",
+      "approved_plan": "SeekPulse V1.1",
+      "authorization_kind": "stage_planning_and_preparation_only",
+      "accepted_stage": "S6-01",
+      "authorized_stage": "S7-planning",
+      "issue": 16,
+      "authorized_actions": [
+        "Read-only GitHub and source audit of S7 readiness and actual app.main/Docker startup gaps",
+        "Write S7 48–72h acceptance gates, metric definitions, redacted observation template and independent AI handoff drill",
+        "Create isolated docs/s7-01-acceptance-readiness branch, docs-only Draft PR and CI, without merge"
+      ],
+      "not_authorized": [
+        "access any real VPS, use Telegram Session, Bot Token, Bark/ntfy secrets or send any real message",
+        "implement production integration, alter runtime or target identity/schema, do a DB cutover or restore",
+        "perform 48–72h VPS testing, live backup/fault injection, deploy or start a service",
+        "merge S7 Draft PR, authorize final acceptance, Release, Tag or production deployment"
+      ],
+      "user_instruction": "批准",
+      "context": "Direct reply to '是否批准启动 S7 / Issue #16 的验收规划与准备？真实 VPS 操作、部署和正式发布仍需另行审批，不会因为启动 S7 就自动执行。' after S6 user-accepted and separately authorized PR #27 squash merge 12ce325 with main G0 push #38567964267 4/4 PASS.",
+      "source": "Current ChatGPT user reply and immediately preceding approval request; cross-check Issue #16"
     }
   ]
 }
