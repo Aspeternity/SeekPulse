@@ -1,0 +1,131 @@
+name: S7 V1.1 Docker Offline Delivery
+
+on:
+  pull_request:
+    paths:
+      - 'Dockerfile.v11'
+      - 'compose.v11.yaml'
+      - '.dockerignore'
+      - '.env.v11.example'
+      - 'docs/decisions/ADR-0008-v11-docker-delivery.md'
+      - 'docs/deployment/V1.1-docker-offline.md'
+      - 'tests/test_s7_docker_contract.py'
+      - '.github/workflows/s7-v11-docker-offline.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: s7-docker-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  regression:
+    name: Docker contracts + full offline regressions / Python ${{ matrix.python-version }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.11', '3.12']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '${{ matrix.python-version }}'
+          cache: pip
+      - name: Install existing S1-S5 pinned dependency set
+        run: python -m pip install -r requirements-s5.txt
+      - name: Packaging contract + full offline S1-S6 Gate B regression
+        run: |
+          python -m unittest discover -s tests -p 'test_s7_docker_contract.py' -v
+          python -m unittest discover -s tests -v
+          python -m pip check
+      - name: Ruff + compileall
+        run: |
+          python -m pip install ruff==0.13.3
+          ruff check tests/test_s7_docker_contract.py
+          python -m compileall -q app scripts tests
+
+  image-smoke:
+    name: Build V1.1 local image + inspect safe Compose (never push)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build ephemeral Docker image (no login, no push)
+        run: docker build --file Dockerfile.v11 --tag "seekpulse-v11-offline:${{ github.sha }}" .
+      - name: Verify image nonroot, deps, Web assets and explicit opt-in
+        shell: bash
+        run: |
+          set -euo pipefail
+          image="seekpulse-v11-offline:${{ github.sha }}"
+          docker run --rm --entrypoint python "$image" -m pip check
+          docker run --rm --entrypoint python "$image" -c '
+          import os
+          from pathlib import Path
+          import apprise, fastapi, jinja2, telethon, uvicorn
+          import app.v11_main
+          assert os.getuid() == 10001
+          assert os.getgid() == 10001
+          assert Path("/app/app/web_ui/templates/login.html").is_file()
+          assert Path("/app/app/web_ui/static").is_dir()
+          assert Path("/app/data").is_dir()
+          assert not Path("/app/.env").exists()
+          assert not Path("/app/data/bot.db").exists()
+          '
+          docker run --rm "$image" --help >/dev/null
+          # Without an explicit gate V1.1 must not initialize a database
+          # or attempt a Bot/Session/notification connection.
+          if docker run --rm "$image" >"${RUNNER_TEMP}/v11-gate-denied.log" 2>&1; then
+            echo "V1.1 image unexpectedly started without opt-in"
+            exit 1
+          fi
+          grep -q "v11_not_explicitly_enabled" "${RUNNER_TEMP}/v11-gate-denied.log"
+      - name: Parse Portainer and Synology Linux Compose using fake env only
+        shell: bash
+        run: |
+          set -euo pipefail
+          export SEEKPULSE_IMAGE="seekpulse-v11-offline:${{ github.sha }}"
+          export SEEKPULSE_DATA_DIR="${RUNNER_TEMP}/seekpulse-v11-data"
+          export BOT_TOKEN="offline_dummy_no_network"
+          export ALLOWED_USER_IDS="123456"
+          export SEEKPULSE_ADMIN_TG_USER_ID="123456"
+          export SEEKPULSE_WEB_PASSWORD_HASH="offline_placeholder_not_used"
+          mkdir -p "$SEEKPULSE_DATA_DIR"
+          docker compose -f compose.v11.yaml config --quiet
+          docker compose -f compose.v11.yaml config --format json >"${RUNNER_TEMP}/v11-compose.json"
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          definition = json.loads(
+              (Path(os.environ["RUNNER_TEMP"]) / "v11-compose.json").read_text()
+          )
+          services = definition["services"]
+          assert list(services) == ["seekpulse"], services.keys()
+          service = services["seekpulse"]
+          assert "build" not in service and "ports" not in service
+          assert service["network_mode"] == "host"
+          assert service["read_only"] is True
+          assert service["privileged"] is False if "privileged" in service else True
+          assert service["user"] == "10001:10001"
+          assert service["restart"] == "no"
+          assert service["command"] == ["--run"]
+          assert service["environment"]["SEEKPULSE_V11_ENABLE"] == "1"
+          assert service["environment"]["DATABASE_PATH"] == "/app/data/bot.db"
+          assert service["volumes"][0]["type"] == "bind"
+          assert service["volumes"][0]["target"] == "/app/data"
+          # Compose v2 may normalize away an explicitly false bind flag.
+          # Verify the source preserves the safety intent and the resolved
+          # configuration never requests creation of an absent host path.
+          assert "create_host_path: false" in Path("compose.v11.yaml").read_text()
+          assert service["volumes"][0].get("bind", {}).get(
+              "create_host_path", False
+          ) is False
+          assert "ALL" in service["cap_drop"]
+          assert "no-new-privileges:true" in service["security_opt"]
+          assert not service.get("devices")
+          PY
