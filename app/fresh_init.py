@@ -140,9 +140,21 @@ async def initialize_empty_database(path: Path) -> int:
                 raise RuntimeError("fresh_init_nonempty_watermark")
             check_prepared_database(stage)
             report = inspect_database(stage)
+            # S6's deliberately redacted report omits the initialized bit.
+            # Check only our fresh staging file, not any existing user DB.
+            with sqlite3.connect(stage.as_uri() + "?mode=ro", uri=True) as db:
+                initial_states = dict(db.execute(
+                    "SELECT source, initialized FROM s3_source_status"
+                ).fetchall())
+                observations = db.execute(
+                    "SELECT COUNT(*) FROM source_observations"
+                ).fetchone()[0]
+                targets = db.execute(
+                    "SELECT COUNT(*) FROM targets"
+                ).fetchone()[0]
             if (report["users"] != 0 or any(report["tasks"].values())
-                    or report["sources"]["rss"]["initialized"]
-                    or report["sources"]["telegram"]["initialized"]):
+                    or initial_states != {"rss": 0, "telegram": 0}
+                    or observations != 0 or targets != 0):
                 raise RuntimeError("fresh_init_nonempty_staging_database")
             if any(os.path.lexists(str(stage) + s) for s in _SIDECARS[1:]):
                 raise RuntimeError("fresh_init_uncheckpointed_staging_database")
