@@ -199,9 +199,11 @@ class UpstreamPollerContracts(unittest.IsolatedAsyncioTestCase):
         user = await self.user(101, 1001)
         await self.keyword(101, "dmit")
         self.bot.send_message.side_effect = RuntimeError("simulated network error")
-        await self.poll([entry("retry", "DMIT available")])
-        self.assertFalse(await self.db.is_delivered(user.id, "retry"))
-        await self.poll([entry("retry", "DMIT available")])
+        with self.assertLogs("app.poller", level="ERROR") as failures:
+            await self.poll([entry("retry", "DMIT available")])
+            self.assertFalse(await self.db.is_delivered(user.id, "retry"))
+            await self.poll([entry("retry", "DMIT available")])
+        self.assertEqual(len(failures.output), 2)
         self.assertEqual(self.bot.send_message.await_count, 2)
 
     async def test_partial_target_failure_is_documented_legacy_limitation(self):
@@ -213,7 +215,9 @@ class UpstreamPollerContracts(unittest.IsolatedAsyncioTestCase):
             101, -1005000, chat_title="Channel", chat_type="channel"
         )
         self.bot.send_message.side_effect = [None, RuntimeError("target 2 failed")]
-        await self.poll([entry("partial", "DMIT partial")])
+        with self.assertLogs("app.poller", level="ERROR") as failures:
+            await self.poll([entry("partial", "DMIT partial")])
+        self.assertEqual(len(failures.output), 1)
         self.assertTrue(await self.db.is_delivered(user.id, "partial"))
         await self.poll([entry("partial", "DMIT partial")])
         self.assertEqual(self.bot.send_message.await_count, 2)
