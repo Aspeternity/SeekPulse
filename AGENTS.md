@@ -4,10 +4,9 @@
 
 ## 0. 当前授权边界（最高优先级）
 
-- **最新授权摘要（2026-10-15）**：实时 GitHub Issues/PR、当前对话的用户明确批准、完整 CI 和最新 SHA 优先于本静态摘要。S1–S6、S7-01、Gate B、Docker-01（#32/PR #33）、Docker-02（#34/PR #35）均已分别离线验收和独立合并。main `d39761f47aa44ebc5a521a79338a35f166f9edf0`，新 [G0 #38623045093](https://github.com/Aspeternity/SeekPulse/actions/runs/38623045093) 4/4 PASS。用户已取消单独 VPS 预检 #31，未来 PVE/Portainer 或群晖 Docker 只在另行授权后选择。
-- **当前仅获离线开发授权**：Docker-03 / [Issue #36](https://github.com/Aspeternity/SeekPulse/issues/36)，唯一写入负责人 ChatGPT，分支 `feat/s7-docker-03-image-release-readiness` / [Draft PR #37](https://github.com/Aspeternity/SeekPulse/pull/37)。用户仅批准本地 AMD64/ARM64 OCI 构建验证、镜像安全/版本/Digest 策略、Portainer/群晖说明和 GitHub CI；**不包括用户阶段验收、PR 合并、GHCR push/Tag/Release、访问 NAS/PVE/Session/Token/生产 DB、真实通知或 S7 实机执行**。详见 #36 和审批上下文。
-- **G0 授权**：Fork / 新建项目的工程建档、文档、Issue/PR 模板、协作规范、基础 CI、非业务功能的验证脚手架、建档专用 Draft PR。
-- **目前授权**：Gate B / Issue #29（父 S7 Issue #16）的 **B01 单实例 opt-in 运行入口、B02 正式 Bark/ntfy 目标独立身份/版本化迁移、B03 原旧链安全切换** 的设计与离线开发。唯一写入负责人 ChatGPT；分支 `feat/gate-b-01-v11-runtime-cutover`、Draft PR #30；精确 HEAD CI、用户离线阶段验收与独立合并审批。保留默认旧 Docker/Compose 启动。**未授权**：Gate B PR 合并、真实数据库/服务器操作、输入或使用真实 Session/Token、真实通知、部署、S7 现场执行与最终验收、Tag/Release。详见 Issue #29 与 ADR-0007。
+- **最新仓库事实（2026-10-15）**：S1–S6、S7-01、Gate B、Docker-01/02/03 已分别离线验收并获得单独合并授权；最新 main `1d24b1564983465de340b3e30a758f52f45062ec`，合并后 [G0 #38631128468](https://github.com/Aspeternity/SeekPulse/actions/runs/38631128468) **4/4 PASS**，PR #33/#35/#37 已合并；最新可核实的用户原话、Issue/PR/CI 精确 SHA 优先于本静态快照。
+- **本轮最新独立授权**：Docker-04 [Issue #38](https://github.com/Aspeternity/SeekPulse/issues/38)，ChatGPT 唯一写入，分支 `feat/s7-docker-04-security-review` / [Draft PR #39](https://github.com/Aspeternity/SeekPulse/pull/39)，仅开发并在 GitHub 临时 runner 用公开官方镜像与漏洞数据库核验**基础镜像 Digest 固定、AMD64/ARM64 OS/Python CVE、CycloneDX SBOM 与供应链安全**。**未获本阶段人工验收、PR 合并、GHCR 正式发布、Tag/Release、访问 NAS/PVE/Portainer/群晖或真实 DB/Session/Token/通知授权**。详见 #38、ADR-0011 与用户本次“批准”的紧邻申请。
+- **历史阶段权限**：G0 工程建档、Gate B 集成曾分别获单独开发/验收/合并许可，但原“目前授权 Gate B”只是历史，**不能以旧许可覆盖现有 Docker-04 限定范围**。禁止默认合并/发布。用户已取消专门 VPS 预检 #31；未来在已有 PVE/Portainer 或群晖上的真实验收也必须另行批准。
 - **明确禁止擅自执行**：合并 `main`、创建 Release / Tag 发布、修改生产环境、强制推送或覆盖既有工作。
 - 遇到授权边界不清、关键资料冲突或无法验证，先停止可能越权的操作并报告，不得推定默认获批。
 

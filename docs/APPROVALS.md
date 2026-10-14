@@ -1,6 +1,6 @@
 # 审批及执行权限记录（人工可核实）
 
-> **最新（2026-10-15）**：Docker-01 #32/PR #33、Docker-02 #34/PR #35 已分别离线验收并经独立授权合并；main `d39761f`，新 G0 #38623045093 4/4 PASS。用户目前**仅批准 Docker-03 / Issue #36 的双架构 GHCR 镜像发布准备、版本/安全/Digest 策略、Portainer/群晖说明的离线开发与 CI**（Draft PR #37），未批准该 PR 阶段验收/合并、GHCR 发布、Tag/Release、NAS/PVE 部署或真实通知。下方旧审批仅为历史记录，最新 Issue/PR/CI/用户原话优先。
+> **最新（2026-10-15）**：用户已分别批准 Docker-01/02/03 离线验收与独立合并（PR #33/#35/#37），最新 main `1d24b156`，新 G0 #38631128468 **4/4 PASS**。用户最新仅批准 Docker-04 / #38 / Draft PR #39 的**基础镜像 Digest 固定、OS/Python CVE/双架构 SBOM/供应链安全审查及 GitHub 临时 runner 离线开发**；尚未授权 Docker-04 阶段验收、PR 合并、GHCR 镜像发布/Tag、真实 NAS/PVE/Portainer/群晖部署、生产凭据/数据库/通知。后续仍以明确用户指令、最新 Issues/PR/CI 为准。
 
 ## 2026-10-13：V1.1 方案批准，G0 授权
 
@@ -143,3 +143,11 @@ S7-01 文档规划经用户回复「批准」验收后，用户另行回复「�
 4. 用户明确已有 NAS/群晖 Docker 和 PVE/Portainer，**无须专门 VPS 预检**；原 [Issue #31](https://github.com/Aspeternity/SeekPulse/issues/31) 已关闭为 `not_planned`。取消 VPS 体检不等于允许连接或更改家庭网络/容器。
 
 以上是当前聊天用户原话及紧邻审批问题的审计摘要，**不等于独立 GitHub Reviewer 签名**。跨会话恢复请先核对 [Issue #36](https://github.com/Aspeternity/SeekPulse/issues/36)、[PR #37](https://github.com/Aspeternity/SeekPulse/pull/37)、父 [#16](https://github.com/Aspeternity/SeekPulse/issues/16) 的最新 SHA、CI、阶段验收和后续授权。
+
+
+## 2026-10-15 Docker-03 完成；Docker-04 仅获发布前离线安全审查开发许可
+
+- Docker-03 [Issue #36](https://github.com/Aspeternity/SeekPulse/issues/36) 和 [PR #37](https://github.com/Aspeternity/SeekPulse/pull/37) 的完整离线 CI 在 HEAD `206150741423d03bbc5ae718a18e12e5abf82a26` 通过后，用户先另答“批准”仅确认 Docker-03 离线范围**阶段验收**；又在明确申请 PR #37 转 Ready/Squash 合并时单独回答“批准”。新 `main 1d24b1564983465de340b3e30a758f52f45062ec`、[G0 #38631128468](https://github.com/Aspeternity/SeekPulse/actions/runs/38631128468) **4/4 PASS**，子 #36 CLOSED。权限不包含任何 GHCR 发布、真实 Docker 环境或通知。
+- **Docker-04 本轮最新授权原话：“批准”。** 紧邻申请是“是否批准启动 Docker-04 发布前安全审查与离线开发”，明确包含**基础镜像 Digest 固定、OS/Python 依赖漏洞扫描、SBOM 和供应链安全检查**，并写明“这一步仍不推送 GHCR 镜像，也不部署 NAS/PVE。真正发布时再单独申请授权”。因此仅授权 [Issue #38](https://github.com/Aspeternity/SeekPulse/issues/38)，ChatGPT 唯一写入，`feat/s7-docker-04-security-review`、[Draft PR #39](https://github.com/Aspeternity/SeekPulse/pull/39) 的**临时 runner 离线代码、公开镜像/公开漏洞库审计和 CI**。扫描执行成功**不自动证明安全可发布**；若有严重漏洞/扫描不完整应记录为 BLOCKED/UNKNOWN，拒绝隐瞒。
+- **本次未获授权** Docker-04 人工阶段验收、PR 合并、正式 GHCR Login/Push/Tag/Release、访问用户 NAS/PVE/Portainer/群晖、读取旧 SQLite/备份/Session/Token、真实 Telegram/Bark/ntfy 通知、真实回滚/48–72h/Gate D–G。
+- 基础镜像只读预检参考：[GH Actions #38632803851](https://github.com/Aspeternity/SeekPulse/actions/runs/38632803851)，核验 python:3.11-slim 官方多架构索引 digest；该 digest 是**基础镜像 index digest**，并非未来 SeekPulse GHCR 已发布镜像的远端 digest。阶段成果应以 PR #39 最新 HEAD 和 CI 实际结果核对。此摘要不是 GitHub 独立 Reviewer 签名。
