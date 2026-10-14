@@ -17,7 +17,7 @@
 - `app/main.py` 不创建此 S4 Worker；旧 FeedPoller 仍为既有运行时，真正从旧历史迁移/切换多渠道须另获批准。
 - **正式注册 Bark/ntfy 新目标的表结构与旧目标共存方案尚未完成。** S4 测试只给已存在目标 ID 绑定 provider，不能承诺生产用户今天就可在 Web/Bot 新建 Bark/ntfy 目标。切勿伪造 Telegram chat ID。
 - Telegram、Bark 和 ntfy 的模拟 API success 不能证明手机提醒送达、移动 APNs 路由、真实平台限流或自建 ntfy 服务。S0 Apprise PR #18 为独立研究，继续 Draft 未合并。
-- 官方 host allowlist 只允许 `api.day.app`、`ntfy.sh`；未来要允许自建 Bark/ntfy 必须独立审批 DNS/SSRF/重定向/网络路径。
+- 官方 host allowlist 只允许 `api.day.app`、`ntfy.sh`，并**只接收 `barks://`、`ntfys://` 加密 URL**，拒绝 `bark://`、`ntfy://` 的明文协议；未来要允许自建 Bark/ntfy 必须独立审批 DNS/SSRF/重定向/网络路径。
 - 每目标冷却协调器以单个 Worker 实例为假设；多进程或跨主机不保证跨实例目标限流，未来正式运行必须先落实单实例所有权。
 - S4 仍遵守 ADR-0002：API 接受后、SQLite sent 落库前崩溃存在极端重复窗口，不承诺 strict exactly-once。
 

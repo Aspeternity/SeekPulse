@@ -123,8 +123,8 @@ class NotifierContracts(unittest.IsolatedAsyncioTestCase):
 
     async def test_apprise_rejects_redirects_private_hosts_and_injected_urls(self):
         allowed = (
-            (Channel.BARK, "bark://api.day.app/device-key"),
-            (Channel.NTFY, "ntfy://ntfy.sh/topic"),
+            (Channel.BARK, "barks://api.day.app/device-key"),
+            (Channel.NTFY, "ntfys://ntfy.sh/topic"),
         )
         for channel, url in allowed:
             with self.subTest(channel=channel):
@@ -137,10 +137,12 @@ class NotifierContracts(unittest.IsolatedAsyncioTestCase):
             (Channel.NTFY, "ntfy://localhost/topic"),
             (Channel.NTFY, "ntfy://ntfy.sh.evil.invalid/topic"),
             (Channel.BARK, "bark://api.day.app:8080/key"),
-            (Channel.NTFY, "ntfy://ntfy.sh/topic?redirect=yes"),
+            (Channel.NTFY, "ntfys://ntfy.sh/topic?redirect=yes"),
             (Channel.NTFY, "ntfy://u:p@ntfy.sh/topic"),
             (Channel.BARK, "http://api.day.app/device-key"),
-            (Channel.NTFY, "ntfy://ntfy.sh/../../private"),
+            (Channel.BARK, "bark://api.day.app/device-key"),  # insecure
+            (Channel.NTFY, "ntfy://ntfy.sh/topic"),  # insecure
+            (Channel.NTFY, "ntfys://ntfy.sh/../../private"),
         )
         for channel, url in rejected:
             with self.subTest(url=url), self.assertRaises(ValueError):
@@ -149,7 +151,7 @@ class NotifierContracts(unittest.IsolatedAsyncioTestCase):
     async def test_apprise_result_object_and_service_status(self):
         fake = FakeApprise()
         adapter = AppriseNotifier(
-            lambda name: "bark://api.day.app/fake-key",
+            lambda name: "barks://api.day.app/fake-key",
             factory=lambda: fake,
         )
         target = ChannelTarget(1, 1, Channel.BARK, None, "MY_BARK_REF")
@@ -212,8 +214,8 @@ class WorkerContracts(unittest.IsolatedAsyncioTestCase):
         )
         self.apprise = AppriseNotifier(
             lambda ref: {
-                "BARK_SECRET": "bark://api.day.app/fake-key",
-                "NTFY_SECRET": "ntfy://ntfy.sh/fake-topic",
+                "BARK_SECRET": "barks://api.day.app/fake-key",
+                "NTFY_SECRET": "ntfys://ntfy.sh/fake-topic",
             }.get(ref),
             factory=lambda: self.push,
         )

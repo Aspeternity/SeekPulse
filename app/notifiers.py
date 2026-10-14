@@ -106,8 +106,8 @@ class TelegramNotifier:
 class AppriseNotifier:
     """Strict Bark/ntfy wrapper: one service per request, official HTTPS only.
 
-    The *secret* is an Apprise scheme URL obtained from a protected runtime
-    resolver. SQLite keeps only its environment-key-like reference. Allowing
+    The *secret* is a barks:// or ntfys:// HTTPS-only URL supplied by
+    a protected runtime resolver. SQLite keeps only its environment-key-like reference. Allowing
     additional notification hosts requires separately reviewed config:
     arbitrary URLs, raw IPs, redirect targets and private addresses are not
     accepted by this V1.1 adapter.
@@ -150,8 +150,10 @@ class AppriseNotifier:
             port = parts.port
         except ValueError as exc:
             raise ValueError("invalid push configuration") from exc
+        # Apprise "bark://" and "ntfy://" are plain HTTP. Require TLS.
+        secure_schemes = {Channel.BARK: "barks", Channel.NTFY: "ntfys"}
         if (
-            parts.scheme != channel.value
+            parts.scheme != secure_schemes[channel]
             or not host or host.lower() not in AppriseNotifier.OFFICIAL_HOSTS[channel]
             or port not in (None, 443)
             or parts.username is not None or parts.password is not None
