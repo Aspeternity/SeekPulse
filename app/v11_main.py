@@ -19,18 +19,18 @@ from typing import Any
 
 from app.bot import build_application
 from app.config import Settings
-from app.db import Database
-from app.delivery import CoreStore
-from app.gate_b_dispatch import ObservationDispatcher
-from app.gate_b_targets import GateBTargetStore
+from app.fresh_init import (
+    check_prepared_database,
+    database_path_from_environment,
+    initialize_empty_database,
+)
 from app.instance_lock import database_owner_lock
 from app.main import configure_logging
 from app.maintenance import verify_backup
 from app.notifiers import AppriseNotifier, TelegramNotifier
-from app.route_store import RouteStore
 from app.rss import FeedClient
 from app.source_adapters import RSSSource, SourceSupervisor, TelegramSource
-from app.source_state import SourceStore
+from app.v11_stores import initialize_stores as _stores
 from app.web import create_web_app
 from app.web_auth import AdminWebConfig
 from app.worker import DeliveryWorker
@@ -119,22 +119,6 @@ async def supervise(components: GateBComponents, stop: asyncio.Event) -> None:
             await bot.shutdown()
 
 
-async def _stores(path: Path):
-    db = Database(path)
-    core = CoreStore(path)
-    sources = SourceStore(path)
-    routes = RouteStore(path)
-    registry = GateBTargetStore(path)
-    dispatcher = ObservationDispatcher(path, core, routes)
-    # No migration in --run; a separate, approved --prepare is mandatory.
-    await db.init()
-    await core.init()
-    await sources.init()
-    await routes.init()
-    await dispatcher.init()
-    return db, core, sources, routes, registry, dispatcher
-
-
 async def prepare_cutover(settings: Settings, backup: Path) -> int:
     """Offline-only explicit schema+cursor preparation, with verified snapshot."""
     if not backup or not backup.is_dir():
@@ -151,6 +135,9 @@ async def prepare_cutover(settings: Settings, backup: Path) -> int:
 
 
 async def build_components(settings: Settings) -> GateBComponents:
+    # Reject missing, legacy or unprimed databases before writable init, Bot,
+    # Web or notification startup. Never create a DB via --run.
+    check_prepared_database(settings.database_path)
     db, core, sources, routes, registry, dispatcher = await _stores(
         settings.database_path
     )
@@ -223,9 +210,21 @@ def main(argv: list[str] | None = None) -> int:
     g = parser.add_mutually_exclusive_group(required=True)
     g.add_argument("--prepare", action="store_true", help="Versioned offline schema+cursor prime")
     g.add_argument("--run", action="store_true", help="Explicitly start V1.1 single process")
+    g.add_argument("--init-fresh", action="store_true",
+                   help="Explicitly initialize a NEW, otherwise-empty data volume")
+    g.add_argument("--check", action="store_true",
+                   help="Read-only validation of V1.1 schema and Prime")
     args = parser.parse_args(argv)
     if os.getenv("SEEKPULSE_V11_ENABLE") != "1":
         raise RuntimeError("v11_not_explicitly_enabled")
+    if args.init_fresh:
+        asyncio.run(initialize_empty_database(database_path_from_environment()))
+        print("fresh_init_ready")
+        return 0
+    if args.check:
+        check_prepared_database(database_path_from_environment())
+        print("v11_database_ready")
+        return 0
     settings = Settings.load()
     configure_logging(settings.log_level)
     if args.prepare:
