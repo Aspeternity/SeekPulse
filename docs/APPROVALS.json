@@ -108,6 +108,30 @@
       "user_instruction": "批准",
       "context": "Direct reply to assistant's explicit question '是否批准开始 S2 开发？' naming Issues #10 and #11 after S1 PR #21 merge and main green CI.",
       "source": "User message in this ChatGPT conversation; see GitHub Issues #10/#11"
+    },
+    {
+      "event_id": "APPROVAL-2026-10-14-S3-AUTHORIZED",
+      "date": "2026-10-14",
+      "approved_plan": "SeekPulse V1.1",
+      "authorization_kind": "stage_development_only",
+      "accepted_stage": "S2",
+      "authorized_stage": "S3",
+      "issue": 12,
+      "authorized_actions": [
+        "S3 Issue #12 official RSS and Telegram source adapters",
+        "S3 RSS/TG source checkpoint, bounded recovery and source health",
+        "S2 CoreStore observation integration and offline CI in independent Draft PR"
+      ],
+      "not_authorized": [
+        "merge S3 PR to main",
+        "S4-S7 implementation",
+        "real Telegram account login or credentials",
+        "production deployment or legacy delivery cutover",
+        "Release or Tag publication"
+      ],
+      "user_instruction": "批准启动 S3 / Issue #12 开发",
+      "context": "Direct reply to explicit S3 Issue #12 development authorization request after separately accepted and merged S2 PR #22/#23, with no merge/deploy/S4 approval.",
+      "source": "User message in current ChatGPT conversation; GitHub Issue #12 records scope; check later instructions"
     }
   ]
 }

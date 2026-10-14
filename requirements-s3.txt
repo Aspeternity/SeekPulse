@@ -1,0 +1,3 @@
+# S3 source-adapter optional runtime; keep S1 upstream pins untouched.
+-r requirements.txt
+Telethon==1.45.0

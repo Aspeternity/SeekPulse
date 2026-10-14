@@ -1,11 +1,9 @@
-# SeekPulse — 当前阶段 S2 开发参考索引
+# SeekPulse 当前 GitHub 交接索引 — S3 / Issue #12
 
-> 本文件只是 2026-10-14 的快照。新对话必须以 GitHub Issues、PR、main SHA、最新 CI 与用户真实批准为准。
+> 2026-10-14 快照。**文档不能替代实时 GitHub Issue/PR/分支 SHA、最新 CI 与用户审批上下文。**
 
-- main（S2 启动时）：94f26d2a1f58924c9e060698a655dd28601ace94；S1 [PR #21](https://github.com/Aspeternity/SeekPulse/pull/21) 已经用户单独批准 Squash 合并，合并后 CI [#38495140224](https://github.com/Aspeternity/SeekPulse/actions/runs/38495140224) 4/4 PASS。
-- S0-04 条件式 Go 已验收，S0 研究 PR #17/#18/#19/#20 仍保持 Draft；S0 网络受人为调试的 10 秒组无法证明 TG 稳定提速。
-- 用户最新明确授权：在“是否批准开始 S2 开发？”后回复“批准”；S2 [#10](https://github.com/Aspeternity/SeekPulse/issues/10) 规范化帖子/规则三态，[#11](https://github.com/Aspeternity/SeekPulse/issues/11) SQLite 原子目标级投递状态；每 Issue 唯一写入负责人 ChatGPT，分别 Draft PR。
-- S2-01 分支 feat/s2-01-canonical-post-rules（从 main 94f26d2 派生），S2-02 分支 feat/s2-02-sqlite-delivery-queue（待 S2-01 模型稳定后建立依赖分支）。两者 HEAD SHA/CI 必须在各自 Issue 重新核验。
-- 本阶段只开发领域模型、SQLite 核心与无网络的回归；不接入真实 TG/Bot 推送、不改变生产。S3–S7、任何 PR 合并、版本发布、部署均没有授权。
-- 已批准设计：docs/ARCHITECTURE.md、docs/decisions/ADR-0002-delivery-semantics.md；SQLite 短事务，不在 HTTP 发送时保持写锁，目标级唯一任务，不承诺严格 exactly once。
-- 唯一下一步：在研究分支写好 S2-01 并核对当前 HEAD CI；随后可在独立 stacked 分支实施 S2-02，最终分别提交用户验收，不能擅自合并。
+- 上游基线 S1：PR #21 已获单独授权合并。S2-01 Issue #10 / PR #22、S2-02 Issue #11 / PR #23 均已获得用户阶段验收并分别批准 Squash 合并。main 进入 S3 前为 `b895bc8d5961090b8c2fcf40f9ab0be00a212143`，合并后 G0 CI [#38537413073](https://github.com/Aspeternity/SeekPulse/actions/runs/38537413073) **4/4 PASS**。
+- S0 研究 PR #17–#20 未获合并授权，继续保持 Draft/未合并。不要将历史性能样本解释成 TG 稳定优于原版 10s RSS。
+- **最新用户指令：**「批准启动 S3 / Issue #12 开发」。唯一写入负责人 ChatGPT；分支 `feat/s3-01-dual-source-adapters`；S3 目标 RSS + @nodeseekc TG 的标准化观测/独立健康/游标补查与离线故障测试，连接已验收的 S2 CoreStore。对应 Draft PR、HEAD SHA 和 CI 必须重新核验 Issue #12 与 GitHub 当前记录。
+- **限制：** S3 仅来源观测，不安排真实通知 Worker，不自动旧历史转新任务；`app/main.py` 仍沿用旧 FeedPoller，未做生产切换。S4–S7、合并 S3、Release/Tag、部署、真实 Telegram Session/通知均未授权。
+- **当前下一步：** 在独立 S3 分支完成代码与不联网 CI，保留已批 S1/S2 回归，然后请求用户 S3 阶段验收；未经单独批准不合并 main。

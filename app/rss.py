@@ -19,6 +19,7 @@ class FeedEntry:
     source_text: str
     category_slug: str | None
     category_name: str
+    summary_known: bool = True
 
 
 @dataclass(slots=True)
@@ -47,6 +48,7 @@ class FeedClient:
         for item in parsed.entries[: self.max_entries_per_feed]:
             title = strip_html(item.get("title")) or "无标题"
             link = item.get("link", "").strip()
+            summary_known = "summary" in item or "description" in item
             summary = item.get("summary") or item.get("description") or ""
             plain_summary = truncate_text(strip_html(summary), 280)
             published_raw = (
@@ -88,6 +90,7 @@ class FeedClient:
                     source_text=source_text,
                     category_slug=category_slug,
                     category_name=category_label(category_slug),
+                    summary_known=summary_known,
                 )
             )
 

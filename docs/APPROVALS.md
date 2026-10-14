@@ -1,6 +1,6 @@
 # 审批及执行权限记录（人工可核实）
 
-> **最新（2026-10-14）：S1-01 已验收并经单独授权合并 PR #21；用户已明确授权 S2 / Issues #10、#11 开发。** 下方 2026-10-13 关于“当前仅 G0”的段落是当时的历史状态，不能替代新授权。其他任何 PR 合并、Release/Tag、生产变更及 S3–S7 仍需单独审批。
+> **最新（2026-10-14）：S1、S2 已分别验收及单独获批合并；用户明确批准启动 S3 / Issue #12 开发。** 下方 2026-10-13 关于“当前仅 G0”的段落是当时的历史状态，不能替代新授权。S3 合并、S4–S7、Release/Tag 及生产变更仍需单独审批。
 
 ## 2026-10-13：V1.1 方案批准，G0 授权
 
@@ -64,3 +64,14 @@
 - **S2 正式获开发授权**：覆盖 [#10 S2-01](https://github.com/Aspeternity/SeekPulse/issues/10) 标准 NodeSeek 帖子模型、字段来源追溯及三态规则；[#11 S2-02](https://github.com/Aspeternity/SeekPulse/issues/11) SQLite 单目标原子去重任务、租约认领、失败/重试/失效与迁移测试。设计基线为已批 V1.1、docs/ARCHITECTURE.md 和 ADR-0002。每 Issue 独立负责人/分支/Draft PR，按 SHA 全绿后用户验收。
 - **未授权**：自动合并 S2 PR、S3–S7 开发、发布/Tag、生产部署、真实 TG/Bark/ntfy 推送、上传私有 Session 或改变已批准产品范围。S2 工作仅在独立开发分支完成，不能因为 CI 通过自动合并。
 - 以上 GitHub 审批摘要只记录本次对话用户原话及紧邻的明确问题，**不冒充独立签名**；后续仍须核对实时 Issue、PR、main、CI 和用户最新指令。
+
+
+## 2026-10-14：S2 验收及合并完成，独立授权 S3 / Issue #12 开发
+
+用户在明确离线 S2 验收范围后回复「验收通过」，随后分别回答「批准」授权合并 [PR #22](https://github.com/Aspeternity/SeekPulse/pull/22) 与 [PR #23](https://github.com/Aspeternity/SeekPulse/pull/23)。两 PR 分别 Squash 合并为 [84622a1](https://github.com/Aspeternity/SeekPulse/commit/84622a10149f0c0c0538437c98cbe5e7e67b045e)、[b895bc8](https://github.com/Aspeternity/SeekPulse/commit/b895bc8d5961090b8c2fcf40f9ab0be00a212143)；合并后 main CI [#38537413073](https://github.com/Aspeternity/SeekPulse/actions/runs/38537413073) 4/4 全绿。S2 完成仅代表离线业务核心，不等于真实通知可用。
+
+**S3 开发授权原文：**「批准启动 S3 / Issue #12 开发」。直接上下文为助手明确申请 S3 / Issue #12 Telegram + RSS 双源适配、游标补查、来源健康及独立失败恢复的开发，并说明独立分支、Draft PR、按最新 SHA 核验 CI、用户阶段验收和单独合并审批。
+
+- **获准：** S3 Issue #12、单一负责人 ChatGPT、`feat/s3-01-dual-source-adapters` 独立分支与 Draft PR；通过无凭据模拟构建两源→S2 CoreStore 观察、来源持久游标、退避/健康、断线补查。
+- **未获准：** 合并 S3 PR、启动 S4–S7、发布/Tag、真实 Telegram Session/账号登录、生产部署/迁移、真实 Bot/Bark/ntfy 通知及上传敏感凭据。
+- 上述仅为当前聊天授权及上下文的可核实摘要，**不是 GitHub 独立用户签名**。实际 HEAD/PR/CI 请实时核验 Issue #12 和对应 Draft PR。
