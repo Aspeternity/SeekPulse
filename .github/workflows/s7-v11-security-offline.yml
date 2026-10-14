@@ -24,7 +24,8 @@ jobs:
           set -euo pipefail
           ref="docker.io/library/python:3.11-slim"
           docker buildx version
-          digest="$(docker buildx imagetools inspect "$ref" | awk '/^Digest:/ {print $2;exit}')"
+          docker buildx imagetools inspect "$ref" > "${RUNNER_TEMP}/python-base-inspect.txt"
+          digest="$(awk '/^Digest:/ {print $2;exit}' "${RUNNER_TEMP}/python-base-inspect.txt")"
           [[ "$digest" =~ ^sha256:[0-9a-f]{64}$ ]]
           docker buildx imagetools inspect "$ref@$digest" --raw > "${RUNNER_TEMP}/verified-python-base-index.json"
           python - <<'PY'
