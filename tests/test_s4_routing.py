@@ -155,7 +155,10 @@ class SqliteRouteTests(unittest.IsolatedAsyncioTestCase):
         )
         self.assertEqual(count, 3)
         tasks = await self.core.list_tasks(self.user.id, 200)
-        self.assertEqual([t.priority for t in tasks], [0, 1, 1])
+        self.assertEqual(
+            {t.target_id: t.priority for t in tasks},
+            {ids[0]: 0, ids[1]: 1, ids[2]: 1},
+        )
 
     async def test_empty_override_is_not_the_legacy_default(self):
         await self.routes.set_defaults(self.user.id, [])

@@ -87,7 +87,7 @@ class DeliveryWorker:
         for priority in (preference, Priority(1 - preference.value)):
             tasks = await self.core.claim(
                 now=self._clock(), lease_seconds=self.lease_seconds,
-                limit=1, priority=priority,
+                limit=1, priority=int(priority),
                 exclude_target_ids=tuple(sorted(blocked)),
             )
             if tasks:
