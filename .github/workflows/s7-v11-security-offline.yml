@@ -84,7 +84,8 @@ jobs:
       matrix:
         arch: ['amd64', 'arm64']
     env:
-      TRIVY_CACHE_DIR: ${{ runner.temp }}/trivy-security-db
+      # Job-level env cannot access runner.temp; hosted Linux runner is ephemeral.
+      TRIVY_CACHE_DIR: /tmp/seekpulse-docker04-trivy-cache
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - name: Enable ARM64 emulation only in the ephemeral runner
