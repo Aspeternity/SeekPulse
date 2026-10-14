@@ -22,7 +22,15 @@ from app.fresh_init import (
 )
 from app.instance_lock import database_owner_lock
 from app.maintenance import inspect_database
-from app.v11_main import build_components, main
+# G0 installs only the upstream requirements; the optional V1.1 Web
+# packages are covered by S7's full-dependency workflow below.
+try:
+    from app.v11_main import build_components, main
+except ModuleNotFoundError as exc:
+    if exc.name not in {"fastapi", "uvicorn", "jinja2", "apprise", "telethon"}:
+        raise
+    build_components = None
+    main = None
 
 _OPTIN = {
     "SEEKPULSE_V11_ENABLE": "1",
@@ -205,21 +213,26 @@ class FreshDatabaseContracts(unittest.IsolatedAsyncioTestCase):
             original = checksum(path)
             with self.assertRaisesRegex(RuntimeError, "v11_database_not_prepared"):
                 check_prepared_database(path)
-            with patch("app.v11_main._stores",
-                       side_effect=AssertionError("must not init or send")):
-                with self.assertRaisesRegex(RuntimeError, "v11_database_not_prepared"):
-                    await build_components(SimpleNamespace(database_path=path))
+            if build_components is not None:
+                with patch("app.v11_main._stores",
+                           side_effect=AssertionError("must not init or send")):
+                    with self.assertRaisesRegex(RuntimeError, "v11_database_not_prepared"):
+                        await build_components(SimpleNamespace(database_path=path))
             self.assertEqual(checksum(path), original)
 
     async def test_check_rejects_missing_file_without_creating_it(self):
         with TemporaryDirectory() as td:
             path = Path(td) / "bot.db"
-            with patch("app.v11_main._stores",
-                       side_effect=AssertionError("must not init")):
-                with self.assertRaisesRegex(RuntimeError, "v11_database_not_prepared"):
-                    await build_components(SimpleNamespace(database_path=path))
+            with self.assertRaisesRegex(RuntimeError, "v11_database_not_prepared"):
+                check_prepared_database(path)
+            if build_components is not None:
+                with patch("app.v11_main._stores",
+                           side_effect=AssertionError("must not init")):
+                    with self.assertRaisesRegex(RuntimeError, "v11_database_not_prepared"):
+                        await build_components(SimpleNamespace(database_path=path))
             self.assertFalse(path.exists())
 
+    @unittest.skipUnless(main is not None, "Full V1.1 dependencies needed for CLI import")
     async def test_cli_fresh_check_and_legacy_prepare_are_separate(self):
         with TemporaryDirectory() as td:
             path = Path(td) / "bot.db"
