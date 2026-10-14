@@ -1,6 +1,6 @@
 # 审批及执行权限记录（人工可核实）
 
-> **最新（2026-10-14）：S0-04 条件式 Go 已获用户验收，S1 / Issue #9 获授权开始开发。** 下方 2026-10-13 关于“当前仅 G0”的段落是当时的历史状态，不能替代新授权。任何 PR 合并、Release/Tag、生产变更及 S2–S7 仍需单独审批。
+> **最新（2026-10-14）：S1-01 已验收并经单独授权合并 PR #21；用户已明确授权 S2 / Issues #10、#11 开发。** 下方 2026-10-13 关于“当前仅 G0”的段落是当时的历史状态，不能替代新授权。其他任何 PR 合并、Release/Tag、生产变更及 S3–S7 仍需单独审批。
 
 ## 2026-10-13：V1.1 方案批准，G0 授权
 
@@ -54,3 +54,13 @@
 - **S1 / Issue #9：明确批准开展代码开发**，范围限定于原版 RSS、关键词独立 OR/组合 AND、屏蔽词、分类、多用户多目标的回归测试以及 Python 3.11/3.12、现有依赖锁定与 CI 兼容检查；独立分支、Draft PR、按最新 SHA 验证 CI、完成后申请用户验收。
 - **仍未批准**：S2–S7 实施、合并 main 或任何现有研究 PR、正式业务行为变更、Release/Tag、真实通知推送、生产修改或凭据/Session 上传。
 - **实施记录**：S0-04 [Issue #8](https://github.com/Aspeternity/SeekPulse/issues/8) 已关闭（只表示报告已验收），S1-01 [Issue #9](https://github.com/Aspeternity/SeekPulse/issues/9) 进行中。审批来源为当前用户回复和直接上下文，不代表 GitHub 提供独立电子签名。
+
+
+## 2026-10-14：S1-01 验收、独立合并 PR #21，以及授权 S2
+
+用户依次原文：“S1-01 验收通过” → （在助手明确询问“是否批准合并 PR #21？”后）“批准” → （在助手确认合并完成、main CI 4/4 全绿，并询问“是否批准开始 S2 开发？”后）“批准”。
+
+- **S1-01 验收和 PR #21 合并分别获批准**。GitHub [PR #21](https://github.com/Aspeternity/SeekPulse/pull/21) 已 Squash 合并到 main [94f26d2](https://github.com/Aspeternity/SeekPulse/commit/94f26d2a1f58924c9e060698a655dd28601ace94)，合并后 [G0 CI #38495140224](https://github.com/Aspeternity/SeekPulse/actions/runs/38495140224) 4/4 PASS，旧研究 PR #17–#20 仍 Draft 未合并。
+- **S2 正式获开发授权**：覆盖 [#10 S2-01](https://github.com/Aspeternity/SeekPulse/issues/10) 标准 NodeSeek 帖子模型、字段来源追溯及三态规则；[#11 S2-02](https://github.com/Aspeternity/SeekPulse/issues/11) SQLite 单目标原子去重任务、租约认领、失败/重试/失效与迁移测试。设计基线为已批 V1.1、docs/ARCHITECTURE.md 和 ADR-0002。每 Issue 独立负责人/分支/Draft PR，按 SHA 全绿后用户验收。
+- **未授权**：自动合并 S2 PR、S3–S7 开发、发布/Tag、生产部署、真实 TG/Bark/ntfy 推送、上传私有 Session 或改变已批准产品范围。S2 工作仅在独立开发分支完成，不能因为 CI 通过自动合并。
+- 以上 GitHub 审批摘要只记录本次对话用户原话及紧邻的明确问题，**不冒充独立签名**；后续仍须核对实时 Issue、PR、main、CI 和用户最新指令。
