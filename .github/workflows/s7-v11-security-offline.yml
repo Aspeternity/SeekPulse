@@ -1,0 +1,41 @@
+name: S7 V1.1 Docker-04 Pre-Release Security (No Publish)
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/s7-v11-security-offline.yml'
+      - 'Dockerfile.v11'
+      - 'docs/decisions/ADR-0011-v11-release-security.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify-public-base:
+    name: Verify official Python multiarch base index digest (read only)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Query official Python image index, without registry login or push
+        shell: bash
+        run: |
+          set -euo pipefail
+          ref="docker.io/library/python:3.11-slim"
+          docker buildx version
+          digest="$(docker buildx imagetools inspect "$ref" | awk '/^Digest:/ {print $2;exit}')"
+          [[ "$digest" =~ ^sha256:[0-9a-f]{64}$ ]]
+          docker buildx imagetools inspect "$ref@$digest" --raw > "${RUNNER_TEMP}/verified-python-base-index.json"
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          doc=json.loads((Path(os.environ["RUNNER_TEMP"])/"verified-python-base-index.json").read_text())
+          assert doc["schemaVersion"]==2
+          platforms={f"{m['platform']['os']}/{m['platform']['architecture']}"
+                     for m in doc["manifests"] if "platform" in m}
+          assert {"linux/amd64","linux/arm64"}.issubset(platforms),platforms
+          print("VERIFIED_PYTHON_BASE_ARCHITECTURES="+",".join(sorted(platforms)))
+          PY
+          echo "VERIFIED_PYTHON_BASE_INDEX_DIGEST=$digest"
+          echo "PINNABLE_IMAGE=python:3.11-slim@$digest"
