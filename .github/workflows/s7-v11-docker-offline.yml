@@ -118,7 +118,13 @@ jobs:
           assert service["environment"]["DATABASE_PATH"] == "/app/data/bot.db"
           assert service["volumes"][0]["type"] == "bind"
           assert service["volumes"][0]["target"] == "/app/data"
-          assert service["volumes"][0]["bind"]["create_host_path"] is False
+          # Compose v2 may normalize away an explicitly false bind flag.
+          # Verify the source preserves the safety intent and the resolved
+          # configuration never requests creation of an absent host path.
+          assert "create_host_path: false" in Path("compose.v11.yaml").read_text()
+          assert service["volumes"][0].get("bind", {}).get(
+              "create_host_path", False
+          ) is False
           assert "ALL" in service["cap_drop"]
           assert "no-new-privileges:true" in service["security_opt"]
           assert not service.get("devices")
