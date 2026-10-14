@@ -1,6 +1,6 @@
 # 审批及执行权限记录（人工可核实）
 
-> **最新（2026-10-14）：S1–S6 已分别验收、获独立合并授权并合入 main `12ce325`；用户只批准 S7 / Issue #16 的**验收规划与准备**。** 真实 VPS、正式主流程集成/数据迁移、真实发信、S7 PR 合并、Release/Tag 和生产变更仍需另外授权。下方旧阶段是历史授权记录，不能覆盖本次边界。
+> **最新（2026-10-14）：S1–S6 已分别验收合并；S7-01 规划 PR #28 已验收且单独获批合并（main `36aa8a1`，新 G0 4/4）。用户现已单独批准 Gate B / Issue #29 仅 B01/B02/B03 设计与离线开发，PR #30 尚未验收/合并。真实 VPS、生产迁移/Session/消息/48–72h、Tag/Release/部署均未授权。** 历史阶段记录不能替代最新授权。
 
 ## 2026-10-13：V1.1 方案批准，G0 授权
 
@@ -121,3 +121,15 @@
 - **未获准**：真实 VPS 登录、只读实机预检、现场 48–72h 运行、凭据/Session、真实消息、生产镜像/配置/数据库写入或备份/迁移、功能代码和 schema 改造、停机/回滚演练、合并本 Draft PR、最终验收、Tag/Release 或部署。
 - **下一闸门**：文档 Draft PR 的最新 HEAD CI 与规划审阅通过后，先针对上述生产集成阻断单独征求开发授权；真实 VPS 预检与灰度又是后续独立授权。所有未观测状态明确记 `NOT_STARTED`、`BLOCKED` 或 `UNKNOWN`。
 - 这是用户当前会话明确指令的摘要，**不是**用户在 GitHub UI 签署的 Reviewer 审查，不自动改变既有分支合并权限。
+
+
+## 2026-10-14：S7-01 规划验收/PR #28 独立合并；Gate B / Issue #29 获离线开发授权
+
+S7-01 文档规划经用户回复「批准」验收后，用户另行回复「批准」，明确授权 PR #28（`3734d2a`）Squash 合并与合并后 CI 核验。合并 commit [`36aa8a1`](https://github.com/Aspeternity/SeekPulse/commit/36aa8a10e0f698fe8ffc8bd5cca1b52be6550aec)，新主分支 [G0 push #38578973921](https://github.com/Aspeternity/SeekPulse/actions/runs/38578973921) **4/4 PASS**。S7 父 Issue #16 继续 open/blocked，规划不构成实机验收。
+
+**本次 Gate B 独立开发授权用户原话**：「批准」。紧邻明确请求：“是否批准启动 Gate B 的设计与离线开发？若批准，将继续采用独立开发分支、Draft PR、完整 CI、阶段验收和单独合并审批。此次不包含真实 VPS 操作、正式切换或生产部署。”
+
+- **获准**：以 ChatGPT 为唯一写入负责人，基于 main `36aa8a1` 的 Gate B Issue #29 / Draft PR #30 / 分支 `feat/gate-b-01-v11-runtime-cutover`，设计与离线实现 B01 opt-in 单 asyncio 进程集成 S3/S4/S5 与 Bot、B02 真实 Bark/ntfy 独立 target ID、B03 历史观察 Prime/崩溃去重/过期过滤/锁及恢复语义；在临时 SQLite/内存 ASGI/假通知适配器中验证，保留旧默认 Docker/Compose，新增 ADR-0007。
+- **未获准**：PR #30 合并 main、Gate B 阶段验收、真实 VPS 预检/操作、生产 DB/Schema/Session/Key/通知/Worker 切换、真实手机到达、48–72h、第二 AI 真运行、Tag/Release 或部署。
+- **下一审批**：以最新 GateB PR HEAD 双 Python 版本 CI 证据完成离线回归，向用户申请 Gate B-01 **仅离线开发范围阶段验收**；通过后再独立申请 PR #30 合并。Issue #16 仍未整体关闭。
+- 用户原话及其紧邻请求可在当前 ChatGPT 对话与 Issue #29 核对；本记录不冒充 GitHub 用户独立 Reviewer 签署。

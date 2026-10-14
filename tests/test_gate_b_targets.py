@@ -187,7 +187,13 @@ class TargetRegistryContracts(unittest.IsolatedAsyncioTestCase):
             Source.RSS, "used-push", 21, datetime.now(timezone.utc),
             title="DMIT",
         ))
-        await self.core.enqueue(self.admin.id, 21, [used], now=1000)
+        # S2 refuses disabled destinations. Enable to create a real durable
+        # task, then pause again to exercise the audit-history deletion guard.
+        await self.db.set_target_enabled(self.admin.id, used, True)
+        self.assertEqual(
+            await self.core.enqueue(self.admin.id, 21, [used], now=1000), 1
+        )
+        await self.db.set_target_enabled(self.admin.id, used, False)
         with self.assertRaises(ValueError):
             await self.registry.delete_unused(self.admin.id, used)
 

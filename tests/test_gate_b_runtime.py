@@ -265,7 +265,7 @@ class StaleSourceContracts(unittest.IsolatedAsyncioTestCase):
         self.assertEqual((await rss.poll_once()).outcome, "baseline")
         report = await rss.poll_once()
         self.assertEqual(report.outcome, "ok")
-        self.assertEqual(report.ingested, 1)
+        self.assertEqual(report.observed, 1)
         self.assertIsNone(await self.core.get_post(101))
         self.assertIsNone(await self.core.get_post(102))
         self.assertIsNotNone(await self.core.get_post(103))

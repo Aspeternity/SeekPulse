@@ -227,6 +227,30 @@
       "user_instruction": "批准",
       "context": "Direct reply to '是否批准启动 S7 / Issue #16 的验收规划与准备？真实 VPS 操作、部署和正式发布仍需另行审批，不会因为启动 S7 就自动执行。' after S6 user-accepted and separately authorized PR #27 squash merge 12ce325 with main G0 push #38567964267 4/4 PASS.",
       "source": "Current ChatGPT user reply and immediately preceding approval request; cross-check Issue #16"
+    },
+    {
+      "event_id": "APPROVAL-2026-10-14-GATE-B-DEV-ONLY",
+      "date": "2026-10-14",
+      "approved_plan": "SeekPulse V1.1",
+      "authorization_kind": "stage_design_and_offline_development_only",
+      "accepted_stage": "S7-01-planning",
+      "authorized_stage": "Gate-B-B01-B02-B03",
+      "issue": 29,
+      "authorized_actions": [
+        "Opt-in single-process V1.1 runtime integration of existing Bot commands and S3 RSS/Telegram, S2 delivery tasks, S4 worker, loopback S5 Web, without changing legacy default Docker startup",
+        "Offline versioned nullable-chat-id SQLite migration and user-owned Bark/ntfy standalone targets with safe secret references",
+        "Explicit old-observation baseline, durable routing cursor, crash-idempotent enqueues, stale message filtering, offline integration/security/regression tests",
+        "Independent feat/gate-b-01-v11-runtime-cutover branch, Draft PR #30, precise HEAD CI, subsequent request for user stage acceptance"
+      ],
+      "not_authorized": [
+        "merge Gate B PR to main or treat CI green as acceptance",
+        "access VPS, operate any production DB, change runtime or actually cut over",
+        "use any real Telegram Session, token, Bark/ntfy credentials, send real messages",
+        "live 48–72h observation, S7 full acceptance, Tag/Release/production deployment"
+      ],
+      "user_instruction": "批准",
+      "context": "Direct reply to explicit '是否批准启动 Gate B 的设计与离线开发？' asked after S7-01 planning PR #28 squash merged to main 36aa8a1 with G0 push #38578973921 4/4 PASS. Real VPS/deployment explicitly excluded.",
+      "source": "Current ChatGPT user reply and direct prior approval request; Issue #29"
     }
   ]
 }
