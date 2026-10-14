@@ -59,8 +59,13 @@ def _map_error(exc: BaseException) -> MaintenanceError:
         return MaintenanceError("io_failure")
     if isinstance(exc, sqlite3.OperationalError):
         name = getattr(exc, "sqlite_errorname", "")
-        if name in {"SQLITE_BUSY", "SQLITE_LOCKED"}:
+        # SQLite reports disk exhaustion as SQLITE_FULL, not always ENOSPC.
+        if name.startswith("SQLITE_FULL"):
+            return MaintenanceError("disk_full")
+        if name.startswith(("SQLITE_BUSY", "SQLITE_LOCKED")):
             return MaintenanceError("database_busy")
+        if name.startswith("SQLITE_IOERR"):
+            return MaintenanceError("io_failure")
         return MaintenanceError("database_unavailable")
     if isinstance(exc, sqlite3.DatabaseError):
         return MaintenanceError("database_corrupt")

@@ -190,6 +190,15 @@ class SnapshotContracts(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(self.path.read_bytes(), before)
         self.assertTrue(inspect_database(self.path)["ok"])
 
+    def test_sqlite_full_error_is_classified_as_disk_full_not_generic_error(self):
+        failure = sqlite3.OperationalError("disk full")
+        failure.sqlite_errorname = "SQLITE_FULL"
+        with patch("app.maintenance._copy_snapshot", side_effect=failure):
+            self.assert_error("disk_full", create_backup, self.path, self.bundle)
+        self.assertFalse(self.bundle.exists())
+        self.assertFalse(list(self.root.glob(".seekpulse-s6-*")))
+        self.assertTrue(inspect_database(self.path)["ok"])
+
     def test_disk_full_during_restore_removes_stage_and_preserves_bundle(self):
         create_backup(self.path, self.bundle)
         destination = self.root / "never-created.db"

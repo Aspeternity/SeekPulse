@@ -39,3 +39,10 @@ python -m app.maintenance restore-new --bundle /private/backups/seekpulse-YYYYmm
 所有自动测试仅使用临时 SQLite / mock，未在真实 VPS、Telegram 账号、Bark、ntfy、用户 Web 浏览器运行。S6 的代码只保证**独立本地工具与故障注入模拟**，不承诺生产无损跨版本迁移、自动回滚或备份加密/上传。S7 48–72h 实机实验、生产上线或发布 Tag/Release 尚未获授权。
 
 停机切换的危险事项（包含是否影响旧 -wal/-shm/正在运行的用户和真实投递的幂等性）必须在真实 VPS 演练之前另行批准，不以 CI 成功代替。
+
+## 离线资源、依赖和数据保护审查（不代表 VPS 实测）
+
+- **新增运行依赖**：`app.maintenance` 只使用 Python 标准库（sqlite3/hashlib/pathlib/os 等），不添加 pip 包、数据库服务、Redis、网络访问或额外后台 Worker；S6 CI 专项复用 S5 固定依赖做完整回归，不修改原 Dockerfile / Compose / requirements.txt。
+- **磁盘预留**：在线快照需同磁盘临时存储完整 SQLite 图像，加 manifest 与文件系统余量；`restore-new` 还需要另一份完整镜像空间。具体峰值磁盘、IO 时长、CPU/RAM 与 1 vCPU/1 GiB 性能指标均**未实测**，应在 S7 真实 VPS 期间定量核对，严禁宣称达到目标。
+- **敏感边界**：DB 快照虽设置 0700/0600，**内容未加密**，应由用户自行在获批机器上使用加密备份及受控保留策略；独立的 Telegram Telethon Session、.env、Bot Token 和运行时密钥**不会**包含在 SQLite 快照中，必要时须按单独审批的安全流程备份/重新授权，绝不上传到 GitHub/CI。
+- **错误分类**：除操作系统 ENOSPC/EDQUOT 外，SQLite 底层 `SQLITE_FULL` 也统一输出 `disk_full`；SQLITE_BUSY/LOCKED 表示占锁，IOERR 类错误仅返回 `io_failure`，所有用户原文异常和绝对路径均不得打印。测试覆盖各分支。
