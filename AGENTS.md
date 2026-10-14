@@ -4,9 +4,9 @@
 
 ## 0. 当前授权边界（最高优先级）
 
-- **最新仓库事实（2026-10-15）**：S1–S6、S7-01、Gate B、Docker-01/02/03 已分别离线验收并获得单独合并授权；最新 main `1d24b1564983465de340b3e30a758f52f45062ec`，合并后 [G0 #38631128468](https://github.com/Aspeternity/SeekPulse/actions/runs/38631128468) **4/4 PASS**，PR #33/#35/#37 已合并；最新可核实的用户原话、Issue/PR/CI 精确 SHA 优先于本静态快照。
-- **本轮最新独立授权**：Docker-04 [Issue #38](https://github.com/Aspeternity/SeekPulse/issues/38)，ChatGPT 唯一写入，分支 `feat/s7-docker-04-security-review` / [Draft PR #39](https://github.com/Aspeternity/SeekPulse/pull/39)，仅开发并在 GitHub 临时 runner 用公开官方镜像与漏洞数据库核验**基础镜像 Digest 固定、AMD64/ARM64 OS/Python CVE、CycloneDX SBOM 与供应链安全**。**未获本阶段人工验收、PR 合并、GHCR 正式发布、Tag/Release、访问 NAS/PVE/Portainer/群晖或真实 DB/Session/Token/通知授权**。详见 #38、ADR-0011 与用户本次“批准”的紧邻申请。
-- **历史阶段权限**：G0 工程建档、Gate B 集成曾分别获单独开发/验收/合并许可，但原“目前授权 Gate B”只是历史，**不能以旧许可覆盖现有 Docker-04 限定范围**。禁止默认合并/发布。用户已取消专门 VPS 预检 #31；未来在已有 PVE/Portainer 或群晖上的真实验收也必须另行批准。
+- **最新仓库事实（2026-10-15）**：Docker-01/02/03/04 已分别离线验收并独立 Squash 合并（PR #33/#35/#37/#39），当前 main `fbb4f4009954567e3ed2943c0428075d8cf32fec`，合并后 [G0 #38639966882](https://github.com/Aspeternity/SeekPulse/actions/runs/38639966882) **4/4 PASS**。Docker-04 的 AMD64/ARM64 Trivy 发现每平台 High 48 条、12 个不同 CVE ID；`vulnerability_gate=BLOCKED_HIGH_OR_CRITICAL`，**GHCR 发布仍被阻断**。
+- **当前唯一新开发授权**：用户在明确申请“**下一阶段 High CVE 专项审查与离线修复开发；不发布 GHCR、不部署 NAS/PVE；修复和复测后另行申请验收**”后回答「批准」。[Docker-05 Issue #40](https://github.com/Aspeternity/SeekPulse/issues/40)，唯一写入负责人 ChatGPT，分支 `feat/s7-docker-05-high-cve-remediation`；仅限 V1.1 opt-in Python 安全覆盖层、Debian High 分析、公开 CVE 情报、GitHub 临时 CI、双架构镜像 Trivy 复扫。**尚未批准该阶段人工验收/PR 合并、High CVE 免责、安全发布放行、GHCR Push/Tag/Release、真实 NAS/PVE/Portainer/群晖、生产数据/通知或 Gate D–G**。以实时 GitHub / 用户最新原话为准。
+- **历史授权非继承**：G0、Gate B 与 Docker-01/02/03/04 的审批均是限定范围的已完成阶段，不构成对 Docker-05 后续合并/发布或连接用户设备的默示许可。旧 VPS 预检 #31 已取消；未来已有 PVE/群晖上实际验收也须另外批准。
 - **明确禁止擅自执行**：合并 `main`、创建 Release / Tag 发布、修改生产环境、强制推送或覆盖既有工作。
 - 遇到授权边界不清、关键资料冲突或无法验证，先停止可能越权的操作并报告，不得推定默认获批。
 

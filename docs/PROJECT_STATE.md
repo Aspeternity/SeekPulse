@@ -1,19 +1,20 @@
-# SeekPulse — 跨会话开发交接状态（GitHub 实时事实优先）
+# SeekPulse — 跨会话项目状态（Issue / PR / 精确 SHA / CI 优先）
 
-> 2026-10-15 快照。`AGENTS.md`、最新 Issues/PR/提交 SHA/CI 和用户的明确批准是最终依据；此文件不自动赋予实施许可。
+> 2026-10-15 最新开发快照；本文件不能代替 `AGENTS.md` 和实际 GitHub 记录或用户独立批准。
 
-## 已完成并分别独立批准合并
-- S1–S6、S7-01 规划、Gate B、Docker-01 [#32/PR #33](https://github.com/Aspeternity/SeekPulse/pull/33)、Docker-02 [#34/PR #35](https://github.com/Aspeternity/SeekPulse/pull/35)、Docker-03 [#36/PR #37](https://github.com/Aspeternity/SeekPulse/pull/37) 均已完成各自**离线范围**人工验收、独立 Squash 合并和合并后 G0。
-- 最新合并后 main `1d24b1564983465de340b3e30a758f52f45062ec`；精确 SHA 的 [G0 #38631128468](https://github.com/Aspeternity/SeekPulse/actions/runs/38631128468) **4/4 PASS**。旧研究 S0 Draft PR #17–#20 未合并。
-- V1.1 `Dockerfile.v11` / `compose.v11.yaml` 是 opt-in，非 root/私有数据卷/管理 Web 回环；全新空卷须显式 `--init-fresh → --check → --run`，已有数据必须经过 S6 verified backup + `--prepare`，不能自动覆盖/Prime。旧 `Dockerfile` / `docker-compose.yml` 保持。
-- Docker-03 已本地 Buildx/QEMU 证明 AMD64+ARM64 OCI/manifest 与 ARM64 无网络 CLI；**从未发布 GHCR 可拉取的 SeekPulse V1.1 镜像或正式 registry index digest**。
+## main 已批准合并的阶段
 
-## 当前唯一开发授权：Docker-04 / Issue #38
-- 用户在明确提出“Docker-04 发布前安全审查与离线开发（基础镜像 Digest 固定、OS/Python 漏洞扫描、SBOM 和供应链检查），仍不推送 GHCR、NAS/PVE 部署须另行批准”后直接回答“批准”。审计见 [Issue #38](https://github.com/Aspeternity/SeekPulse/issues/38)。
-- 唯一写入负责人：ChatGPT，分支 `feat/s7-docker-04-security-review`，[Draft PR #39](https://github.com/Aspeternity/SeekPulse/pull/39)。本阶段**未获人工阶段验收、合并或发布授权**；PR HEAD/CI 结果会随提交变化，必须实时核对。
-- ADR-0011：在 GitHub runner 核实官方 `python:3.11-slim` 双架构 index Digest 并固定到 V1.1 Dockerfile；对本地构建的 AMD64/ARM64 镜像执行公开漏洞库 OS/Debian + Python/PyPI CVE 检查、CycloneDX SBOM、scanner DB 新鲜度/完整性/架构与供应链校验。**CI 扫描执行成功 ≠ CVE 无风险，也 ≠ 用户授权发布**；缺数据库/漏扫判 UNKNOWN，High/Critical 判发布阻断。
-- 官方基础镜像候选 index digest `sha256:e88e9763f943ec1834f992a4b51e0f24500486803e8bc534e5767af9ea65f6ce`，证据为临时只读 [GH Actions #38632803851](https://github.com/Aspeternity/SeekPulse/actions/runs/38632803851)（含 AMD64 和 ARM64）。**它不是未来 GHCR 发行镜像 digest**。
+- S1–S6、S7-01、Gate B、Docker-01 [#32/PR #33](https://github.com/Aspeternity/SeekPulse/pull/33)、Docker-02 [#34/PR #35](https://github.com/Aspeternity/SeekPulse/pull/35)、Docker-03 [#36/PR #37](https://github.com/Aspeternity/SeekPulse/pull/37)、Docker-04 [#38/PR #39](https://github.com/Aspeternity/SeekPulse/pull/39) 均各自完成离线验收、独立授权合并、合并后精确 G0 核验。
+- `main fbb4f4009954567e3ed2943c0428075d8cf32fec`，真正合并后 [G0 #38639966882](https://github.com/Aspeternity/SeekPulse/actions/runs/38639966882) **4/4 PASS**；旧 S0 Draft #17–#20 未动。旧默认 `Dockerfile`/`docker-compose.yml`、旧 `requirements.txt` 保留。V1.1 仅 opt-in，非 root/只读 rootfs、回环 Web、数据库首次 `--init-fresh → --check → --run`；旧 DB 仍经 S6 verified backup + `--prepare`。
+- Docker-04 公开 DB 2026-10-14 的 AMD64/ARM64 本地镜像 Trivy + CycloneDX 成功：每架构 Debian 87 / PyPI 65、Critical 0、High 48 条（OS 44 + Python 4）、High 去重 CVE 12 个，Medium 81、Low 77、Unknown 3。**安全结论 `BLOCKED_HIGH_OR_CRITICAL`，`release_ready=false`，正式 GHCR 镜像未发布也无远端 registry digest**。固定的 Python 官方基础镜像 digest 不是 SeekPulse 正式发行 digest。
 
-## 明确未获准 / 唯一下一步
-- 父 [S7 #16](https://github.com/Aspeternity/SeekPulse/issues/16) 继续 OPEN/status:blocked；独立 VPS 预检 #31 已因用户使用现有 PVE/Portainer/群晖而取消，但**从未授权进入这些机器**。未开始正式 GHCR registry push、Tag/Release、实际 Docker 部署、真实 Telegram/Bark/ntfy 通知、Web 隧道、生产 SQLite/Session/Token、灾难演练或 48–72h/Gate D–G。
-- **唯一下一步**：对 Draft PR #39 最新 HEAD 完整核对 G0、Docker-01/02/03/04 CI 与 OS/Python CVE/双架构 SBOM 证据；发现阻断明确记录风险、不得误报可发布。完成后**仅申请 Docker-04 本次离线安全审查阶段验收**；通过后再单独申请 PR 合并，GHCR 发布及 NAS/PVE 实机再各自申请授权。
+## 当前唯一授权：Docker-05 / High CVE 离线修复开发
+
+- 用户在紧邻申请“**是否批准启动下一阶段的 High CVE 专项审查与离线修复开发？仍不发布 GHCR、不部署 NAS/PVE；完成修复和复测后再单独申请验收**”后回复“批准”。[Issue #40](https://github.com/Aspeternity/SeekPulse/issues/40)，唯一写入负责人 ChatGPT，独立分支 `feat/s7-docker-05-high-cve-remediation`、ADR-0012；最新 PR 和 commit SHA **必须实时在 GitHub 核实**，不能在文档中预记 PASS。
+- 已批准工作：只对 `Dockerfile.v11` 的最终镜像使用 `requirements-v11-security.txt` 修补 `aiohttp/jaraco.context/wheel` 已证实的 4 条 PyPI High 记录；旧版依赖和应用、数据库/Web/通知契约不动。Debian ncurses/systemd/acl/util-linux/Perl 的 8 个 High CVE 仍需准确分析，不擅自混装 Debian unstable 或添加 scanner 忽略/免责。新增两版 Python 回归及 AMD64/ARM64 QEMU/Trivy 复扫；**即使 PyPI 归零，剩余 OS High 仍阻断正式镜像发布**。
+- 官方 Debian 稳定版多数暂无可直接引入的受支持修复或标注 no-dsa/postponed；只记录上游状态与运行时影响评估，不将 OS High 标记已修复。详见 ADR-0012 和实时扫描结果。
+
+## 尚未授权 / 唯一下一步
+
+- 父 [S7 #16](https://github.com/Aspeternity/SeekPulse/issues/16) 继续 OPEN/status:blocked，用户不需要单独 VPS 预检；PVE/Portainer 与群晖 NAS 尚未获准登录或部署。正式 GHCR Push/Tag/Release、远端 digest、生产 SQLite/Session/Token、通知、48–72h、Gate D–G 全部 NOT_STARTED。
+- **唯一下一步**：完成 Issue #40 开发和最新 HEAD G0 + Docker-01/02/03/04/05 CI，按两架构真实 PyPI/OS High 复扫更新风险审计；**仅向用户申请 Docker-05 离线修复开发阶段验收**。人工验收通过后仍须另申请 Squash 合并；High CVE 风险处置与 GHCR 真实发布/实机部署各另行批准，不能自动顺延。

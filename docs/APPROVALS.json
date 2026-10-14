@@ -359,6 +359,51 @@
       "user_instruction": "批准",
       "context": "Direct reply to explicit '是否批准启动 Docker-04 发布前安全审查与离线开发？...仍不推送 GHCR 镜像，也不部署 NAS/PVE，真正发布时再单独申请授权。'",
       "source": "Current ChatGPT conversation and GitHub Issue #38; no independent GitHub Reviewer signature"
+    },
+    {
+      "event_id": "APPROVAL-2026-10-15-DOCKER04-OFFLINE-ACCEPT-MERGE",
+      "date": "2026-10-15",
+      "approved_plan": "SeekPulse V1.1",
+      "authorization_kind": "offline_acceptance_then_separate_squash_merge",
+      "authorized_stage": "S7-Docker-04",
+      "issue": 38,
+      "pr": 39,
+      "authorized_actions": [
+        "User separately accepted Docker-04 offline safety audit while retaining BLOCKED_HIGH_OR_CRITICAL",
+        "User independently authorized exact PR #39 HEAD 2c2dd81457828581c52996d151fb07f722f57281 squash merge",
+        "New main fbb4f4009954567e3ed2943c0428075d8cf32fec G0 #38639966882 4/4 success"
+      ],
+      "not_authorized": [
+        "Remediate or accept High CVEs, mark GHCR safe",
+        "Publish GHCR, GitHub Release/Tag, NAS/PVE/Portainer real access",
+        "Production SQLite/Session/Token or any real notifications"
+      ],
+      "user_instruction": "批准（针对已完成离线审查阶段验收）; 批准（仅针对 PR #39 独立 Squash 合并）",
+      "source": "Issue #38, PR #39, parent #16 audit comments and immediate ChatGPT user replies"
+    },
+    {
+      "event_id": "APPROVAL-2026-10-15-DOCKER05-HIGH-CVE-OFFLINE-DEV-ONLY",
+      "date": "2026-10-15",
+      "approved_plan": "SeekPulse V1.1",
+      "authorization_kind": "stage_development_only",
+      "authorized_stage": "S7-Docker-05",
+      "issue": 40,
+      "authorized_actions": [
+        "Audit 12 distinct High CVE IDs from actual Docker-04 public scanner evidence and Debian/PyPI advisories",
+        "Apply precise fixed Python dependency versions only to V1.1 opt-in Docker image, keep legacy pins/default runtime unchanged",
+        "Test patched Python 3.11/3.12 and both AMD64/ARM64 local images with fresh Trivy/CycloneDX; document unresolved Debian OS High",
+        "Request separate user acceptance after new HEAD CI verification"
+      ],
+      "not_authorized": [
+        "Treat CI or scanner progress as user's stage acceptance, merge main without independent approval",
+        "Suppress known vulnerabilities, claim cleared High CVE release gate without evidence or approval",
+        "GHCR registry image login/push/Tag/Release or remote manifest/digest issuance",
+        "Access NAS/PVE/Portainer/Synology/VPS/production DB/Session/Token, send real Telegram/Bark/ntfy notifications",
+        "Real Gate D-G, 48-72h monitoring"
+      ],
+      "user_instruction": "批准",
+      "context": "Immediate answer to specific request '批准启动下一阶段的 High CVE 专项审查与离线修复开发？仍不发布 GHCR、不部署 NAS/PVE；完成修复和复测后再单独申请验收。'",
+      "source": "Current ChatGPT conversation, Issue #40; not an independent GitHub Reviewer signature"
     }
   ]
 }

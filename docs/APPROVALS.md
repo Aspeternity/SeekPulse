@@ -1,6 +1,6 @@
 # 审批及执行权限记录（人工可核实）
 
-> **最新（2026-10-15）**：用户已分别批准 Docker-01/02/03 离线验收与独立合并（PR #33/#35/#37），最新 main `1d24b156`，新 G0 #38631128468 **4/4 PASS**。用户最新仅批准 Docker-04 / #38 / Draft PR #39 的**基础镜像 Digest 固定、OS/Python CVE/双架构 SBOM/供应链安全审查及 GitHub 临时 runner 离线开发**；尚未授权 Docker-04 阶段验收、PR 合并、GHCR 镜像发布/Tag、真实 NAS/PVE/Portainer/群晖部署、生产凭据/数据库/通知。后续仍以明确用户指令、最新 Issues/PR/CI 为准。
+> **最新（2026-10-15）**：Docker-01/02/03/04 各自离线验收与独立 Squash 合并已完成，当前 `main fbb4f4009954567e3ed2943c0428075d8cf32fec`，合并后 G0 #38639966882 **4/4 PASS**；Docker-04 的 Trivy **High 48 条（12 个不同 CVE）** 仍使 GHCR 发布 **BLOCKED**。用户最新**仅批准 Docker-05 / Issue #40 的 High CVE 定向审查与离线修复开发**，不含阶段验收、PR 合并、解除风险阻断、正式发布、NAS/PVE 部署或生产通知。以实时 GitHub + 用户原话优先；下方老批次仅历史。
 
 ## 2026-10-13：V1.1 方案批准，G0 授权
 
@@ -151,3 +151,11 @@ S7-01 文档规划经用户回复「批准」验收后，用户另行回复「�
 - **Docker-04 本轮最新授权原话：“批准”。** 紧邻申请是“是否批准启动 Docker-04 发布前安全审查与离线开发”，明确包含**基础镜像 Digest 固定、OS/Python 依赖漏洞扫描、SBOM 和供应链安全检查**，并写明“这一步仍不推送 GHCR 镜像，也不部署 NAS/PVE。真正发布时再单独申请授权”。因此仅授权 [Issue #38](https://github.com/Aspeternity/SeekPulse/issues/38)，ChatGPT 唯一写入，`feat/s7-docker-04-security-review`、[Draft PR #39](https://github.com/Aspeternity/SeekPulse/pull/39) 的**临时 runner 离线代码、公开镜像/公开漏洞库审计和 CI**。扫描执行成功**不自动证明安全可发布**；若有严重漏洞/扫描不完整应记录为 BLOCKED/UNKNOWN，拒绝隐瞒。
 - **本次未获授权** Docker-04 人工阶段验收、PR 合并、正式 GHCR Login/Push/Tag/Release、访问用户 NAS/PVE/Portainer/群晖、读取旧 SQLite/备份/Session/Token、真实 Telegram/Bark/ntfy 通知、真实回滚/48–72h/Gate D–G。
 - 基础镜像只读预检参考：[GH Actions #38632803851](https://github.com/Aspeternity/SeekPulse/actions/runs/38632803851)，核验 python:3.11-slim 官方多架构索引 digest；该 digest 是**基础镜像 index digest**，并非未来 SeekPulse GHCR 已发布镜像的远端 digest。阶段成果应以 PR #39 最新 HEAD 和 CI 实际结果核对。此摘要不是 GitHub 独立 Reviewer 签名。
+
+
+## 2026-10-15：Docker-04 独立验收并合并；Docker-05 仅获 High CVE 离线修复开发授权
+
+- Docker-04 [Issue #38](https://github.com/Aspeternity/SeekPulse/issues/38) 先按获准范围完成 AMD64/ARM64 本地 Trivy、CycloneDX 及基础镜像 digest 锁定；用户在明确请求“**仅按 Docker-04 已完成的离线安全审查和开发范围验收，保留 High 漏洞发布阻断**”后单独答复“**批准**”；又在明确申请已验收 [PR #39](https://github.com/Aspeternity/SeekPulse/pull/39) 精确 HEAD `2c2dd814` 转 Ready、Squash 合并 main 并核对 CI 时再单独回答“**批准**”。新 main `fbb4f4009954567e3ed2943c0428075d8cf32fec`，新 [G0 #38639966882](https://github.com/Aspeternity/SeekPulse/actions/runs/38639966882) **4/4 PASS**。本批准从未涵盖风险免责、GHCR 发布或真实宿主机。
+- **最新本阶段授权**：ChatGPT 提出“**是否批准启动下一阶段的 High CVE 专项审查与离线修复开发？仍不发布 GHCR、不部署 NAS/PVE；完成修复和复测后再单独申请验收。**”用户直接回答“**批准**”。唯一负责人 ChatGPT，[Docker-05 Issue #40](https://github.com/Aspeternity/SeekPulse/issues/40)，`feat/s7-docker-05-high-cve-remediation` 分支；仅允许对 V1.1 opt-in 镜像的 PyPI 修复、安全矩阵分析、GitHub 临时 runner 两 Python 与 AMD64/ARM64 Trivy/SBOM 执行，不允许旧版依赖/默认 Dockerfile/Compose 任意更改或 Debian unstable 混装。
+- **没有获得** Docker-05 人工阶段验收、PR 合并、High CVE 风险接受/免责、正式 GHCR login/push/Tag/Release、远端 registry digest、NAS/PVE/Portainer/群晖/VPS 连接、生产 SQLite/Session/Token、Telegram/Bark/ntfy 真实通知及 Gate D–G/48–72h 的批准。即使 PyPI High 修复后 OS High 残留，`BLOCKED_HIGH_OR_CRITICAL` 继续保持；须重新按最新公开漏洞 DB 和准确受验 SHA 核对。
+- 本节是对当前聊天用户原话与紧邻问题的审批范围解释，**不是 GitHub 独立 Reviewer 签名**；跨对话以 Issue #40/新 Draft PR 与 #16、AGENTS.md 和实际 CI/SHA 为准。
