@@ -8,8 +8,10 @@ must run all cases without skips.
 
 from __future__ import annotations
 
+import os
 import re
 from datetime import datetime, timezone
+from unittest.mock import patch
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
@@ -336,6 +338,42 @@ class S5WebContracts(unittest.IsolatedAsyncioTestCase):
             blocked = await client.get("/rules")
             self.assertEqual(blocked.status_code, 409)
         self.assertIsNone(await self.db.get_user_settings_by_tg_user(7333))
+
+    async def test_keyword_count_limit_matches_existing_bot(self):
+        csrf = await self.sign_in()
+        # The admin already has one existing Bot keyword in shared SQLite.
+        with patch.dict(os.environ, {"MAX_KEYWORDS_PER_USER": "1"}):
+            response = await self.client.post(
+                "/rules/add", data={"_csrf": csrf, "keyword": "oracle"}
+            )
+        self.assertEqual(response.status_code, 422)
+        self.assertEqual(len(await self.db.list_keywords_by_tg_user(1001)), 1)
+
+    async def test_latency_is_source_to_api_not_mobile_and_scoped(self):
+        from app.web_service import WebService
+
+        await self.core.observe(SourceObservation(
+            source=Source.RSS, event_id="latency-rss", post_id=888,
+            observed_at=STAMP, title="Measured admin post",
+        ))
+        start = int(STAMP.timestamp())
+        await self.core.enqueue(
+            self.admin.id, 888, [self.admin_target.id], now=start + 1
+        )
+        task = (await self.core.claim(now=start + 2, limit=1))[0]
+        self.assertTrue(await self.core.mark_sent(
+            task.id, task.lease_token, now=start + 5
+        ))
+        metrics = await WebService(self.path, 1001).dashboard()
+        self.assertEqual(metrics["latency_samples"], 1)
+        self.assertEqual(metrics["source_api_p50_ms"], 5000)
+        self.assertEqual(metrics["source_api_p95_ms"], 5000)
+        await self.sign_in()
+        html = (await self.client.get("/")).text
+        self.assertIn("P50 延迟", html)
+        self.assertIn("API 接受", html)
+        self.assertIn("5000", html)
+        self.assertIn("不能代表论坛发布时间或手机实际提醒", html)
 
     async def test_web_default_and_priority_update_reflect_s4_policy(self):
         csrf = await self.sign_in()

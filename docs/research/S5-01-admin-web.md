@@ -5,7 +5,7 @@
 ## 功能交付与依赖
 
 - FastAPI 0.143.0、Jinja2 3.1.6、Uvicorn 0.54.0、python-multipart 0.0.32；HTMX 2.0.8 已 vendor 在 app/web_ui/static，附带 0BSD 许可。专用 requirements-s5.txt 向上引用已固定 S1-S4 依赖，原 requirements.txt 不变。
-- 中文响应式后台：概览、关键词/屏蔽词/AND 组合、S3 来源状态、现有通知目标及 S4 路由、历史和设置。概览片段通过本地 HTMX 定时查询同一 SQLite；CSS 支持明暗模式，无 CDN。
+- 中文响应式后台：概览、关键词/屏蔽词/AND 组合、S3 来源状态、现有通知目标及 S4 路由、历史和设置。概览片段通过本地 HTMX 定时查询同一 SQLite；统计最近 200 条有效的来源首次观测至 API 接受延迟 P50/P95 并区分手机到达。Web 添加关键词遵守 Bot 原有 MAX_KEYWORDS_PER_USER 数量上限。CSS 支持明暗模式，无 CDN。
 - 认证与防护：独立 scrypt 密码哈希、服务端会话/CSRF、登录限速、Host/loopback/Origin 安全限制、Jinja2 自动转义与 CSP。Web 仅管理员本人视角，不可访问其他 Bot 用户数据。
 
 ## 离线验证

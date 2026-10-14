@@ -10,7 +10,7 @@
 4. **认证。** 独立 Web 管理密码采用 scrypt 盐化哈希，从受保护环境读取 SEEKPULSE_WEB_PASSWORD_HASH；不允许 Bot Token 兼作 Web 凭据。交互式 python -m app.web_auth 仅输出哈希。服务端内存保存不可逆 SHA256 会话 token 键、CSRF 和到期时间，HttpOnly、SameSite Strict cookie；成功登录后旋转会话，退出及进程重启失效，匿名登录页也要求 CSRF。五次失败后有界登录限速。
 5. **请求安全。** 写操作必须 POST、管理员登录和 CSRF token；提供 Origin 时必须同源。Jinja2 自动转义，CSP 禁止内联脚本及第三方源，并启用 NoSniff、NoReferrer、Frame Deny、NoStore。HTMX 2.0.8 本地静态资源，随附 Zero-Clause BSD 许可证，无任何 CDN/远程 JS。请求值及 ID 均在服务器校验；不反射机密或原始异常。
 6. **唯一业务配置。** Web/Bot 修改关键词、AND 条件、屏蔽词、启停、版块时共用上游方法；来源启停只调整 S3 状态，不能宣称已启动未集成的 TG 采集；通知只允许为已有且合法归属的 target_id 配置 provider 及环境变量安全引用。**非 Telegram 正式新目标身份/迁移仍未完成，本阶段绝不制造假 chat_id 或输入设备 URL/Key。**
-7. **只读健康和历史。** 任务统计、来源健康、最近 50 项管理员 S2 任务及最近 40 项旧 Bot 历史必须 LIMIT 且带 user_id 作用域；显示 API 接受不等于手机收到，不推断全链路延迟。
+7. **只读健康、统计和历史。** 任务统计、来源健康、最近 50 项管理员 S2 任务和最近 40 项旧 Bot 历史必须 LIMIT 且带 user_id 作用域；API 已接受任务的最近 200 有效样本基于首次来源观测与 sent_at 计算可观测延迟 P50/P95（毫秒），严格区分手机到达，不杜撰尚无的样本。Web 新增关键词也读取与 Bot 相同的 MAX_KEYWORDS_PER_USER 上限。
 
 ## 被拒方案和残余风险
 

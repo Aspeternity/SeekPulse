@@ -6,6 +6,16 @@
   <section id="summary" aria-label="任务摘要" hx-get="/fragments/summary" hx-trigger="every 30s" hx-swap="innerHTML">
     {% include "_summary.html" %}
   </section>
+  <section class="panel">
+    <div class="panel-head"><h2>首次观察 → 通知 API 接受</h2><span class="muted">仅统计管理员任务的最近 200 条有效样本</span></div>
+    <div class="metric-grid">
+      <article class="metric"><span>P50 延迟</span><strong>{{ source_api_p50_ms if source_api_p50_ms is not none else '—' }}</strong><small>毫秒 · API 接受口径</small></article>
+      <article class="metric"><span>P95 延迟</span><strong>{{ source_api_p95_ms if source_api_p95_ms is not none else '—' }}</strong><small>毫秒 · API 接受口径</small></article>
+      <article class="metric"><span>有效样本</span><strong>{{ latency_samples }}</strong><small>无样本时不推断延迟</small></article>
+      <article class="metric"><span>永久失败</span><strong>{{ count_failed }}</strong><small>仅该管理员的任务</small></article>
+    </div>
+    <p class="muted small">数据区间：来源首次观测到外部通知 API 返回接受，不能代表论坛发布时间或手机实际提醒；Web 尚未接管现有 Bot 的生产流程。</p>
+  </section>
   <div class="two-col">
     <section class="panel">
       <div class="panel-head"><h2>来源健康</h2><a href="/sources">查看设置 →</a></div>

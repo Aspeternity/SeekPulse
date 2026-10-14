@@ -7,8 +7,11 @@ changes immediately through the same SQLite file.
 
 from __future__ import annotations
 
+import math
+import os
 import re
 import time
+from datetime import datetime
 from pathlib import Path
 
 import aiosqlite
@@ -109,6 +112,35 @@ class WebService:
                    WHERE user_id=? AND status IN ('pending','retry_wait')""",
                 (owner.user_id,),
             )).fetchone()
+            # Only source-observation -> API-accepted latency is measurable.
+            # Sample is limited and per-user; never call this mobile delivery.
+            samples = await (await conn.execute(
+                """SELECT dt.sent_at,
+                          (SELECT MIN(so.observed_at) FROM source_observations so
+                           WHERE so.post_id=dt.post_id) AS first_seen
+                   FROM delivery_tasks dt
+                   WHERE dt.user_id=? AND dt.status='sent' AND dt.sent_at IS NOT NULL
+                   ORDER BY dt.id DESC LIMIT 200""",
+                (owner.user_id,),
+            )).fetchall()
+        latencies = []
+        for sent_at, observed_at in samples:
+            try:
+                when = datetime.fromisoformat(observed_at)
+                if when.tzinfo is None:
+                    continue
+                diff = round((sent_at - when.timestamp()) * 1000)
+                if diff >= 0:
+                    latencies.append(diff)
+            except (TypeError, ValueError, OverflowError):
+                continue
+        latencies.sort()
+
+        def percentile(level: float) -> int | None:
+            if not latencies:
+                return None
+            return latencies[max(0, math.ceil(level * len(latencies)) - 1)]
+
         counts = {name: n for name, n in entries}
         return {
             "count_tasks": sum(counts.values()),
@@ -120,6 +152,9 @@ class WebService:
                 max(0, int(time.time()) - int(oldest[0])) if oldest[0] is not None else 0
             ),
             "counts": counts,
+            "source_api_p50_ms": percentile(0.50),
+            "source_api_p95_ms": percentile(0.95),
+            "latency_samples": len(latencies),
             "sources": (await self.sources_view())["sources"],
         }
 
@@ -164,6 +199,18 @@ class WebService:
     async def add_rule(self, keyword: str) -> bool:
         await self._owner()
         raw, terms = self._keyword(keyword)
+        # Honor exactly the same keyword-count limit as existing Bot commands.
+        limit_raw = os.getenv(
+            "MAX_KEYWORDS_PER_USER", os.getenv("MAX_SUBSCRIPTIONS_PER_USER", "50")
+        )
+        try:
+            limit = int(limit_raw)
+        except ValueError as exc:
+            raise ValueError("invalid keyword limit") from exc
+        if not 1 <= limit <= 1000:
+            raise ValueError("invalid keyword limit")
+        if await self.db.count_keywords_by_tg_user(self.admin_tg_id) >= limit:
+            raise ValueError("keyword limit reached")
         created, _ = await self.db.add_keyword(self.admin_tg_id, raw, terms)
         return created
 
