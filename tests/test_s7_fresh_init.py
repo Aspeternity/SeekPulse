@@ -17,7 +17,6 @@ from unittest.mock import patch
 from app.db import Database
 from app.fresh_init import (
     check_prepared_database,
-    database_path_from_environment,
     initialize_empty_database,
 )
 from app.instance_lock import database_owner_lock
