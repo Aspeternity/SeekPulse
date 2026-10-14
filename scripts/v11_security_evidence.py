@@ -146,8 +146,12 @@ def verify_security_evidence(
              "missing_vulnerability_scan_targets")
     classes: set[str] = set()
     severity_counts: Counter[str] = Counter()
+    class_severity: dict[str, Counter[str]] = {
+        "os-pkgs": Counter(), "lang-pkgs": Counter()
+    }
     blocker_ids: set[str] = set()
     fixed_blocker_ids: set[str] = set()
+    affected_packages: set[tuple[str, str, str, str, str, str]] = set()
     for result in results:
         _require(isinstance(result, dict), "invalid_scan_result")
         classification = result.get("Class")
@@ -163,10 +167,24 @@ def verify_security_evidence(
             vid = vuln.get("VulnerabilityID")
             _require(isinstance(vid, str) and vid, "invalid_vulnerability_identifier")
             severity_counts[level] += 1
+            class_severity[classification][level] += 1
             if level in {"HIGH", "CRITICAL"}:
                 blocker_ids.add(vid)
                 if vuln.get("FixedVersion"):
                     fixed_blocker_ids.add(vid)
+                # Actual affected package/version evidence is essential for
+                # remediation decisions; only PUBLIC package metadata here.
+                package = vuln.get("PkgName", "")
+                installed = vuln.get("InstalledVersion", "")
+                fixed = vuln.get("FixedVersion", "")
+                _require(isinstance(package, str) and package,
+                         "missing_high_severity_package")
+                for value in (package, installed, fixed):
+                    _require(isinstance(value, str) and len(value) <= 150,
+                             "invalid_package_version")
+                affected_packages.add((
+                    classification, level, vid, package, installed, fixed
+                ))
     _require(classes == {"os-pkgs", "lang-pkgs"},
              "os_or_python_vulnerability_scan_missing")
     gate = (
@@ -184,6 +202,21 @@ def verify_security_evidence(
         "findings": {
             "by_severity": {name: severity_counts[name]
                             for name in ("CRITICAL", "HIGH", "MEDIUM", "LOW", "UNKNOWN")},
+            "by_package_class": {
+                category: {level: class_severity[category][level]
+                           for level in ("CRITICAL", "HIGH", "MEDIUM", "LOW", "UNKNOWN")}
+                for category in ("os-pkgs", "lang-pkgs")
+            },
+            "high_critical_affected_package_matches": len(affected_packages),
+            "high_critical_package_sample": [
+                {
+                    "source": category, "severity": level, "id": vid,
+                    "package": package, "installed": installed,
+                    "fixed": fixed or None,
+                }
+                for category, level, vid, package, installed, fixed
+                in sorted(affected_packages)[:30]
+            ],
             "high_critical_unique_ids": len(blocker_ids),
             "high_critical_with_fixed_version_unique_ids": len(fixed_blocker_ids),
             "high_critical_sample_ids": sorted(blocker_ids)[:20],

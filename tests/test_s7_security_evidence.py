@@ -98,6 +98,10 @@ class VulnerabilityGate(unittest.TestCase):
             verdict["findings"]["high_critical_with_fixed_version_unique_ids"], 1
         )
         self.assertFalse(verdict["release_ready"])
+        self.assertEqual(verdict["findings"]["high_critical_affected_package_matches"], 2)
+        sample = verdict["findings"]["high_critical_package_sample"]
+        self.assertEqual({entry["package"] for entry in sample}, {"openssl", "libexample"})
+        self.assertEqual(verdict["findings"]["by_package_class"]["os-pkgs"]["HIGH"], 1)
 
     def test_medium_and_low_require_review_not_clearance(self):
         data = fixture()
