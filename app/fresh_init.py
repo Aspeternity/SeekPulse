@@ -10,7 +10,7 @@ from __future__ import annotations
 import os
 import sqlite3
 import tempfile
-from contextlib import suppress
+from contextlib import closing, suppress
 from pathlib import Path
 
 from app.instance_lock import database_owner_lock
@@ -40,7 +40,7 @@ def _validate_path(path: Path) -> None:
         if (not parent.is_dir() or parent.is_symlink()
                 or parent.resolve() != parent or path.is_symlink()):
             raise RuntimeError("fresh_init_unsafe_database_path")
-    except (OSError, ValueError) as exc:
+    except (OSError, ValueError):
         raise RuntimeError("fresh_init_unsafe_database_path") from None
 
 
@@ -70,7 +70,9 @@ def check_prepared_database(path: Path) -> int:
         _validate_path(path)
         if not path.is_file() or path.is_symlink():
             raise RuntimeError("v11_database_not_prepared")
-        with sqlite3.connect(path.as_uri() + "?mode=ro", uri=True, timeout=2.0) as db:
+        with closing(sqlite3.connect(
+            path.as_uri() + "?mode=ro", uri=True, timeout=2.0
+        )) as db:
             db.execute("PRAGMA query_only=ON")
             row = db.execute(
                 "SELECT value FROM gate_b_schema_meta "
@@ -142,7 +144,9 @@ async def initialize_empty_database(path: Path) -> int:
             report = inspect_database(stage)
             # S6's deliberately redacted report omits the initialized bit.
             # Check only our fresh staging file, not any existing user DB.
-            with sqlite3.connect(stage.as_uri() + "?mode=ro", uri=True) as db:
+            with closing(sqlite3.connect(
+                stage.as_uri() + "?mode=ro", uri=True
+            )) as db:
                 initial_states = dict(db.execute(
                     "SELECT source, initialized FROM s3_source_status"
                 ).fetchall())

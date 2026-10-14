@@ -7,7 +7,7 @@ import hashlib
 import os
 import sqlite3
 import unittest
-from contextlib import redirect_stdout
+from contextlib import closing, redirect_stdout
 from io import StringIO
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -57,7 +57,7 @@ class FreshDatabaseContracts(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(report["tasks"], {})
             self.assertEqual(report["sources"]["rss"]["enabled"], True)
             self.assertEqual(report["sources"]["telegram"]["enabled"], False)
-            with sqlite3.connect(path) as db:
+            with closing(sqlite3.connect(path)) as db:
                 self.assertEqual(db.execute(
                     "SELECT COUNT(*) FROM source_observations"
                 ).fetchone()[0], 0)
