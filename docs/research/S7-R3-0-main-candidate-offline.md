@@ -17,6 +17,8 @@
 - 输出 `LOCAL_EVIDENCE_CLEAN_AWAITING_MANUAL_RELEASE_APPROVAL` 只表示**当次**本地镜像与**当次**公开 DB 未报告漏洞，不等于 GHCR package 已存在、远端签名/attestation 已验证，也不代表人工风险接受。DB/依赖/底座如变化，必须再次扫描；失败或不可用则 `BLOCKED/UNKNOWN`。
 - 历史 Debian Trixie 44 条包×CVE/8 个 OS High 是**另一旧镜像**历史证据；Alpine 本次未报告不是“Debian 已修复”的同义词。
 
+本次额外复用 Docker-03 的 `scripts/inspect_v11_oci.py`，对**同一精确 main SHA** 用 QEMU/Buildx 生成**仅在临时 Runner 的本地** AMD64+ARM64 OCI archive，逐项验证 OCI index/platform manifest/config/layer SHA、`org.opencontainers.image.revision` 和 `0.0.0-ci`。预期 `R30_EXACT_MAIN_OCI_SOURCE=PASS`、`R30_MAIN_MULTIARCH_LOCAL_OCI_ONLY=PASS`，`remote_ghcr_digest=null`；**注意该 QEMU 归档与各 native 扫描镜像属于不同构建，不能据此推定字节一致，更不能冒充未来 GHCR index**。没有 registry 登录、推送或上传 archive。
+
 ## 3. 将来真正 R3-1 发行的顺序（**仅方案，不执行**）
 
 **不允许“先扫描一个本地构建，换个 Runner 重建再推送就视为相同字节”。**

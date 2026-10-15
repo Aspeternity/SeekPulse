@@ -196,3 +196,54 @@ jobs:
           assert report["remote_index_digest"] is None
           print("R30_MAIN_OFFLINE_EVIDENCE_ONLY=PASS platform=" + report["platform"])
           PY
+
+  main-oci-provenance:
+    name: Exact main AMD64+ARM64 local OCI manifest and blobs (no registry)
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ github.event.pull_request.base.sha || github.sha }}
+      - name: Enforce same precise main source as native safety jobs
+        shell: bash
+        run: |
+          set -euo pipefail
+          source_sha="$(git rev-parse HEAD)"
+          expected_sha="${{ github.event.pull_request.base.sha || github.sha }}"
+          [[ "$source_sha" =~ ^[0-9a-f]{40}$ ]]
+          test "$source_sha" = "$expected_sha"
+          echo "SOURCE_SHA=$source_sha" >> "$GITHUB_ENV"
+          echo "R30_EXACT_MAIN_OCI_SOURCE=PASS sha=$source_sha"
+      - name: Enable QEMU for isolated ARM64 OCI metadata build
+        uses: docker/setup-qemu-action@1f40c72289eff860ee54a304f1438e3cff362e0a # v4.3.0
+      - name: Isolated Buildx OCI archive builder
+        uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0
+      - name: Inspect complete local OCI index, platform manifests and SHA refs
+        shell: bash
+        run: |
+          set -euo pipefail
+          archive="${RUNNER_TEMP}/seekpulse-r30-main.oci.tar"
+          docker buildx inspect --bootstrap
+          docker buildx build --progress plain \
+            --file Dockerfile.v11 \
+            --platform linux/amd64,linux/arm64 \
+            --provenance=false --sbom=false \
+            --build-arg SEEKPULSE_BUILD_VERSION=0.0.0-ci \
+            --build-arg "SEEKPULSE_BUILD_REVISION=${SOURCE_SHA}" \
+            --output "type=oci,dest=${archive}" .
+          test -s "$archive"
+          python scripts/inspect_v11_oci.py \
+            --archive "$archive" --revision "${SOURCE_SHA}" \
+            --version 0.0.0-ci > "${RUNNER_TEMP}/r30-oci-validated.json"
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          p = Path(os.environ["RUNNER_TEMP"]) / "r30-oci-validated.json"
+          report = json.loads(p.read_text())
+          assert report["platforms"] == ["linux/amd64", "linux/arm64"]
+          assert report["status"] == "LOCAL_OCI_VERIFIED_NOT_PUBLISHED"
+          assert report["remote_ghcr_digest"] is None
+          assert report["release_authorized"] is False
+          print("R30_MAIN_MULTIARCH_LOCAL_OCI_ONLY=PASS")
+          PY
