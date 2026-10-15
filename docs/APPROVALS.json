@@ -495,6 +495,51 @@
       "user_instruction": "批准",
       "context": "Direct reply to '单独制定受支持的 OS 漏洞修复或替代基础镜像方案。需要新的开发授权' after Docker-06 independently accepted/merged",
       "source": "Current user conversation, Issue #44 and Draft PR #45; not a GitHub UI reviewer signature"
+    },
+    {
+      "event_id": "APPROVAL-2026-10-15-DOCKER07-OFFLINE-ACCEPT-AND-INDEPENDENT-MERGE",
+      "date": "2026-10-15",
+      "approved_plan": "SeekPulse V1.1",
+      "authorization_kind": "independent_offline_acceptance_then_independent_squash_merge",
+      "authorized_stage": "S7-Docker-07",
+      "issue": 44,
+      "pr": 45,
+      "authorized_actions": [
+        "User accepted only supported OS research and native AMD64/ARM64 full app Alpine offline testing",
+        "User later separately approved exact PR #45 HEAD a3b4e21b574c64cda190849a7686bbd354328b8f Ready+Squash merge",
+        "New main 30c246be5f7cb11fb315ccecc882798b75f28160 and G0 run 38718379825 4/4 PASS"
+      ],
+      "not_authorized": [
+        "Select Alpine as approved live V1.1 image in main under Docker-07 permission",
+        "GHCR publish/Tag/Release, risk waiver, NAS/PVE/Portainer/Synology, production credentials/DB, real notifications"
+      ],
+      "user_instruction": "批准（对 Docker-07 离线验收）；批准（对 PR #45 独立 Squash 合并）",
+      "source": "Current ChatGPT conversation and Issue #44 approval comment 6189609492 / merge comment 6189677762; not a separately signed GitHub Review"
+    },
+    {
+      "event_id": "APPROVAL-2026-10-15-DOCKER08-ALPINE-RUNTIME-OFFLINE-DEV-ONLY",
+      "date": "2026-10-15",
+      "approved_plan": "SeekPulse V1.1",
+      "authorization_kind": "stage_design_and_offline_development_only",
+      "authorized_stage": "S7-Docker-08",
+      "issue": 46,
+      "pr": 47,
+      "authorized_actions": [
+        "Design ADR-0015 for supported pinned official Alpine runtime for opt-in Dockerfile.v11",
+        "Develop minimal Alpine runtime compatibility changes in an isolated Draft PR, while keeping legacy and Compose/user protocols unchanged",
+        "Update fail-closed CVE/Trivy/SBOM scanner expected OS identity and tests without suppressing Debian historical CVEs",
+        "Run actual formal image native AMD64/ARM64 offline WAL/TLS/nonroot/notification mocks and comprehensive public security CI",
+        "Request independent user offline-stage acceptance after latest HEAD CI"
+      ],
+      "not_authorized": [
+        "Treat this as stage acceptance, mark Ready or merge PR #47 to main without new approval",
+        "Treat old Debian CVE disappearance in Alpine as patched or approve/ignore new CVEs",
+        "GHCR login/push/tag/release or official remote registry digest",
+        "NAS/PVE/Portainer/Synology/VPS, production SQLite/Session/Token/backups, live Telegram/Bark/ntfy, Gate D-G"
+      ],
+      "user_instruction": "批准",
+      "context": "Immediate response to '是否批准启动 Docker-08 的方案设计及离线开发？本次不包含合并、发布或实机部署。'",
+      "source": "Current user ChatGPT reply, Issue #46, Draft PR #47; not GitHub UI reviewer signature"
     }
   ]
 }

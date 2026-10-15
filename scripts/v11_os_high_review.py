@@ -1,4 +1,4 @@
-"""Docker-06: reconcile Debian OS High CVEs with an ACTUAL local Trivy scan.
+"""Docker-06/08: reconcile OS High CVEs with an ACTUAL local Trivy scan.
 
 The output is an evidence-only risk inventory, never a vulnerability waiver,
 an exploitability claim, or permission to publish a registry image.  This
@@ -60,6 +60,7 @@ def review_os_high(
     validated_report: dict[str, Any],
     platform: str,
     image: str,
+    os_family: str = "debian",
 ) -> dict[str, Any]:
     """Check scan identity + both package classes + exact high counts.
 
@@ -68,6 +69,7 @@ def review_os_high(
     An absent historical CVE is NOT automatically considered fixed.
     """
     _need(platform in _VALID_PLATFORMS, "invalid_expected_platform")
+    _need(os_family in {"debian", "alpine"}, "invalid_expected_os_family")
     _need(isinstance(image, str) and image == f"seekpulse-security-local:{platform.split('/')[1]}",
           "invalid_expected_local_image")
 
@@ -76,6 +78,8 @@ def review_os_high(
           "not_validated_local_scan")
     _need(validated_report.get("platform") == platform, "report_platform_mismatch")
     _need(validated_report.get("image") == image, "report_image_mismatch")
+    _need(validated_report.get("os_family") == os_family,
+          "validated_report_os_family_mismatch")
     _need(validated_report.get("release_authorized") is False and
           validated_report.get("release_ready") is False,
           "invalid_release_authorization")
@@ -96,7 +100,7 @@ def review_os_high(
     meta = scan.get("Metadata")
     _need(isinstance(meta, dict), "missing_image_metadata")
     os_meta = meta.get("OS")
-    _need(isinstance(os_meta, dict) and os_meta.get("Family") == "debian",
+    _need(isinstance(os_meta, dict) and os_meta.get("Family") == os_family,
           "wrong_os_family")
     img_id = meta.get("ImageID")
     _need(isinstance(img_id, str) and re.fullmatch(r"sha256:[0-9a-f]{64}", img_id)
@@ -162,8 +166,11 @@ def review_os_high(
         packages = sorted(affected.get(cve, ()))
         historical[cve] = {
             "source_package": source_package,
-            "scan_state": ("HIGH_REPORTED" if packages else
-                           "NOT_REPORTED_VERIFY_UPSTREAM"),
+            "scan_state": (
+                "HIGH_REPORTED" if packages else
+                "NOT_REPORTED_VERIFY_UPSTREAM" if os_family == "debian" else
+                "NOT_REPORTED_IN_DIFFERENT_DISTRO_NOT_A_FIX"
+            ),
             "affected_package_matches": len(packages),
             "affected_packages": [
                 {"package": n, "installed": version,
@@ -174,7 +181,8 @@ def review_os_high(
     additional = sorted(set(affected).difference(_HISTORICAL_OS_CVES))
 
     return {
-        "scope": "LOCAL_RUNTIME_DEBIAN_OS_HIGH_REVIEW",
+        "scope": "LOCAL_RUNTIME_OS_HIGH_REVIEW",
+        "os_family": os_family,
         "platform": platform,
         "local_image": image,
         "scanner_db": dict(db),
@@ -183,7 +191,11 @@ def review_os_high(
         "os_distinct_high_critical_ids": len(affected),
         "historical_high_cves": historical,
         "other_high_critical_cve_ids": additional,
-        "source_status_snapshot": "DEBIAN_TRACKER_2026-10-15_RECHECK_REQUIRED",
+        "source_status_snapshot": (
+            "DEBIAN_TRACKER_2026-10-15_RECHECK_REQUIRED"
+            if os_family == "debian" else
+            "HISTORICAL_DEBIAN_CVES_NOT_ALPINE_PATCH_PROOF"
+        ),
         "risk_gate": existing_gate,
         "release_authorized": False,
         "release_ready": False,
@@ -205,17 +217,19 @@ def _read(path: Path) -> dict[str, Any]:
 
 
 def main(argv: list[str] | None = None) -> int:
-    p = argparse.ArgumentParser(description="Review local Debian OS High; never release")
+    p = argparse.ArgumentParser(description="Review local OS High, retain Debian historical evidence; never release")
     p.add_argument("--scan", type=Path, required=True)
     p.add_argument("--validated-report", type=Path, required=True)
     p.add_argument("--platform", choices=sorted(_VALID_PLATFORMS), required=True)
     p.add_argument("--image", required=True)
+    p.add_argument("--os-family", choices=("debian", "alpine"), default="debian")
     p.add_argument("--output", type=Path, required=True)
     args = p.parse_args(argv)
     try:
         evidence = review_os_high(
             scan=_read(args.scan), validated_report=_read(args.validated_report),
-            platform=args.platform, image=args.image
+            platform=args.platform, image=args.image,
+            os_family=args.os_family,
         )
     except OSHighEvidenceError as exc:
         p.error(str(exc))
@@ -224,7 +238,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     print(
         "OS_HIGH_REVIEW=VALID "
-        f"platform={args.platform} "
+        f"os_family={args.os_family} platform={args.platform} "
         f"os_high_records={evidence['os_high_records']} "
         f"distinct_os_high_ids={evidence['os_distinct_high_critical_ids']} "
         f"release_gate={evidence['risk_gate']} "

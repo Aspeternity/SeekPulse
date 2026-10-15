@@ -75,6 +75,7 @@ def verify_security_evidence(
     image_inspect: dict[str, Any],
     platform: str,
     image_tag: str,
+    os_family: str = "debian",
     now: datetime | None = None,
 ) -> dict[str, Any]:
     """Fail closed on missing evidence; return release BLOCKED on real CVEs.
@@ -83,6 +84,7 @@ def verify_security_evidence(
     Never use a local OCI digest as an official GHCR remote registry digest.
     """
     _require(platform in _PLATFORMS, "unexpected_image_platform")
+    _require(os_family in {"debian", "alpine"}, "unsupported_expected_os_family")
     current = (now or datetime.now(timezone.utc)).astimezone(timezone.utc)
     freshness = _db_freshness(db_metadata, current)
 
@@ -117,15 +119,18 @@ def verify_security_evidence(
              "missing_bom_components")
     os_packages = 0
     python_packages = 0
+    os_purl = {"debian": "pkg:deb/", "alpine": "pkg:apk/"}[os_family]
+    foreign_purl = {"debian": "pkg:apk/", "alpine": "pkg:deb/"}[os_family]
     for item in components:
         _require(isinstance(item, dict), "invalid_bom_component")
         purl = item.get("purl", "")
         _require(isinstance(purl, str), "invalid_bom_purl")
-        if purl.startswith("pkg:deb/"):
+        _require(not purl.startswith(foreign_purl), "mixed_or_wrong_distro_os_inventory")
+        if purl.startswith(os_purl):
             os_packages += 1
         if purl.startswith("pkg:pypi/"):
             python_packages += 1
-    _require(os_packages >= 10, "missing_debian_os_inventory")
+    _require(os_packages >= 10, "missing_" + os_family + "_os_inventory")
     _require(python_packages >= 5, "missing_python_dependency_inventory")
 
     _require(isinstance(scan, dict), "missing_trivy_json_scan")
@@ -136,8 +141,8 @@ def verify_security_evidence(
     metadata = scan.get("Metadata")
     _require(isinstance(metadata, dict), "scanner_missing_image_metadata")
     os_record = metadata.get("OS")
-    _require(isinstance(os_record, dict) and os_record.get("Family") == "debian",
-             "scanner_missing_debian_os")
+    _require(isinstance(os_record, dict) and os_record.get("Family") == os_family,
+             "scanner_wrong_os_family")
     report_image_id = metadata.get("ImageID")
     _require(isinstance(report_image_id, str) and report_image_id == image_id,
              "scanner_local_image_id_mismatch")
@@ -157,6 +162,9 @@ def verify_security_evidence(
         classification = result.get("Class")
         _require(classification in {"os-pkgs", "lang-pkgs"},
                  "unsupported_scan_result_class")
+        if classification == "os-pkgs":
+            _require(result.get("Type") == os_family,
+                     "scanner_os_result_family_mismatch")
         classes.add(classification)
         issues = result.get("Vulnerabilities") or []
         _require(isinstance(issues, list), "invalid_vulnerability_list")
@@ -197,8 +205,10 @@ def verify_security_evidence(
         "evidence": "VALID_LOCAL_SCAN_NOT_PUBLISHED",
         "platform": platform,
         "image": image_tag,
+        "os_family": os_family,
         "scanner_db": freshness,
-        "inventory": {"debian_packages": os_packages, "pypi_packages": python_packages},
+        "inventory": {os_family + "_packages": os_packages,
+                      "pypi_packages": python_packages},
         "findings": {
             "by_severity": {name: severity_counts[name]
                             for name in ("CRITICAL", "HIGH", "MEDIUM", "LOW", "UNKNOWN")},
@@ -250,6 +260,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--inspect", required=True, type=Path)
     parser.add_argument("--platform", required=True, choices=sorted(_PLATFORMS))
     parser.add_argument("--image", required=True)
+    parser.add_argument("--os-family", choices=("debian", "alpine"), default="debian")
     parser.add_argument("--output", required=True, type=Path)
     args = parser.parse_args(argv)
     try:
@@ -260,6 +271,7 @@ def main(argv: list[str] | None = None) -> int:
             image_inspect=_load(args.inspect),
             platform=args.platform,
             image_tag=args.image,
+            os_family=args.os_family,
         )
     except SecurityEvidenceError as exc:
         parser.error(str(exc))

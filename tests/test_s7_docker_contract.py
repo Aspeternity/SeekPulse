@@ -19,7 +19,7 @@ def load(name: str) -> str:
 class DockerPackagingContract(unittest.TestCase):
     def test_opt_in_image_contains_all_runtime_dependencies_and_web_files(self):
         dockerfile = load("Dockerfile.v11")
-        self.assertIn("FROM python:3.11-slim", dockerfile)
+        self.assertIn("FROM python:3.11-alpine3.24@sha256:", dockerfile)
         self.assertIn("-r requirements-s5.txt", dockerfile)
         self.assertIn("COPY app ./app", dockerfile)
         self.assertIn('ENTRYPOINT ["python", "-m", "app.v11_main"]', dockerfile)

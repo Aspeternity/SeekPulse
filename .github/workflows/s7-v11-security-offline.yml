@@ -1,4 +1,4 @@
-name: S7 V1.1 Docker-04 CVE, SBOM and Pinned Base (No Publish)
+name: S7 V1.1 Docker-04+08 CVE, SBOM and Pinned Alpine Base (No Publish)
 
 on:
   pull_request:
@@ -7,6 +7,7 @@ on:
       - 'scripts/v11_security_evidence.py'
       - 'tests/test_s7_security_evidence.py'
       - 'docs/decisions/ADR-0011-v11-release-security.md'
+      - 'docs/decisions/ADR-0015-v11-alpine-runtime-migration.md'
       - 'docs/deployment/V1.1-docker-offline.md'
       - '.github/workflows/s7-v11-security-offline.yml'
   workflow_dispatch:
@@ -57,7 +58,7 @@ jobs:
         run: |
           set -euo pipefail
           base="$(awk '$1 == "FROM" {print $2}' Dockerfile.v11)"
-          [[ "$base" =~ ^python:3[.]11-slim@sha256:[0-9a-f]{64}$ ]]
+          [[ "$base" =~ ^python:3[.]11-alpine3[.]24@sha256:d9368b3a5ac59afea7b5d4f2e2aea0941dbf9fdee9c369c5bec00b98244bc929$ ]]
           docker buildx imagetools inspect "$base" --raw > "${RUNNER_TEMP}/pinned-official-index.json"
           python - <<'PY'
           import json
@@ -77,19 +78,22 @@ jobs:
 
   scan-local-platform:
     name: Trivy OS+PyPI and CycloneDX / linux/${{ matrix.arch }} (local only)
-    runs-on: ubuntu-latest
+    # Native runners avoid emulated native-wheel and SQLite behavior in QEMU.
+    runs-on: ${{ matrix.runner }}
     timeout-minutes: 75
     strategy:
       fail-fast: false
       matrix:
-        arch: ['amd64', 'arm64']
+        include:
+          - arch: amd64
+            runner: ubuntu-latest
+          - arch: arm64
+            runner: ubuntu-24.04-arm
     env:
       # Job-level env cannot access runner.temp; hosted Linux runner is ephemeral.
       TRIVY_CACHE_DIR: /tmp/seekpulse-docker04-trivy-cache
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-      - name: Enable ARM64 emulation only in the ephemeral runner
-        uses: docker/setup-qemu-action@1f40c72289eff860ee54a304f1438e3cff362e0a # v4.3.0
       - name: Configure Buildx for local builds only
         uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0
       - name: Install a fixed Trivy scanner version from pinned action
@@ -180,6 +184,7 @@ jobs:
             --inspect "$root/inspect.json" \
             --platform "linux/${{ matrix.arch }}" \
             --image "$image" \
+            --os-family alpine \
             --output "$root/report.json"
           # Report is local-only and deliberately release_authorized=false.
           # A real High/Critical CVE is reported as BLOCKED; do not wash CI green.
@@ -211,7 +216,7 @@ jobs:
           print("PYPI_HIGH_AFTER_PATCH=0 OS_HIGH_REMAINS="+str(os_findings["HIGH"]))
 
           PY
-      - name: Review each Debian OS High CVE against full unsuppressed Trivy scan
+      - name: Review Alpine OS findings and retain historical Debian CVE evidence
         shell: bash
         run: |
           set -euo pipefail
@@ -222,6 +227,7 @@ jobs:
             --validated-report "$root/report.json" \
             --platform "linux/${{ matrix.arch }}" \
             --image "$image" \
+            --os-family alpine \
             --output "$root/os-high-review.json"
           python - <<'PY'
           import json, os
@@ -236,7 +242,8 @@ jobs:
           if os_high or os_critical:
               assert evidence["risk_gate"] == "BLOCKED_HIGH_OR_CRITICAL"
           cves={k:v["scan_state"] for k,v in evidence["historical_high_cves"].items()}
-          print("DEBIAN_OS_HIGH_CVE_EVIDENCE="+json.dumps({
+          assert evidence["os_family"] == "alpine"
+          print("ALPINE_OS_HIGH_AND_HISTORICAL_DEBIAN_EVIDENCE="+json.dumps({
               "platform":evidence["platform"],
               "os_high_records":os_high,
               "os_critical_records":os_critical,
@@ -245,4 +252,7 @@ jobs:
               "risk_gate":evidence["risk_gate"],
               "release_authorized":False,
           },sort_keys=True))
+          # Fail CI *after* emitting the precise unsuppressed affected-CVE
+          # evidence. Changing distro must never make High/Critical ignorable.
+          assert os_high == 0 and os_critical == 0, "runtime_alpine_os_high_or_critical"
           PY
