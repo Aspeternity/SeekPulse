@@ -32,7 +32,10 @@ RUN apk add --no-cache --upgrade 'zlib=1.3.2-r1' \
     && apk info -v | grep -Fx 'zlib-1.3.2-r1'
 
 # Each -r file contains approved direct pins; S5 includes S4/S3/upstream.
-# V1.1-only fixed-version security patches, applied in the same image layer.
+# V1.1-only security overrides, applied in one dependency layer.
+# pip==26.2.1 is a pinned BUILD tool, removed after pip check.
+# Pip's vendored setuptools 70.3.0 / urllib3 2.7.0 must not ship.
+# SeekPulse's production app runs without the pip installer.
 COPY requirements.txt requirements-s3.txt requirements-s4.txt requirements-s5.txt \
      requirements-v11-security.txt ./
 RUN python -m pip install --no-cache-dir --upgrade pip==26.2.1 \

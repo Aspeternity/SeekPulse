@@ -9,7 +9,7 @@
 
 ## 当前唯一许可：Docker-10 已知漏洞**离线修复开发**
 - 用户对明确请求“**启动 Docker-10 的漏洞修复方案设计及离线开发，非阶段验收、合并、GHCR 发布、NAS/PVE**”回复 **「批准」**，同时询问项目阶段。已在回复解释 **S7**，不是从头开发。独立 [Issue #50](https://github.com/Aspeternity/SeekPulse/issues/50) OPEN、[Draft PR #51](https://github.com/Aspeternity/SeekPulse/pull/51) OPEN、分支 `fix/s7-docker-10-remediate-runtime-cves-offline`，唯一写入者 ChatGPT；最新 HEAD/CI 必须实时查询，**未完成不得预报绿色**。
-- [ADR-0017](decisions/ADR-0017-v11-runtime-vulnerability-remediation.md) 研发候选：只在 opt-in V1.1 `Dockerfile.v11` 的旧固定 Alpine3.24 基础上，从 Alpine stable 仓库精确 `zlib=1.3.2-r1`、启动 pip 安装前升级固定 `pip==26.2.1`；`requirements-v11-security.txt` 只加 `python-dotenv==1.2.2`，原四个安全 pin 保留；旧 Dockerfile/两份 Compose/原版 requirements `app/` 和 DB/通知协议全部不改。两原生架构本地完整镜像、SQLite WAL/TLS/资源限制和最新 Trivy OS+PyPI/CycloneDX **对 8 个明确目标 CVE 全部不再报告**，无 ignore/隐瞒风险。
+- [ADR-0017](decisions/ADR-0017-v11-runtime-vulnerability-remediation.md) 研发候选：只在 opt-in V1.1 `Dockerfile.v11` 的旧固定 Alpine3.24 基础上，从 Alpine stable 仓库精确 `zlib=1.3.2-r1`、启动 pip 安装前升级固定 `pip==26.2.1`，经 `pip check` 后从最终运行镜像卸载 pip（其捆绑旧版 setuptools/urllib3 被真实 Trivy 新 High 证据识别）；`requirements-v11-security.txt` 只加 `python-dotenv==1.2.2`，原四个安全 pin 保留；旧 Dockerfile/两份 Compose/原版 requirements `app/` 和 DB/通知协议全部不改。两原生架构本地完整镜像、SQLite WAL/TLS/资源限制和最新 Trivy OS+PyPI/CycloneDX **对 8 个明确目标 CVE 全部不再报告**，无 ignore/隐瞒风险。
 - **未批准** Docker-10 代码阶段验收、PR #51 独立合并、GHCR login/push/Tag/Release/签名/attestation/正式 registry digest、用户 NAS/PVE/群晖/Portainer/VPS、生产 SQLite/Token/Session/备份、真实 TG/Bark/ntfy 或 Gate D–G/48–72h。父 [S7 #16](https://github.com/Aspeternity/SeekPulse/issues/16) 必须继续 **OPEN/status:blocked**。
 
 ## 唯一下一步
