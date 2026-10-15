@@ -1,0 +1,193 @@
+name: S7 Docker-09 GHCR Prepublish CVE Review (Local Only / No Publish)
+
+on:
+  pull_request:
+    paths:
+      - 'Dockerfile.v11'
+      - 'requirements-v11-security.txt'
+      - 'compose.v11.yaml'
+      - 'scripts/v11_pre_release_review.py'
+      - 'scripts/v11_security_evidence.py'
+      - 'scripts/v11_release_policy.py'
+      - 'tests/test_s7_pre_release_review.py'
+      - 'docs/decisions/ADR-0016-v11-ghcr-prepublish-security-review.md'
+      - '.github/workflows/s7-v11-prepublish-review-offline.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: s7-docker09-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  contract:
+    name: Public CVE report no-publish contracts / Python ${{ matrix.python-version }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.11', '3.12']
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: '${{ matrix.python-version }}'
+          cache: pip
+      - name: Install unchanged S1-S5 dependency pins
+        run: python -m pip install -r requirements-s5.txt
+      - name: Fail-closed prepublish report negative contracts
+        run: python -m unittest discover -s tests -p 'test_s7_pre_release_review.py' -v
+      - name: Full S1-S7 + Docker-09 offline regression
+        run: python -m unittest discover -s tests -v
+      - name: Syntax, lint and dependency compatibility
+        run: |
+          python -m pip install ruff==0.13.3
+          ruff check scripts/v11_pre_release_review.py tests/test_s7_pre_release_review.py
+          python -m compileall -q scripts tests app
+          python -m pip check
+
+  native-cve-review:
+    name: Full Alpine app Trivy Medium/Low and SBOM / linux/${{ matrix.arch }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 75
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            runner: ubuntu-latest
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    env:
+      ARCH: ${{ matrix.arch }}
+      TRIVY_CACHE_DIR: /tmp/seekpulse-docker09-trivy
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Configure ephemeral Buildx local images only
+        uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0
+      - name: Pinned public Trivy CLI and fresh public vulnerability DB
+        uses: aquasecurity/setup-trivy@e07451d2e059ed86c2870430ea286b3a9e0bf241
+        with:
+          version: v0.75.0
+          cache: false
+      - name: Pinned official index and full V1.1 application built locally
+        shell: bash
+        run: |
+          set -euo pipefail
+          image="seekpulse-prepublish-local:${ARCH}"
+          grep -Fx 'FROM python:3.11-alpine3.24@sha256:d9368b3a5ac59afea7b5d4f2e2aea0941dbf9fdee9c369c5bec00b98244bc929' Dockerfile.v11
+          docker buildx build --file Dockerfile.v11 \
+            --platform "linux/${ARCH}" \
+            --provenance=false --sbom=false --load \
+            --build-arg SEEKPULSE_BUILD_VERSION=0.0.0-ci \
+            --build-arg "SEEKPULSE_BUILD_REVISION=${GITHUB_SHA}" \
+            --tag "$image" .
+          root="${RUNNER_TEMP}/prepublish"
+          mkdir -p "$root"
+          docker image inspect "$image" > "$root/inspect-array.json"
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          root=Path(os.environ["RUNNER_TEMP"])/"prepublish"
+          images=json.loads((root/"inspect-array.json").read_text())
+          assert len(images)==1
+          img=images[0]
+          assert img["Os"]=="linux" and img["Architecture"]==os.environ["ARCH"]
+          assert img.get("RepoDigests") in ([],None)
+          config=img["Config"]
+          assert config["User"]=="10001:10001"
+          assert config["Entrypoint"]==["python","-m","app.v11_main"]
+          assert config["Cmd"]==["--run"]
+          labels=config["Labels"]
+          assert labels["org.opencontainers.image.revision"]==os.environ["GITHUB_SHA"]
+          assert labels["org.opencontainers.image.version"]=="0.0.0-ci"
+          assert labels["org.opencontainers.image.source"]=="https://github.com/Aspeternity/SeekPulse"
+          assert labels["org.opencontainers.image.licenses"]=="MIT"
+          for env in config["Env"]:
+              assert not env.startswith((
+                  "BOT_TOKEN=", "SEEKPULSE_TG_API_HASH=", "SEEKPULSE_TG_SESSION=",
+                  "SEEKPULSE_WEB_PASSWORD_HASH=", "SEEKPULSE_PUSH_",
+              ))
+          (root/"inspect.json").write_text(json.dumps(img))
+          print("LOCAL_ONLY_OFFICIAL_ALPINE_IMAGE_IDENTITY=PASS platform=linux/"+os.environ["ARCH"])
+          PY
+      - name: Offline nonroot pip compatibility with restricted network and rootfs
+        shell: bash
+        run: |
+          set -euo pipefail
+          image="seekpulse-prepublish-local:${ARCH}"
+          docker run --rm --platform "linux/${ARCH}" \
+            --network none --read-only --cap-drop ALL \
+            --security-opt no-new-privileges \
+            --tmpfs /tmp:rw,nosuid,nodev,noexec,size=64m \
+            --entrypoint python "$image" -m pip check
+      - name: Actual OS and Python full-image Trivy scan (unsuppressed)
+        shell: bash
+        run: |
+          set -euo pipefail
+          image="seekpulse-prepublish-local:${ARCH}"
+          root="${RUNNER_TEMP}/prepublish"
+          trivy --version
+          trivy image --image-src docker --scanners vuln \
+            --pkg-types os,library --timeout 20m --no-progress \
+            --format json --output "$root/vulnerabilities.json" "$image"
+          trivy image --image-src docker --timeout 20m --no-progress \
+            --format cyclonedx --output "$root/sbom.cdx.json" "$image"
+          test -s "$root/vulnerabilities.json"
+          test -s "$root/sbom.cdx.json"
+          test -s "${TRIVY_CACHE_DIR}/db/metadata.json"
+      - name: Verify fresh DB, full SBOM, local image ID and OS+PyPI inventory
+        shell: bash
+        run: |
+          set -euo pipefail
+          root="${RUNNER_TEMP}/prepublish"
+          image="seekpulse-prepublish-local:${ARCH}"
+          python scripts/v11_security_evidence.py \
+            --scan "$root/vulnerabilities.json" \
+            --sbom "$root/sbom.cdx.json" \
+            --db-metadata "${TRIVY_CACHE_DIR}/db/metadata.json" \
+            --inspect "$root/inspect.json" \
+            --platform "linux/${ARCH}" --image "$image" \
+            --os-family alpine --output "$root/validated-report.json"
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          p=Path(os.environ["RUNNER_TEMP"])/"prepublish"/"validated-report.json"
+          report=json.loads(p.read_text())
+          assert report["release_authorized"] is False
+          assert report["release_ready"] is False
+          assert report["ghcr_image_status"]=="NOT_PUBLISHED"
+          assert report["remote_index_digest"] is None
+          print("LOCAL_FULL_SCAN_IDENTITY_FRESH_SBOM=PASS")
+          PY
+      - name: Public Medium/Low list and fail-closed blockers (never approve release)
+        shell: bash
+        run: |
+          set -euo pipefail
+          root="${RUNNER_TEMP}/prepublish"
+          image="seekpulse-prepublish-local:${ARCH}"
+          python scripts/v11_pre_release_review.py \
+            --scan "$root/vulnerabilities.json" \
+            --validated-report "$root/validated-report.json" \
+            --revision "${GITHUB_SHA}" \
+            --platform "linux/${ARCH}" --image "$image" \
+            --version v1.1.0-rc.1 --output "$root/review.json"
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          review=json.loads((Path(os.environ["RUNNER_TEMP"])/"prepublish"/"review.json").read_text())
+          assert review["reviewed_source_sha"]==os.environ["GITHUB_SHA"]
+          assert review["manual_review_completed"] is False
+          assert review["release_authorized"] is False
+          assert review["release_ready"] is False
+          assert review["ghcr_image_status"]=="NOT_PUBLISHED"
+          assert review["remote_index_digest"] is None
+          assert review["sbom_signed"] is False
+          assert review["image_signed"] is False
+          assert review["build_provenance_attested"] is False
+          assert review["status"]=="MANUAL_RELEASE_SECURITY_REVIEW_REQUIRED"
+          print("PUBLIC_MANUAL_REVIEW_REQUIRED=PASS platform=linux/"+os.environ["ARCH"])
+          PY
