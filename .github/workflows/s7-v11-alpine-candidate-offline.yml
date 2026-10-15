@@ -15,7 +15,8 @@ permissions:
   contents: read
 
 concurrency:
-  group: s7-docker07-${{ github.workflow }}-${{ github.ref }}
+  # Native-runner study must not wait behind the obsolete long QEMU job.
+  group: s7-docker07-native-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
