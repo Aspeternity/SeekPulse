@@ -695,6 +695,66 @@
         "NAS/PVE/Portainer/Synology/VPS, production secrets/SQLite, true TG/Bark/ntfy or 48-72h live observation"
       ],
       "source": "User current reply '批准' and Issue #52 / Draft PR #53; not GitHub reviewer signature"
+    },
+    {
+      "event_id": "APPROVAL-2026-10-16-DOCKER11-INDEPENDENT-OFFLINE-STAGE-ACCEPTANCE",
+      "date": "2026-10-16",
+      "approved_plan": "SeekPulse V1.1",
+      "authorization_kind": "offline_stage_acceptance_only",
+      "authorized_stage": "S7-Docker-11",
+      "issue": 52,
+      "pr": 53,
+      "user_instruction": "批准",
+      "authorized_actions": [
+        "Accept only Docker-11 GHCR prepublish security and supply-chain design and offline work at exact head eb98fdc0f91adc6cda0cf0eda305bb0609b1b916, 8/8 workflows and 27/27 jobs success",
+        "Record offline acceptance in GitHub Issue #52 comment 6199401855"
+      ],
+      "not_authorized": [
+        "PR #53 Ready/Squash merge until separately approved",
+        "GHCR push/sign/Tag/Release, NAS/PVE deployment"
+      ],
+      "source": "Current user direct reply and Issue #52 comment 6199401855; not GitHub Reviewer UI signature"
+    },
+    {
+      "event_id": "APPROVAL-2026-10-16-DOCKER11-PR53-SEPARATE-MERGE",
+      "date": "2026-10-16",
+      "approved_plan": "SeekPulse V1.1",
+      "authorization_kind": "independent_ready_squash_merge_and_postmerge_g0",
+      "authorized_stage": "S7-Docker-11",
+      "issue": 52,
+      "pr": 53,
+      "user_instruction": "批准",
+      "authorized_actions": [
+        "Exact HEAD eb98fdc0f91adc6cda0cf0eda305bb0609b1b916 Draft -> Ready and Squash Merge main cf5f6010ff45c2511c2343f2466c63538397fdea",
+        "Head and main git tree 3e9c8ea5dd35876069512f6a76cdda09f9dca4ea identical",
+        "Postmerge G0 run 38787500228 completed/success 4/4; close Issue #52 only"
+      ],
+      "not_authorized": [
+        "GHCR login/push, signer/attestations, Tag/Release, NAS/PVE/Portainer/Synology deployment or real notifications",
+        "Close parent S7 Issue #16 or declare release ready"
+      ],
+      "source": "Current user separate approval and Issue #52 comment 6199613581, PR #53 comment 6199614818"
+    },
+    {
+      "event_id": "APPROVAL-2026-10-16-R30-MAIN-CANDIDATE-OFFLINE-ONLY",
+      "date": "2026-10-16",
+      "approved_plan": "SeekPulse V1.1",
+      "authorization_kind": "release_candidate_design_and_readonly_main_security_recheck_only",
+      "authorized_stage": "S7-R3-0",
+      "issue": 54,
+      "user_instruction": "批准",
+      "context": "Direct reply to separate request to start R3-0 release candidate security evidence / scheme and offline verification; expressly no GHCR push, signature, Git Tag/Release or NAS/PVE",
+      "authorized_actions": [
+        "Use new main cf5f6010ff45c2511c2343f2466c63538397fdea as exact inspected source in native AMD64/ARM64 GitHub temporary runner local complete image Trivy OS+PyPI/CycloneDX/SBOM recheck",
+        "Design actual pushed-bytes/remote index digest identity, signature/attestation issuer, Git release sequencing and reversible NAS/PVE deployment without execution",
+        "Independent Issue #54 / Draft PR, reuse existing fail-closed gates and update GitHub handoff facts; request separate R3-0 stage acceptance after latest CI"
+      ],
+      "not_authorized": [
+        "R3-0 stage acceptance or Draft PR Ready/Squash merge without separate replies",
+        "GHCR login/push, packages:write, id-token:write, true cosign signing/attestation or Git Tag/Release",
+        "User NAS/PVE/Synology/Portainer/VPS, production SQLite/Token/Session, real TG/Bark/ntfy and Gate D-G"
+      ],
+      "source": "This current conversation user reply '批准', Issue #54; not independent GitHub Reviewer approval"
     }
   ]
 }

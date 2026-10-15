@@ -1,0 +1,263 @@
+name: S7 R3-0 Exact Main Local Candidate Security (No Publish)
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/s7-r30-main-candidate-offline.yml'
+      - 'docs/research/S7-R3-0-main-candidate-offline.md'
+      - 'AGENTS.md'
+      - 'docs/PROJECT_STATE.md'
+      - 'docs/APPROVALS.md'
+      - 'docs/APPROVALS.json'
+      - 'docs/ROADMAP.md'
+  workflow_dispatch:
+
+# R3-0 is read-only. No registry login, push, signed attestation or artifacts.
+permissions:
+  contents: read
+
+concurrency:
+  group: s7-r30-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  policy:
+    name: Offline release policy + fail-closed negative contracts
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: '3.11'
+      - name: Reuse tested offline gates and rejection contracts
+        run: |
+          python -m unittest discover -s tests -p 'test_s7_final_release_gate.py' -v
+          python -m unittest discover -s tests -p 'test_s7_pre_release_review.py' -v
+          python -m unittest discover -s tests -p 'test_s7_release_readiness.py' -v
+      - name: Confirm R3-0 is read-only and follows main-source checkout
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          text = Path('.github/workflows/s7-r30-main-candidate-offline.yml').read_text()
+          assert 'permissions:\n  contents: read\n' in text
+          assert 'github.event.pull_request.base.sha || github.sha' in text
+          assert 'github.event.pull_request.base.ref' in text
+          assert 'refs/heads/main' in text
+          assert 'git rev-parse HEAD' in text
+          assert 'scripts.v11_final_release_gate' in text
+          # Avoid embedding literal disallowed workflow instructions.
+          forbidden = [
+              'packages:' + ' write', 'id-token:' + ' write',
+              'docker/' + 'login-action', 'cosign' + ' sign',
+              'upload-' + 'artifact', '--' + 'push',
+              'gh release' + ' create', 'secrets' + '.',
+          ]
+          assert not any(value in text for value in forbidden)
+          print('R30_READONLY_WORKFLOW_CONTRACT=PASS')
+          PY
+
+  native-main-scan:
+    name: Exact main full image + Trivy/CycloneDX / linux/${{ matrix.arch }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 80
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            runner: ubuntu-latest
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    env:
+      ARCH: ${{ matrix.arch }}
+      TRIVY_CACHE_DIR: /tmp/seekpulse-r30-trivy
+    steps:
+      # IMPORTANT: scan the PR base (main) source, not PR HEAD or synthetic merge.
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ github.event.pull_request.base.sha || github.sha }}
+      - name: Assert precise main SHA before any build
+        shell: bash
+        run: |
+          set -euo pipefail
+          source_sha="$(git rev-parse HEAD)"
+          expected_sha="${{ github.event.pull_request.base.sha || github.sha }}"
+          [[ "$source_sha" =~ ^[0-9a-f]{40}$ ]]
+          if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
+            test "${{ github.event.pull_request.base.ref }}" = "main"
+          else
+            test "$GITHUB_EVENT_NAME" = "workflow_dispatch"
+            test "$GITHUB_REF" = "refs/heads/main"
+          fi
+          test "$source_sha" = "$expected_sha"
+          echo "SOURCE_SHA=$source_sha" >> "$GITHUB_ENV"
+          echo "R30_EXACT_MAIN_SOURCE=PASS sha=$source_sha"
+      - name: Local-only Buildx (pinned immutable action)
+        uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0
+      - name: Trivy CLI pinned, public vulnerability database refreshed
+        uses: aquasecurity/setup-trivy@e07451d2e059ed86c2870430ea286b3a9e0bf241
+        with:
+          version: v0.75.0
+          cache: false
+      - name: Build exact main V1.1 image locally and inspect source/runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          image="seekpulse-prepublish-local:${ARCH}"
+          root="${RUNNER_TEMP}/r30"
+          mkdir -p "$root"
+          grep -Fx 'FROM python:3.11-alpine3.24@sha256:d9368b3a5ac59afea7b5d4f2e2aea0941dbf9fdee9c369c5bec00b98244bc929' Dockerfile.v11
+          docker buildx build --file Dockerfile.v11 \
+            --platform "linux/${ARCH}" --load \
+            --provenance=false --sbom=false \
+            --build-arg SEEKPULSE_BUILD_VERSION=0.0.0-ci \
+            --build-arg "SEEKPULSE_BUILD_REVISION=${SOURCE_SHA}" \
+            --tag "$image" .
+          docker image inspect "$image" > "$root/inspect-array.json"
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          root = Path(os.environ["RUNNER_TEMP"]) / "r30"
+          items = json.loads((root / "inspect-array.json").read_text())
+          assert len(items) == 1
+          data = items[0]
+          assert data["Os"] == "linux" and data["Architecture"] == os.environ["ARCH"]
+          assert data.get("RepoDigests") in (None, [])
+          config = data["Config"]
+          assert config["User"] == "10001:10001"
+          assert config["Entrypoint"] == ["python", "-m", "app.v11_main"]
+          assert config["Cmd"] == ["--run"]
+          assert config["Labels"]["org.opencontainers.image.revision"] == os.environ["SOURCE_SHA"]
+          (root / "inspect.json").write_text(json.dumps(data))
+          print("R30_LOCAL_MAIN_RUNTIME_IDENTITY=PASS")
+          PY
+      - name: Network-disabled, nonroot, read-only runtime smoke
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker run --rm --platform "linux/${ARCH}" --network none \
+            --read-only --cap-drop ALL --security-opt no-new-privileges \
+            --tmpfs /tmp:rw,nosuid,nodev,noexec,size=64m \
+            --entrypoint python "seekpulse-prepublish-local:${ARCH}" \
+            -c 'from importlib.util import find_spec; assert find_spec("pip") is None; import app.v11_main; print("R30_RUNTIME_NO_NETWORK=PASS")'
+      - name: Unignored complete native Trivy OS+PyPI and CycloneDX
+        shell: bash
+        run: |
+          set -euo pipefail
+          image="seekpulse-prepublish-local:${ARCH}"
+          root="${RUNNER_TEMP}/r30"
+          trivy image --image-src docker --scanners vuln \
+            --pkg-types os,library --timeout 20m --no-progress \
+            --format json --output "$root/vulnerabilities.json" "$image"
+          trivy image --image-src docker --timeout 20m --no-progress \
+            --format cyclonedx --output "$root/sbom.cdx.json" "$image"
+          test -s "$root/vulnerabilities.json"
+          test -s "$root/sbom.cdx.json"
+          test -s "${TRIVY_CACHE_DIR}/db/metadata.json"
+      - name: Reuse Docker-04/09/11 raw evidence and manual-review gates
+        shell: bash
+        run: |
+          set -euo pipefail
+          root="${RUNNER_TEMP}/r30"
+          image="seekpulse-prepublish-local:${ARCH}"
+          python scripts/v11_security_evidence.py \
+            --scan "$root/vulnerabilities.json" \
+            --sbom "$root/sbom.cdx.json" \
+            --db-metadata "${TRIVY_CACHE_DIR}/db/metadata.json" \
+            --inspect "$root/inspect.json" --platform "linux/${ARCH}" \
+            --image "$image" --os-family alpine \
+            --output "$root/validated.json"
+          python -m scripts.v11_pre_release_review \
+            --scan "$root/vulnerabilities.json" \
+            --validated-report "$root/validated.json" \
+            --revision "${SOURCE_SHA}" --platform "linux/${ARCH}" \
+            --image "$image" --version v1.1.0-rc.1 \
+            --output "$root/review.json"
+          python -m scripts.v11_final_release_gate \
+            --scan "$root/vulnerabilities.json" \
+            --sbom "$root/sbom.cdx.json" \
+            --db-metadata "${TRIVY_CACHE_DIR}/db/metadata.json" \
+            --inspect "$root/inspect.json" \
+            --validated-report "$root/validated.json" \
+            --prepublish-review "$root/review.json" \
+            --revision "${SOURCE_SHA}" --platform "linux/${ARCH}" \
+            --image "$image" --version v1.1.0-rc.1 \
+            --output "$root/final.json"
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          report = json.loads((Path(os.environ["RUNNER_TEMP"]) / "r30" / "final.json").read_text())
+          assert report["reviewed_source_sha"] == os.environ["SOURCE_SHA"]
+          assert report["platform"] == "linux/" + os.environ["ARCH"]
+          assert report["status"] == "LOCAL_EVIDENCE_CLEAN_AWAITING_MANUAL_RELEASE_APPROVAL"
+          assert report["known_vulnerability_records_at_scan_time"] == 0
+          assert all(v == 0 for v in report["affected_package_vulnerability_records"].values())
+          assert report["local_cyclonedx_sbom_validated"] is True
+          assert report["remote_oci_index_verified"] is False
+          assert report["remote_signature_verified"] is False
+          assert report["remote_sbom_attestation_verified"] is False
+          assert report["release_ready"] is False and report["release_authorized"] is False
+          assert report["ghcr_image_status"] == "NOT_PUBLISHED"
+          assert report["remote_index_digest"] is None
+          print("R30_MAIN_OFFLINE_EVIDENCE_ONLY=PASS platform=" + report["platform"])
+          PY
+
+  main-oci-provenance:
+    name: Exact main AMD64+ARM64 local OCI manifest and blobs (no registry)
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ github.event.pull_request.base.sha || github.sha }}
+      - name: Enforce same precise main source as native safety jobs
+        shell: bash
+        run: |
+          set -euo pipefail
+          source_sha="$(git rev-parse HEAD)"
+          expected_sha="${{ github.event.pull_request.base.sha || github.sha }}"
+          [[ "$source_sha" =~ ^[0-9a-f]{40}$ ]]
+          if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
+            test "${{ github.event.pull_request.base.ref }}" = "main"
+          else
+            test "$GITHUB_EVENT_NAME" = "workflow_dispatch"
+            test "$GITHUB_REF" = "refs/heads/main"
+          fi
+          test "$source_sha" = "$expected_sha"
+          echo "SOURCE_SHA=$source_sha" >> "$GITHUB_ENV"
+          echo "R30_EXACT_MAIN_OCI_SOURCE=PASS sha=$source_sha"
+      - name: Enable QEMU for isolated ARM64 OCI metadata build
+        uses: docker/setup-qemu-action@1f40c72289eff860ee54a304f1438e3cff362e0a # v4.3.0
+      - name: Isolated Buildx OCI archive builder
+        uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0
+      - name: Inspect complete local OCI index, platform manifests and SHA refs
+        shell: bash
+        run: |
+          set -euo pipefail
+          archive="${RUNNER_TEMP}/seekpulse-r30-main.oci.tar"
+          docker buildx inspect --bootstrap
+          docker buildx build --progress plain \
+            --file Dockerfile.v11 \
+            --platform linux/amd64,linux/arm64 \
+            --provenance=false --sbom=false \
+            --build-arg SEEKPULSE_BUILD_VERSION=0.0.0-ci \
+            --build-arg "SEEKPULSE_BUILD_REVISION=${SOURCE_SHA}" \
+            --output "type=oci,dest=${archive}" .
+          test -s "$archive"
+          python scripts/inspect_v11_oci.py \
+            --archive "$archive" --revision "${SOURCE_SHA}" \
+            --version 0.0.0-ci > "${RUNNER_TEMP}/r30-oci-validated.json"
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          p = Path(os.environ["RUNNER_TEMP"]) / "r30-oci-validated.json"
+          report = json.loads(p.read_text())
+          assert report["platforms"] == ["linux/amd64", "linux/arm64"]
+          assert report["status"] == "LOCAL_OCI_VERIFIED_NOT_PUBLISHED"
+          assert report["remote_ghcr_digest"] is None
+          assert report["release_authorized"] is False
+          print("R30_MAIN_MULTIARCH_LOCAL_OCI_ONLY=PASS")
+          PY
