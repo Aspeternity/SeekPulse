@@ -1,0 +1,10 @@
+# V1.1-only security overrides; legacy requirements.txt remains unchanged.
+# CVE-2025-69223 + CVE-2026-69244: aiohttp fixed at 3.14.3.
+aiohttp==3.14.3
+# CVE-2026-23949: jaraco.context fixed at 6.1.0.
+jaraco.context==6.1.0
+# CVE-2026-24049: wheel fixed at 0.46.2.
+wheel==0.46.2
+# Also update setuptools' bundled jaraco.context / wheel copies.
+# Official setuptools 84.0.0 vendors jaraco_context 6.1.0, wheel 0.46.3.
+setuptools==84.0.0
