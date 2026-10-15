@@ -44,7 +44,7 @@ class NarrowSecurityOverrides(unittest.TestCase):
         self.assertEqual(dockerfile.count("requirements-v11-security.txt"), 2)
         self.assertIn("-r requirements-s5.txt", dockerfile)
         self.assertIn("RUN apk add --no-cache --upgrade 'zlib=1.3.2-r1'", dockerfile)
-        self.assertIn("apk info -v zlib | grep -Fx 'zlib-1.3.2-r1'", dockerfile)
+        self.assertIn("apk info -v | grep -Fx 'zlib-1.3.2-r1'", dockerfile)
         self.assertEqual(dockerfile.count("apk add "), 1)
         self.assertIn("RUN python -m pip install --no-cache-dir --upgrade pip==26.2.1", dockerfile)
         self.assertIn(

@@ -29,7 +29,7 @@ WORKDIR /app
 # Pin zlib from Alpine 3.24 stable repositories only (never edge).
 # Missing exact security build on either architecture MUST fail closed.
 RUN apk add --no-cache --upgrade 'zlib=1.3.2-r1' \
-    && apk info -v zlib | grep -Fx 'zlib-1.3.2-r1'
+    && apk info -v | grep -Fx 'zlib-1.3.2-r1'
 
 # Each -r file contains approved direct pins; S5 includes S4/S3/upstream.
 # V1.1-only fixed-version security patches, applied in the same image layer.
