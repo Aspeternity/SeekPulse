@@ -1,20 +1,21 @@
-# SeekPulse — 跨会话项目状态（Issue / PR / 精确 SHA / CI 优先）
+# SeekPulse — 跨会话最新开发交接（GitHub 原始事实优先）
 
-> 2026-10-15 最新开发快照；本文件不能代替 `AGENTS.md` 和实际 GitHub 记录或用户独立批准。
+> 2026-10-15 快照，必须优先遵守 `AGENTS.md`、实时 Issue/PR、提交 SHA、最终 CI、用户独立批准；本文件本身不授予权限。
 
-## main 已批准合并的阶段
+## 已验收合并至 main
 
-- S1–S6、S7-01、Gate B、Docker-01 [#32/PR #33](https://github.com/Aspeternity/SeekPulse/pull/33)、Docker-02 [#34/PR #35](https://github.com/Aspeternity/SeekPulse/pull/35)、Docker-03 [#36/PR #37](https://github.com/Aspeternity/SeekPulse/pull/37)、Docker-04 [#38/PR #39](https://github.com/Aspeternity/SeekPulse/pull/39) 均各自完成离线验收、独立授权合并、合并后精确 G0 核验。
-- `main fbb4f4009954567e3ed2943c0428075d8cf32fec`，真正合并后 [G0 #38639966882](https://github.com/Aspeternity/SeekPulse/actions/runs/38639966882) **4/4 PASS**；旧 S0 Draft #17–#20 未动。旧默认 `Dockerfile`/`docker-compose.yml`、旧 `requirements.txt` 保留。V1.1 仅 opt-in，非 root/只读 rootfs、回环 Web、数据库首次 `--init-fresh → --check → --run`；旧 DB 仍经 S6 verified backup + `--prepare`。
-- Docker-04 公开 DB 2026-10-14 的 AMD64/ARM64 本地镜像 Trivy + CycloneDX 成功：每架构 Debian 87 / PyPI 65、Critical 0、High 48 条（OS 44 + Python 4）、High 去重 CVE 12 个，Medium 81、Low 77、Unknown 3。**安全结论 `BLOCKED_HIGH_OR_CRITICAL`，`release_ready=false`，正式 GHCR 镜像未发布也无远端 registry digest**。固定的 Python 官方基础镜像 digest 不是 SeekPulse 正式发行 digest。
+- S1–S6、S7-01、Gate B 及 Docker-01/02/03/04/05（PR #33/#35/#37/#39/#41）均经过分别批准的**离线阶段验收与独立 Squash 合并**。最新 main `e78112a7123758da24340f4c59f3df190c445ea8`；Docker-05 合并后真正的 [G0 #38703450876](https://github.com/Aspeternity/SeekPulse/actions/runs/38703450876) **4/4 PASS**；旧 S0 Draft #17–#20 未动。
+- V1.1 `Dockerfile.v11` 仍 opt-in，非 root、数据库显式初始化、已固定官方 Python3.11-slim Trixie 多架构基础索引 digest，四个精准 Python 安全覆盖版本；默认旧 Dockerfile/Compose/业务/DB/Prime/通知不变。
+- Docker-05 公开 CVE 数据库双架构完整扫描，PyPI **High=0**、Debian OS **High=44 个包×漏洞记录、8 个不同 CVE ID**（ncurses/systemd/acl/util-linux/perl）；Critical 0。**GHCR `NOT_PUBLISHED`，远端 V1.1 digest 不存在，`release_ready=false`，仍 `BLOCKED_HIGH_OR_CRITICAL`**。
 
-## 当前唯一授权：Docker-05 / High CVE 离线修复开发
+## 当前唯一新开发许可：Docker-06 / Issue #42
 
-- 用户在紧邻申请“**是否批准启动下一阶段的 High CVE 专项审查与离线修复开发？仍不发布 GHCR、不部署 NAS/PVE；完成修复和复测后再单独申请验收**”后回复“批准”。[Issue #40](https://github.com/Aspeternity/SeekPulse/issues/40)，唯一写入负责人 ChatGPT，独立分支 `feat/s7-docker-05-high-cve-remediation`、ADR-0012；最新 PR 和 commit SHA **必须实时在 GitHub 核实**，不能在文档中预记 PASS。
-- 已批准工作：只对 `Dockerfile.v11` 的最终镜像使用 `requirements-v11-security.txt` 修补 `aiohttp/jaraco.context/wheel` 已证实的 4 条 PyPI High 记录及 setuptools 内捆绑旧副本的额外 2 条 High，使用仅 V1.1 的 4 个精确版本（含 `setuptools==84.0.0`）；旧版依赖和应用、数据库/Web/通知契约不动。Debian ncurses/systemd/acl/util-linux/Perl 的 8 个 High CVE 仍需准确分析，不擅自混装 Debian unstable 或添加 scanner 忽略/免责。新增两版 Python 回归及 AMD64/ARM64 QEMU/Trivy 复扫；**即使 PyPI 归零，剩余 OS High 仍阻断正式镜像发布**。
-- 官方 Debian 稳定版多数暂无可直接引入的受支持修复或标注 no-dsa/postponed；只记录上游状态与运行时影响评估，不将 OS High 标记已修复。详见 ADR-0012 和实时扫描结果。
+- 用户在明确提问“启动 Docker-06 Debian OS High 专项审查与离线修复开发；不解除发布阻断、不推 GHCR、不部署 NAS/PVE，之后单独验收和合并”后回答「批准」。唯一写入负责人 ChatGPT；独立分支 `feat/s7-docker-06-os-high-review`，[Draft PR #43](https://github.com/Aspeternity/SeekPulse/pull/43)；精确 HEAD/最新 CI 请**实时**查询，不预报绿色。
+- [ADR-0013](decisions/ADR-0013-v11-os-high-review.md) 核对 Debian 官方 tracker 上 8 个 source-level High 的真实前提、Trixie/Bookworm 与更新分支状态；当前两个稳定分支均有未修复记录，不混装 unstable / forky 二进制包，也不删除 dpkg 元数据制造“无漏洞”。
+- 本阶段实现只读 OS CVE package/ID 审计与恶意/缺失证据的 fail-closed 回归；用 GitHub 临时 runner 实时扫描官方 Bookworm amd64/arm64 基础镜像，**仅作为候选比较，不切换应用运行基础镜像**；原 V1.1 AMD64/ARM64 Trivy/CycloneDX 不跳过原 OS/PyPI 类别，High 仍阻断发行。若稳定版没有安全修补，不提交未经验证的包重构。
+- 不涉及旧版默认 Dockerfile/Compose、`app/`、上游依赖、SQLite/Session/Token、真实 Telegram/Bark/ntfy、PVE/NAS/VPS 的任何操作或发布签名。
 
-## 尚未授权 / 唯一下一步
+## 授权与唯一下一步
 
-- 父 [S7 #16](https://github.com/Aspeternity/SeekPulse/issues/16) 继续 OPEN/status:blocked，用户不需要单独 VPS 预检；PVE/Portainer 与群晖 NAS 尚未获准登录或部署。正式 GHCR Push/Tag/Release、远端 digest、生产 SQLite/Session/Token、通知、48–72h、Gate D–G 全部 NOT_STARTED。
-- **唯一下一步**：完成 Issue #40 开发和最新 HEAD G0 + Docker-01/02/03/04/05 CI，按两架构真实 PyPI/OS High 复扫更新风险审计；**仅向用户申请 Docker-05 离线修复开发阶段验收**。人工验收通过后仍须另申请 Squash 合并；High CVE 风险处置与 GHCR 真实发布/实机部署各另行批准，不能自动顺延。
+- 父 [S7 #16](https://github.com/Aspeternity/SeekPulse/issues/16) OPEN/status:blocked，Docker-05 子 #40 已 CLOSED，Docker-06 子 #42 OPEN、PR #43 Draft/Open/未合并。
+- **唯一下一步**：核对 PR #43 最后 HEAD 的 G0/S1/Docker-01～06 全绿与两架构 Bookworm 候选/当前 Trixie 的真实 OS High 清单；完成后仅请用户**Docker-06 已完成离线审查和自动化证据范围阶段验收**。经确认后仍另请 PR Squash 合并许可；GHCR 发行、剩余风险接受或真正修复、用户指定的 NAS/PVE 实机部署分别另行批准，不能自动顺延。
