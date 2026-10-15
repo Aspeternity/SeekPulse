@@ -1,0 +1,113 @@
+name: S7 Docker-08 Alpine V1.1 Runtime Contract (Local Only / No Publish)
+
+on:
+  pull_request:
+    paths:
+      - 'Dockerfile.v11'
+      - 'compose.v11.yaml'
+      - 'tests/test_s7_alpine_runtime.py'
+      - 'scripts/v11_security_evidence.py'
+      - 'scripts/v11_os_high_review.py'
+      - 'docs/decisions/ADR-0015-v11-alpine-runtime-migration.md'
+      - '.github/workflows/s7-v11-alpine-runtime-offline.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: s7-docker08-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  native-runtime:
+    name: Official pinned Alpine complete app, WAL/TLS, resource fence / linux/${{ matrix.arch }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            runner: ubuntu-latest
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    env:
+      ARCH: ${{ matrix.arch }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Local-only native image build from formal V1.1 Dockerfile
+        shell: bash
+        run: |
+          set -euo pipefail
+          image="seekpulse-docker08-local:${ARCH}"
+          grep -Fx 'FROM python:3.11-alpine3.24@sha256:d9368b3a5ac59afea7b5d4f2e2aea0941dbf9fdee9c369c5bec00b98244bc929' Dockerfile.v11
+          docker build --file Dockerfile.v11 \
+            --build-arg SEEKPULSE_BUILD_VERSION=0.0.0-ci \
+            --build-arg "SEEKPULSE_BUILD_REVISION=${GITHUB_SHA}" \
+            --tag "$image" .
+          docker image inspect "$image" > "${RUNNER_TEMP}/runtime-inspect.json"
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          data=json.loads((Path(os.environ["RUNNER_TEMP"])/"runtime-inspect.json").read_text())
+          assert len(data)==1
+          img=data[0]
+          assert img["Os"]=="linux" and img["Architecture"]==os.environ["ARCH"]
+          assert img.get("RepoDigests") in ([],None)
+          assert img["Config"]["User"]=="10001:10001"
+          assert img["Config"]["Entrypoint"]==["python","-m","app.v11_main"]
+          assert img["Config"]["Cmd"]==["--run"]
+          assert img["Config"]["Labels"]["org.opencontainers.image.revision"]==os.environ["GITHUB_SHA"]
+          assert "HOME=/tmp" in img["Config"]["Env"]
+          for entry in img["Config"]["Env"]:
+              assert not entry.startswith(("BOT_TOKEN=","SEEKPULSE_TG_SESSION=",
+                  "SEEKPULSE_TG_API_HASH=","SEEKPULSE_WEB_PASSWORD_HASH="))
+          print("FORMAL_ALPINE_RUNTIME_LOCAL_ONLY=PASS platform=linux/"+os.environ["ARCH"])
+          print("FORMAL_ALPINE_RUNTIME_IMAGE_BYTES="+str(img["Size"]))
+          PY
+      - name: Full existing S1-S7 and Docker-08 regression in constrained no-network nonroot container
+        shell: bash
+        run: |
+          set -euo pipefail
+          image="seekpulse-docker08-local:${ARCH}"
+          docker run --rm --platform "linux/${ARCH}" \
+            --network none --read-only --cap-drop ALL \
+            --security-opt no-new-privileges \
+            --tmpfs /tmp:rw,nosuid,nodev,noexec,size=64m \
+            --env SEEKPULSE_S7_V11_SECURITY_TEST=1 \
+            --mount "type=bind,source=${GITHUB_WORKSPACE},target=/source,readonly" \
+            --workdir /source --entrypoint python "$image" \
+            -m unittest discover -s tests -v
+          echo "FORMAL_ALPINE_V11_FULL_REGRESSION=PASS platform=linux/${ARCH}"
+      - name: Strict CPU/memory/pids fence with ephemeral SQLite WAL and default CA
+        shell: bash
+        run: |
+          set -euo pipefail
+          image="seekpulse-docker08-local:${ARCH}"
+          docker run --rm --platform "linux/${ARCH}" \
+            --network none --read-only --cap-drop ALL \
+            --security-opt no-new-privileges \
+            --memory 256m --cpus 1 --pids-limit 128 \
+            --tmpfs /tmp:rw,nosuid,nodev,noexec,size=64m \
+            --env SEEKPULSE_S7_V11_SECURITY_TEST=1 \
+            --mount "type=bind,source=${GITHUB_WORKSPACE},target=/source,readonly" \
+            --workdir /source --entrypoint python "$image" \
+            -m unittest discover -s tests -p 'test_s7_alpine_runtime.py' -v
+          echo "FORMAL_ALPINE_RESOURCE_FENCE=PASS platform=linux/${ARCH}"
+      - name: No opt-in means fail closed before DB, source or notifier start
+        shell: bash
+        run: |
+          set -euo pipefail
+          image="seekpulse-docker08-local:${ARCH}"
+          output="${RUNNER_TEMP}/startup-denied.txt"
+          if docker run --rm --platform "linux/${ARCH}" \
+               --network none --read-only --cap-drop ALL \
+               --security-opt no-new-privileges \
+               --tmpfs /tmp:rw,nosuid,nodev,noexec,size=32m \
+               "$image" --run >"$output" 2>&1; then
+            echo "UNEXPECTED_UNAUTHORIZED_V11_START" >&2
+            exit 1
+          fi
+          grep -F 'v11_not_explicitly_enabled' "$output" >/dev/null
+          echo "V11_UNAUTHORIZED_START_DENIED=PASS platform=linux/${ARCH}"
