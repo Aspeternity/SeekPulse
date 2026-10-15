@@ -13,7 +13,6 @@ import sqlite3
 import ssl
 from tempfile import TemporaryDirectory
 import unittest
-from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 ALPINE_DIGEST = "d9368b3a5ac59afea7b5d4f2e2aea0941dbf9fdee9c369c5bec00b98244bc929"
@@ -66,12 +65,14 @@ class AlpineRuntimeContract(unittest.TestCase):
         self.assertGreater(context.cert_store_stats()["x509_ca"], 0)
         # This deliberately does not contact any real HTTPS service.
 
-    def test_v11_runner_disabled_before_accessing_live_stores(self):
-        from app import v11_main
-
-        with patch.dict(os.environ, {"SEEKPULSE_V11_ENABLE": "0"}):
-            with self.assertRaisesRegex(RuntimeError, "v11_not_explicitly_enabled"):
-                v11_main.main(["--run"])
+    def test_v11_explicit_enable_guard_static_contract(self):
+        # G0 intentionally installs only upstream deps. Do not import the
+        # optional FastAPI/Apprise V1.1 entrypoint in the legacy baseline.
+        # Docker-08 runs the actual image --run with no enable and asserts
+        # the precise refusal string, so behavior is still exercised live.
+        source = (ROOT / "app/v11_main.py").read_text(encoding="utf-8")
+        self.assertIn('if os.getenv("SEEKPULSE_V11_ENABLE") != "1":', source)
+        self.assertIn('raise RuntimeError("v11_not_explicitly_enabled")', source)
 
     def test_compose_preserves_private_local_host_network_contract(self):
         raw = (ROOT / "compose.v11.yaml").read_text(encoding="utf-8")
