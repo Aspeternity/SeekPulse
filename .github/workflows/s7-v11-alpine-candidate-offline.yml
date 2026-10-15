@@ -143,6 +143,7 @@ jobs:
           image="seekpulse-alpine-feasibility:${ARCH}"
           docker run --rm --platform "linux/${ARCH}" \
             --network none --read-only --cap-drop ALL \
+            --env SEEKPULSE_S7_V11_SECURITY_TEST=1 \
             --security-opt no-new-privileges \
             --tmpfs /tmp:rw,nosuid,nodev,noexec,size=64m \
             --mount "type=bind,source=${GITHUB_WORKSPACE},target=/source,readonly" \
