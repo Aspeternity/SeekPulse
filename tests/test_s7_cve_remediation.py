@@ -52,6 +52,7 @@ class NarrowSecurityOverrides(unittest.TestCase):
             "-r requirements-v11-security.txt", dockerfile
         )
         self.assertIn("&& python -m pip check", dockerfile)
+        self.assertIn("&& python -m pip uninstall --yes pip", dockerfile)
         self.assertEqual(len(re.findall(r"(?m)^RUN python -m pip install",
                                         dockerfile)), 1)
         self.assertIn("USER 10001:10001", dockerfile)
@@ -76,7 +77,7 @@ class NarrowSecurityOverrides(unittest.TestCase):
         self.assertIn("BLOCKED_HIGH_OR_CRITICAL", workflow)
         self.assertIn('report["release_ready"] is False', workflow)
         self.assertIn("V11_PATCHED_IMAGE_RUNTIME=PASS", workflow)
-        self.assertIn('"pip": "26.2.1"', workflow)
+        self.assertIn("RUNTIME_BUILD_ONLY_PIP_REMOVED=PASS", workflow)
         self.assertIn('"python-dotenv": "1.2.2"', workflow)
         self.assertIn("zlib-1.3.2-r1", workflow)
         self.assertNotIn("--ignore-unfixed", workflow)

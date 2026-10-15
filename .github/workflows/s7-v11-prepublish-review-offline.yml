@@ -123,7 +123,7 @@ jobs:
             --network none --read-only --cap-drop ALL \
             --security-opt no-new-privileges \
             --tmpfs /tmp:rw,nosuid,nodev,noexec,size=64m \
-            --entrypoint python "$image" -m pip check
+            --entrypoint python "$image" -c 'from importlib.util import find_spec; assert find_spec("pip") is None; import app.v11_main; print("RUNTIME_BUILD_ONLY_PIP_REMOVED=PASS")'
       - name: Actual OS and Python full-image Trivy scan (unsuppressed)
         shell: bash
         run: |

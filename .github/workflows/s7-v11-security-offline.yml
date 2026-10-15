@@ -123,7 +123,7 @@ jobs:
           (p / "inspect.json").write_text(json.dumps(images[0]))
           PY
           docker run --rm --platform "linux/${{ matrix.arch }}" \
-            --network none --entrypoint python "$image" -m pip check
+            --network none --entrypoint python "$image" -c 'from importlib.util import find_spec; assert find_spec("pip") is None; import app.v11_main; print("RUNTIME_BUILD_ONLY_PIP_REMOVED=PASS")'
           # Check Alpine stable OS package version on the actual local image.
           docker run --rm --platform "linux/${{ matrix.arch }}" \
             --network none --entrypoint apk "$image" info -v \
@@ -138,7 +138,6 @@ jobs:
               "wheel": "0.46.2",
               "setuptools": "84.0.0",
               "python-dotenv": "1.2.2",
-              "pip": "26.2.1",
           }
           for name, patched in approved.items():
               actual = version(name)

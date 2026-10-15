@@ -41,6 +41,7 @@ class PinnedDependencyContract(unittest.TestCase):
         expected_versions = dict(REQUIRED_DISTRIBUTIONS)
         if mode == "1":
             expected_versions["aiohttp"] = "3.14.3"
+            expected_versions["python-dotenv"] = "1.2.2"
         for name, expected in expected_versions.items():
             with self.subTest(distribution=name):
                 self.assertEqual(metadata.version(name), expected)
