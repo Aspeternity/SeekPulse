@@ -1,6 +1,6 @@
 # SeekPulse 开发路线图 — 审批闸门
 
-> 2026-10-15：Docker-01～05 已按各自离线验收及独立合并许可完成；main `e78112a7123758da24340f4c59f3df190c445ea8`，合并后 [G0 #38703450876](https://github.com/Aspeternity/SeekPulse/actions/runs/38703450876) 4/4 PASS。**Docker-06 / Issue #42 / Draft PR #43 仅获得 Debian OS High 审查与离线开发授权**；GHCR 仍 `BLOCKED_HIGH_OR_CRITICAL`，未授权阶段验收、合并、发布或 NAS/PVE 实机。
+> 2026-10-15：Docker-01～06 已分别离线验收、独立合并；main `accc0b26097b75a5fa724b5ca303d0c87c9be195`，合并后 G0 #38711994265 4/4 PASS。Docker-07 / Issue #44 / Draft PR #45 仅获受支持 OS 处置方案和隔离 Alpine 完整候选双平台 CI 研究许可，**不代表正式底座切换、阶段验收、合并或 GHCR 发行授权**；当前 Debian V1.1 OS High 44/8 CVE，GHCR 仍 BLOCKED。
 
 
 | ID | 阶段 | 必需产物 | 退出门槛 | 状态 |
@@ -13,7 +13,7 @@
 | S4 | 多渠道通知 | Telegram、Bark、ntfy、路由、优先级 | 多目标发送与限流/重试通过 | **已验收并合并**（Issue #13、PR #25，main 6d5f078，CI 4/4；仅离线核心） |
 | S5 | Web 管理 | 界面、认证、规则管理、状态统计 | 双端一致、权限与 CSRF/XSS 测试通过 | **离线已验收并合并**（Issue #14、PR #26，main 9fe66d9，G0 4/4） |
 | S6 | 稳定性硬化 | WAL 快照/校验/恢复至新 DB 路径、故障注入、人工回滚规程 | 可验证恢复、资源与故障测试通过 | **离线验收并合并**（Issue #15 / PR #27，main 12ce325，G0 4/4；实机未验） |
-| S7 | V1.1 容器交付、Debian High 风险审查、受控 GHCR 与实机 | Docker-01～05 已完成并合并；Docker-06 针对 8 个 OS High 的官方稳定分支状态、逐包/逐 CVE 审计、Bookworm/Trixie 双架构候选比较；后续受支持漏洞真正修补或风险处置及正式发布/宿主验证 | 每项离线验收与合并独立批准；High 未处置不能宣称发布安全；正式 GHCR/NAS/PVE 与 48–72h 各有单独许可 | **Docker-01～05 已验收合并**（PR #33/#35/#37/#39/#41，main e78112a7，新 G0 4/4）；**Docker-06 仅离线开发获批**（Issue #42 / Draft PR #43），OS High 44、GHCR BLOCKED |
+| S7 | V1.1 Docker 交付、受支持 OS High 处置与实机验收 | Docker-01～06 已验收/合并；Docker-07 ADR-0014、官方 Alpine 3.24 双架构完整候选隔离离线安全与兼容测试；后续正式风险处理、GHCR 和 NAS/PVE 实机 | 每个 Issue 离线开发→精确 CI→单独验收→单独合并；正式底座切换另批；发布/实机再另批 | **Docker-01～06 完成并合并**；**Docker-07 / #44 / Draft #45 仅研究与候选 CI 获批**，Debian OS High 44/8 仍阻断 GHCR |
 
 ### 开发原则
 

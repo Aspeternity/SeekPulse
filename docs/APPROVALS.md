@@ -1,6 +1,6 @@
 # 审批及执行权限记录（人工可核实）
 
-> **最新（2026-10-15）**：Docker-01～05 分别已离线验收、独立 Squash 合并；main `e78112a7123758da24340f4c59f3df190c445ea8`，新 [G0 #38703450876](https://github.com/Aspeternity/SeekPulse/actions/runs/38703450876) **4/4 PASS**。Docker-05 双架构实际 Trivy：Python High=0、OS High=44 / 8 个不同 CVE，**GHCR 仍 BLOCKED**。用户本轮**仅批准 Docker-06（Issue #42、Draft PR #43）的 Debian OS High 审查及离线修复开发**；未批准 Docker-06 阶段验收/合并、OS High 风险豁免、GHCR/Tag 发布、NAS/PVE 实机或真实通知。以用户明确原话和实时 GitHub 记录优先。
+> **最新（2026-10-15）**：Docker-01～06 已按独立验收及合并授权完成；main `accc0b26097b75a5fa724b5ca303d0c87c9be195`，新 G0 [#38711994265](https://github.com/Aspeternity/SeekPulse/actions/runs/38711994265) 4/4 PASS。原 Debian V1.1 OS High 44 条/8 CVE、PyPI High 0，GHCR 仍 BLOCKED/NOT_PUBLISHED。当前新批准仅覆盖 Docker-07 / Issue #44 / Draft PR #45 的官方方案研究及 GitHub runner 隔离 Alpine 双架构完整应用候选验证；未批准选为正式运行环境、阶段验收、合并、风险豁免、发布或 NAS/PVE 真机。GitHub 最新事实和用户明确原话优先。
 
 ## 2026-10-13：V1.1 方案批准，G0 授权
 
@@ -168,3 +168,14 @@ S7-01 文档规划经用户回复「批准」验收后，用户另行回复「�
 - **未获授权** Docker-06 用户人工阶段验收、Squash 合并 main、已知 Debian OS High 的风险接受/忽略或改低严重性、GHCR 登录/推送/正式 digest/tag/Release、群晖/PVE/Portainer/VPS 登录、生产 SQLite/Token/Session/备份、真实 Telegram/Bark/ntfy 通知、Gate D–G/48–72h；GitHub Actions scanner PASS 不应视为这些许可。
 - Debian 官方 tracker 截至 2026-10-15 显示这些 CVE 在 Trixie/Bookworm 仍有 vulnerable/no-dsa/postponed；在无受支持补丁前，**不能为“降低 Trivy High 数量”去混装 Debian unstable，移除真实有漏洞程序但保留影响代码更不能视为已修复**。审计不能自动将扫描未检出的历史 CVE 标记 FIXED。细节见 ADR-0013 和实时 Draft PR #43 CI。
 - **仅下一审批**：Docker-06 实际完成范围的离线审查和自动化验证阶段验收；以后再另请 PR 合并。此条目为聊天用户原话与紧邻申请的审计解释，非 GitHub Reviewer 独立电子签名。
+
+
+## 2026-10-15：Docker-06 离线阶段验收、独立 PR #43 合并及新 main G0
+
+用户在明确请求 Docker-06 [Issue #42](https://github.com/Aspeternity/SeekPulse/issues/42) **仅按已完成的离线安全审查、Bookworm/Trixie 候选对照及自动化验证范围阶段验收**时明确回复：“批准 Docker-06 / Issue #42 按已完成的离线安全审查、Bookworm/Trixie 候选对照及自动化验证范围阶段验收通过。仅记录验收，PR #43 合并须单独申请授权。”审批记在 [#42 评论 #6188704869](https://github.com/Aspeternity/SeekPulse/issues/42#issuecomment-6188704869)；之后针对精确已验收 HEAD `f951b4616bbbd09c75b279af503977eb0e9435e1` 的 Draft→Ready→Squash 合并 [PR #43](https://github.com/Aspeternity/SeekPulse/pull/43) 另行回答 **「授权」**。GitHub confirmed MERGED，main `accc0b26097b75a5fa724b5ca303d0c87c9be195`，其树与受验 HEAD 完全一致，合并后 [G0 #38711994265](https://github.com/Aspeternity/SeekPulse/actions/runs/38711994265) 4/4 PASS。子任务 #42 CLOSED/completed，父 #16 仍 OPEN/blocked；**没有 OS High 免责或 GHCR 发布授权**。详见 [合并收尾评论](https://github.com/Aspeternity/SeekPulse/issues/42#issuecomment-6188772860)。
+
+## 2026-10-15：Docker-07 方案与隔离候选验证获得新授权（非底座选型）
+
+用户最后答复原话 **「批准」**，直接回应“**单独制定受支持的 OS 漏洞修复或替代基础镜像方案。需要新的开发授权，不能通过本次合并许可直接开展，更不能跳过安全审查进入正式发布。**”因此仅允许独立 [Issue #44](https://github.com/Aspeternity/SeekPulse/issues/44)、研究分支 `research/s7-docker-07-supported-os-candidate`、[Draft PR #45](https://github.com/Aspeternity/SeekPulse/pull/45)；唯一写入负责人 ChatGPT；ADR-0014、公开 Debian Tracker/官方 Python Registry/Alpine 支持状态；临时 GitHub runner **不发布** 的 Python 3.11 Alpine 3.24 完整 V1.1 AMD64/ARM64 候选 build、离线安全/兼容性验证和公开 Trivy/CycloneDX。首轮 PR HEAD `8c3c5d0` 的 [G0 #38714422113](https://github.com/Aspeternity/SeekPulse/actions/runs/38714422113) 4/4 PASS、[Docker-07 #38714422199](https://github.com/Aspeternity/SeekPulse/actions/runs/38714422199) 3/3 PASS；两架构完整候选同一官方 Alpine index digest，OS/PyPI High/Critical 均 0（仅**该次**新鲜扫描），断网/只读/非 root pip/import PASS。后续扩大成 Alpine 内完整离线回归，**最终 PR HEAD 的 CI 仍须重新核验**。这不是正式 V1.1 Alpine 切换/实际部署兼容性验收、也不是原 Debian CVE 已经修复。
+
+**不批准**：修改正式 `Dockerfile.v11`、`compose.v11.yaml`、旧 Dockerfile、生产依赖/DB/通知协议；把 GitHub CI 成功解释为 Docker-07 阶段验收或 PR 合并；OS High 风险豁免、GHCR Push/Tag/Release、用户 NAS/PVE/群晖/Portainer、生产 Token/Session/SQLite/备份、真通知或 Gate D–G/48–72h。后续先按实际完成范围单独申请 Docker-07 离线研究阶段验收，再分别审批任何正式运行环境变更、PR 合并和发布。

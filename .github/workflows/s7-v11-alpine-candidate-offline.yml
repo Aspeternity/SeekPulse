@@ -1,0 +1,241 @@
+name: S7 Docker-07 Alpine 3.24 Candidate (Local Only / No Publish)
+
+on:
+  pull_request:
+    paths:
+      - 'ci/Dockerfile.v11-alpine-candidate'
+      - '.github/workflows/s7-v11-alpine-candidate-offline.yml'
+      - 'docs/decisions/ADR-0014-v11-supported-os-runtime-candidates.md'
+      - 'docs/APPROVALS.json'
+      - 'docs/APPROVALS.md'
+      - 'docs/PROJECT_STATE.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  # Native-runner study must not wait behind the obsolete long QEMU job.
+  group: s7-docker07-native-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lock_base:
+    name: Verify official Python 3.11 Alpine 3.24 index (read only)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      digest: ${{ steps.verify.outputs.digest }}
+    steps:
+      - id: verify
+        name: Validate public Docker Official Images index and required architectures
+        shell: bash
+        run: |
+          set -euo pipefail
+          ref="docker.io/library/python:3.11-alpine3.24"
+          docker buildx imagetools inspect "$ref" > "${RUNNER_TEMP}/official-index.txt"
+          digest="$(awk '/^Digest:/ {print $2;exit}' "${RUNNER_TEMP}/official-index.txt")"
+          [[ "$digest" =~ ^sha256:[0-9a-f]{64}$ ]]
+          docker buildx imagetools inspect "$ref@$digest" --raw > "${RUNNER_TEMP}/official-index.json"
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          p = Path(os.environ["RUNNER_TEMP"]) / "official-index.json"
+          manifest = json.loads(p.read_text())
+          assert manifest.get("schemaVersion") == 2
+          platforms = {
+              f"{item['platform']['os']}/{item['platform']['architecture']}"
+              for item in manifest.get("manifests", [])
+              if isinstance(item.get("platform"), dict)
+          }
+          assert {"linux/amd64", "linux/arm64"}.issubset(platforms), platforms
+          print("OFFICIAL_PYTHON_311_ALPINE324_INDEX=PASS")
+          PY
+          echo "digest=$digest" >> "$GITHUB_OUTPUT"
+          echo "CANDIDATE_OFFICIAL_INDEX=$ref@$digest"
+          echo "CANDIDATE_RELEASE_AUTHORIZED=false GHCR_NOT_PUBLISHED=true"
+
+  scan_candidate:
+    name: Full V1.1 Alpine candidate local build + Trivy / linux/${{ matrix.arch }}
+    needs: lock_base
+    # Use real hosted architectures; QEMU can make the 319 SQLite/async
+    # regression tests very slow and is not equivalent to native ARM64.
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            runner: ubuntu-latest
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    env:
+      ARCH: ${{ matrix.arch }}
+      CANDIDATE_REF: docker.io/library/python:3.11-alpine3.24@${{ needs.lock_base.outputs.digest }}
+      TRIVY_CACHE_DIR: /tmp/seekpulse-docker07-trivy
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Buildx local-only builder
+        uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0
+      - name: Pinned public Trivy scanner, no registry login
+        uses: aquasecurity/setup-trivy@e07451d2e059ed86c2870430ea286b3a9e0bf241
+        with:
+          version: v0.75.0
+          cache: false
+      - name: Compile exact full V1.1 dependency set in temporary local candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          image="seekpulse-alpine-feasibility:${ARCH}"
+          [[ "${CANDIDATE_REF}" =~ ^docker.io/library/python:3[.]11-alpine3[.]24@sha256:[0-9a-f]{64}$ ]]
+          docker buildx build \
+            --file ci/Dockerfile.v11-alpine-candidate \
+            --platform "linux/${ARCH}" \
+            --build-arg "PYTHON_ALPINE_INDEX=${CANDIDATE_REF}" \
+            --provenance=false --sbom=false --load \
+            --tag "$image" .
+          docker image inspect "$image" > "${RUNNER_TEMP}/candidate-inspect.json"
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          items = json.loads((Path(os.environ["RUNNER_TEMP"]) / "candidate-inspect.json").read_text())
+          assert len(items) == 1
+          item = items[0]
+          assert item["Os"] == "linux"
+          assert item["Architecture"] == os.environ["ARCH"]
+          conf = item["Config"]
+          assert conf["User"] == "10001:10001"
+          assert conf["Entrypoint"] == ["python", "-m", "app.v11_main"]
+          assert conf["Labels"]["seekpulse.candidate_only"] == "true"
+          assert conf["Labels"]["seekpulse.release_authorized"] == "false"
+          assert item.get("Size", 0) > 0
+          print("FULL_APP_CANDIDATE_LOCAL_IMAGE_INSPECT=PASS platform=linux/" + os.environ["ARCH"])
+          print("FULL_APP_CANDIDATE_IMAGE_BYTES=" + str(item["Size"]))
+          PY
+      - name: Offline non-root read-only Python and pinned dependencies smoke (never run service)
+        shell: bash
+        run: |
+          set -euo pipefail
+          image="seekpulse-alpine-feasibility:${ARCH}"
+          safety=(--rm --platform "linux/${ARCH}" --network none --read-only
+                  --cap-drop ALL --security-opt no-new-privileges
+                  --tmpfs /tmp:rw,nosuid,nodev,noexec,size=32m
+                  --entrypoint python)
+          docker run "${safety[@]}" "$image" -m pip check
+          docker run "${safety[@]}" "$image" -c '
+          import os, sys, sqlite3, ssl
+          from importlib.metadata import version
+          assert sys.version_info[:2] == (3, 11)
+          assert os.geteuid() == 10001 and os.getegid() == 10001
+          expected = {
+              "aiohttp": "3.14.3",
+              "jaraco.context": "6.1.0",
+              "wheel": "0.46.2",
+              "setuptools": "84.0.0",
+          }
+          for package, wanted in expected.items():
+              assert version(package) == wanted, (package, version(package))
+          import aiohttp, telethon, apprise, fastapi, uvicorn, app.v11_main
+          print("FULL_APP_CANDIDATE_OFFLINE_IMPORT=PASS; SERVICE_NOT_STARTED=true")
+          '
+      - name: All offline S1-S7 regressions inside musl candidate (no network or credentials)
+        shell: bash
+        run: |
+          set -euo pipefail
+          image="seekpulse-alpine-feasibility:${ARCH}"
+          docker run --rm --platform "linux/${ARCH}" \
+            --network none --read-only --cap-drop ALL \
+            --env SEEKPULSE_S7_V11_SECURITY_TEST=1 \
+            --security-opt no-new-privileges \
+            --tmpfs /tmp:rw,nosuid,nodev,noexec,size=64m \
+            --mount "type=bind,source=${GITHUB_WORKSPACE},target=/source,readonly" \
+            --workdir /source --entrypoint python "$image" \
+            -m unittest discover -s tests -v
+          echo "ALPINE_FULL_APP_OFFLINE_UNITTEST=PASS platform=linux/${ARCH}"
+      - name: Fresh local Trivy full OS plus Python vulnerability scan, no ignore
+        shell: bash
+        run: |
+          set -euo pipefail
+          image="seekpulse-alpine-feasibility:${ARCH}"
+          trivy --version
+          trivy image --image-src docker --scanners vuln \
+            --pkg-types os,library --timeout 20m --no-progress \
+            --format json --output "${RUNNER_TEMP}/candidate-vuln.json" "$image"
+          trivy image --image-src docker --timeout 20m --no-progress \
+            --format cyclonedx --output "${RUNNER_TEMP}/candidate-sbom.json" "$image"
+          test -s "${RUNNER_TEMP}/candidate-vuln.json"
+          test -s "${RUNNER_TEMP}/candidate-sbom.json"
+          test -s "${TRIVY_CACHE_DIR}/db/metadata.json"
+      - name: Reject missing or stale scan evidence; report real Alpine CVEs and block release
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          import os
+          from collections import Counter
+          from datetime import datetime, timedelta, timezone
+          from pathlib import Path
+
+          root = Path(os.environ["RUNNER_TEMP"])
+          scan = json.loads((root / "candidate-vuln.json").read_text())
+          sbom = json.loads((root / "candidate-sbom.json").read_text())
+          db = json.loads((Path(os.environ["TRIVY_CACHE_DIR"]) / "db" / "metadata.json").read_text())
+          for field in ("UpdatedAt", "DownloadedAt"):
+              when = datetime.fromisoformat(db[field].replace("Z", "+00:00"))
+              age = datetime.now(timezone.utc) - when
+              assert timedelta() <= age <= timedelta(hours=48), ("stale_public_db", field)
+          assert scan["ArtifactType"] == "container_image"
+          assert scan["Metadata"]["OS"]["Family"] == "alpine"
+          assert scan.get("ArtifactName") == "seekpulse-alpine-feasibility:" + os.environ["ARCH"]
+          results = scan.get("Results")
+          assert isinstance(results, list) and results
+          classes = {r.get("Class") for r in results}
+          assert {"os-pkgs", "lang-pkgs"}.issubset(classes), ("incomplete_os_or_pypi_coverage", classes)
+          assert sbom.get("bomFormat") == "CycloneDX"
+          assert isinstance(sbom.get("components"), list) and sbom["components"]
+          counts = {"os-pkgs": Counter(), "lang-pkgs": Counter()}
+          by_id = {"os-pkgs": {}, "lang-pkgs": {}}
+          for result in results:
+              category = result.get("Class")
+              assert category in counts, ("unexpected_scan_class", category)
+              for v in result.get("Vulnerabilities") or []:
+                  level = v.get("Severity")
+                  vid = v.get("VulnerabilityID")
+                  assert isinstance(vid, str) and vid and isinstance(level, str) and level
+                  counts[category][level] += 1
+                  if level in {"HIGH", "CRITICAL"}:
+                      item = {"package":v.get("PkgName"),
+                              "installed":v.get("InstalledVersion"),
+                              "fixed":v.get("FixedVersion"), "severity":level}
+                      by_id[category].setdefault(vid, []).append(item)
+
+          elevated = sum(counts[k][s] for k in counts for s in ("HIGH","CRITICAL"))
+          report = {
+              "candidate":"ALPINE_324_FULL_V11_APP_LOCAL_ONLY",
+              "platform":"linux/" + os.environ["ARCH"],
+              "base_official_index":os.environ["CANDIDATE_REF"],
+              "db_updated":db["UpdatedAt"],
+              "os_high_records":counts["os-pkgs"]["HIGH"],
+              "os_critical_records":counts["os-pkgs"]["CRITICAL"],
+              "pypi_high_records":counts["lang-pkgs"]["HIGH"],
+              "pypi_critical_records":counts["lang-pkgs"]["CRITICAL"],
+              "os_high_critical_ids":sorted(by_id["os-pkgs"]),
+              "pypi_high_critical_ids":sorted(by_id["lang-pkgs"]),
+              "details":by_id,
+              "historic_debian_cve_absence":"NOT_REPORTED_IN_DIFFERENT_DISTRO_NOT_A_FIX",
+              "candidate_risk_gate":"BLOCKED_HIGH_OR_CRITICAL" if elevated else "REQUIRES_SEPARATE_SECURITY_AND_RELEASE_APPROVAL",
+              "existing_debian_release_gate":"BLOCKED_HIGH_OR_CRITICAL",
+              "release_ready":False,
+              "release_authorized":False,
+              "ghcr":"NOT_PUBLISHED",
+              "runtime_switch_performed":False,
+          }
+          print("FULL_APP_ALPINE_CANDIDATE_EVIDENCE=" + json.dumps(report,sort_keys=True))
+          assert report["release_ready"] is False and report["release_authorized"] is False
+          assert report["ghcr"] == "NOT_PUBLISHED" and report["runtime_switch_performed"] is False
+          assert counts["lang-pkgs"]["HIGH"] == 0 and counts["lang-pkgs"]["CRITICAL"] == 0, "new_python_high_candidate"
+          PY

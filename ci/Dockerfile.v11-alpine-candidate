@@ -1,0 +1,37 @@
+# S7 Docker-07 ONLY: disposable GitHub runner local build feasibility test.
+# NOT the approved V1.1 runtime; NEVER use in Compose, publish or deploy.
+# CI must provide a Docker Official Python 3.11 Alpine 3.24 multiarch
+# index digest, verified read-only before this FROM is resolved.
+ARG PYTHON_ALPINE_INDEX
+FROM ${PYTHON_ALPINE_INDEX}
+
+LABEL org.opencontainers.image.title="SeekPulse candidate only" \
+      org.opencontainers.image.source="https://github.com/Aspeternity/SeekPulse" \
+      org.opencontainers.image.licenses="MIT" \
+      seekpulse.release_authorized="false" \
+      seekpulse.candidate_only="true"
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    HOME=/tmp
+
+WORKDIR /app
+COPY requirements.txt requirements-s3.txt requirements-s4.txt requirements-s5.txt \
+     requirements-v11-security.txt ./
+RUN python -m pip install --no-cache-dir -r requirements-s5.txt \
+    && python -m pip install --no-cache-dir --upgrade -r requirements-v11-security.txt \
+    && python -m pip check
+
+COPY app ./app
+
+# Numeric ID avoids depending on Alpine/BusyBox useradd specifics and
+# keeps the same restricted UID/GID and private app data contract as V1.1.
+RUN mkdir -p /app/data \
+    && chown 10001:10001 /app/data \
+    && chmod 0700 /app/data
+USER 10001:10001
+
+# Do not run this entrypoint in CI. Smoke uses python -c with --network none.
+ENTRYPOINT ["python", "-m", "app.v11_main"]
+CMD ["--run"]
