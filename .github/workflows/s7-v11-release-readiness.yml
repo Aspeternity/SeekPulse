@@ -126,8 +126,10 @@ jobs:
             --build-arg "SEEKPULSE_BUILD_REVISION=${GITHUB_SHA}" \
             --tag "$local_image" \
             .
+          # Dependency resolution was checked in the Dockerfile build layer.
+          # The final runtime deliberately contains no vulnerable pip vendor libs.
           docker run --rm --platform linux/arm64 --network none \
-            --entrypoint python "$local_image" -m pip check
+            --entrypoint python "$local_image" -c 'from importlib.util import find_spec; assert find_spec("pip") is None; import app.v11_main; print("ARM64_BUILD_ONLY_PIP_ABSENT=PASS")'
           docker run --rm --platform linux/arm64 --network none \
             --entrypoint python "$local_image" -c '
           import os, platform

@@ -61,7 +61,9 @@ jobs:
         run: |
           set -euo pipefail
           image="seekpulse-v11-offline:${{ github.sha }}"
-          docker run --rm --entrypoint python "$image" -m pip check
+          # Dockerfile already ran pip check before removing build-only pip.
+          # Final opt-in runtime must not ship pip's vulnerable vendored libraries.
+          docker run --rm --network none --entrypoint python "$image" -c 'from importlib.util import find_spec; assert find_spec("pip") is None; print("V11_RUNTIME_BUILD_ONLY_PIP_REMOVED=PASS")'
           docker run --rm --entrypoint python "$image" -c '
           import os
           from pathlib import Path

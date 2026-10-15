@@ -17,6 +17,7 @@ PATCHED = {
     "jaraco.context": "6.1.0",
     "wheel": "0.46.2",
     "setuptools": "84.0.0",
+    "python-dotenv": "1.2.2",
 }
 
 
@@ -25,7 +26,7 @@ def read(path: str) -> str:
 
 
 class NarrowSecurityOverrides(unittest.TestCase):
-    def test_exactly_four_targeted_version_pins(self):
+    def test_exactly_five_targeted_v11_version_pins(self):
         content = read("requirements-v11-security.txt")
         actual = [
             line.strip() for line in content.splitlines()
@@ -34,7 +35,7 @@ class NarrowSecurityOverrides(unittest.TestCase):
         self.assertEqual(actual, [f"{name}=={version}" for name, version
                                   in PATCHED.items()])
         for line in actual:
-            self.assertRegex(line, r"^[a-z][a-z.]*==[0-9][0-9.]*$")
+            self.assertRegex(line, r"^[a-z][a-z.-]*==[0-9][0-9.]*$")
         for unsafe in ("--extra-index-url", "--trusted-host", "-e ", " git+"):
             self.assertNotIn(unsafe, content)
 
@@ -42,11 +43,16 @@ class NarrowSecurityOverrides(unittest.TestCase):
         dockerfile = read("Dockerfile.v11")
         self.assertEqual(dockerfile.count("requirements-v11-security.txt"), 2)
         self.assertIn("-r requirements-s5.txt", dockerfile)
+        self.assertIn("RUN apk add --no-cache --upgrade 'zlib=1.3.2-r1'", dockerfile)
+        self.assertIn("apk info -v | grep -Fx 'zlib-1.3.2-r1'", dockerfile)
+        self.assertEqual(dockerfile.count("apk add "), 1)
+        self.assertIn("RUN python -m pip install --no-cache-dir --upgrade pip==26.2.1", dockerfile)
         self.assertIn(
             "&& python -m pip install --no-cache-dir --upgrade "
             "-r requirements-v11-security.txt", dockerfile
         )
         self.assertIn("&& python -m pip check", dockerfile)
+        self.assertIn("&& python -m pip uninstall --yes pip", dockerfile)
         self.assertEqual(len(re.findall(r"(?m)^RUN python -m pip install",
                                         dockerfile)), 1)
         self.assertIn("USER 10001:10001", dockerfile)
@@ -55,6 +61,7 @@ class NarrowSecurityOverrides(unittest.TestCase):
 
     def test_legacy_code_and_dependencies_are_untouched(self):
         self.assertIn("aiohttp==3.11.11", read("requirements.txt"))
+        self.assertIn("python-dotenv==1.0.1", read("requirements.txt"))
         for path in (
             "requirements.txt", "requirements-s3.txt", "requirements-s4.txt",
             "requirements-s5.txt", "Dockerfile", "docker-compose.yml",
@@ -70,6 +77,9 @@ class NarrowSecurityOverrides(unittest.TestCase):
         self.assertIn("BLOCKED_HIGH_OR_CRITICAL", workflow)
         self.assertIn('report["release_ready"] is False', workflow)
         self.assertIn("V11_PATCHED_IMAGE_RUNTIME=PASS", workflow)
+        self.assertIn("RUNTIME_BUILD_ONLY_PIP_REMOVED=PASS", workflow)
+        self.assertIn('"python-dotenv": "1.2.2"', workflow)
+        self.assertIn("zlib-1.3.2-r1", workflow)
         self.assertNotIn("--ignore-unfixed", workflow)
         self.assertNotIn(".trivyignore", workflow)
         self.assertNotIn("packages: write", workflow)
