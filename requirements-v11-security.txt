@@ -8,3 +8,6 @@ wheel==0.46.2
 # Also update setuptools' bundled jaraco.context / wheel copies.
 # Official setuptools 84.0.0 vendors jaraco_context 6.1.0, wheel 0.46.3.
 setuptools==84.0.0
+# CVE-2026-28684: V1.1-only security override of legacy dotenv 1.0.1.
+# The fixed package changes symlink-write behavior; no app config protocol change.
+python-dotenv==1.2.2

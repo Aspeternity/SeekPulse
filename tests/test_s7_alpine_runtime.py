@@ -31,7 +31,12 @@ class AlpineRuntimeContract(unittest.TestCase):
         self.assertIn("&& chmod 0700 /app/data", dockerfile)
         self.assertIn('ENTRYPOINT ["python", "-m", "app.v11_main"]', dockerfile)
         self.assertIn('CMD ["--run"]', dockerfile)
-        for forbidden in ("apt-get", "apk add", "COPY . .", "RUN chmod -R 777"):
+        self.assertIn("RUN apk add --no-cache --upgrade 'zlib=1.3.2-r1'", dockerfile)
+        self.assertEqual(dockerfile.count("apk add "), 1)
+        for forbidden in (
+            "apt-get", "apk upgrade", " --repository ", "/edge/",
+            "COPY . .", "RUN chmod -R 777",
+        ):
             self.assertNotIn(forbidden, dockerfile)
 
     def test_sqlite_wal_foreign_keys_integrity_and_hardlink_on_temp_volume(self):
