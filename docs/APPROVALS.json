@@ -540,6 +540,52 @@
       "user_instruction": "批准",
       "context": "Immediate response to '是否批准启动 Docker-08 的方案设计及离线开发？本次不包含合并、发布或实机部署。'",
       "source": "Current user ChatGPT reply, Issue #46, Draft PR #47; not GitHub UI reviewer signature"
+    },
+    {
+      "event_id": "APPROVAL-2026-10-15-DOCKER08-STAGE-ACCEPT-AND-PR47-SEPARATE-SQUASH-MERGE",
+      "date": "2026-10-15",
+      "approved_plan": "SeekPulse V1.1",
+      "authorization_kind": "independent_offline_stage_acceptance_and_later_separate_squash_merge",
+      "authorized_stage": "S7-Docker-08",
+      "issue": 46,
+      "pr": 47,
+      "user_instruction": "批准（仅离线阶段验收）; 批准（独立 PR #47 精确 HEAD Ready/Squash Merge + postmerge G0）",
+      "authorized_actions": [
+        "Docker08 opt-in V1.1 pinned Alpine runtime native amd64/arm64 328 full tests and 5 restricted tests accepted",
+        "Separate user authorization for exact PR #47 head 4f70cf5bb24a0de77f577eb72eeeec6613a94625 Ready+Squash Merge",
+        "Merged main e86b10bd324f083955b1d38a340bbca092b0dc03 and postmerge G0 #38723709559 4/4 success"
+      ],
+      "not_authorized": [
+        "Automatic release readiness, GHCR push, Tag, GitHub Release, signature or attestation publishing",
+        "NAS/PVE/Portainer/Synology, production DB/tokens/session, live Telegram/Bark/ntfy",
+        "Claim historical 8 Debian CVEs were patched in Debian"
+      ],
+      "source": "User replies in direct approval context; Issue #46 final audit comment 6190449427; PR #47 merge comment 6190450412; not GitHub Review signature"
+    },
+    {
+      "event_id": "APPROVAL-2026-10-15-DOCKER09-GHCR-PREPUBLISH-SECURITY-OFFLINE-ONLY",
+      "date": "2026-10-15",
+      "approved_plan": "SeekPulse V1.1",
+      "authorization_kind": "security_review_and_offline_preparation_only",
+      "authorized_stage": "S7-Docker-09",
+      "issue": 48,
+      "pr": 49,
+      "user_instruction": "批准",
+      "context": "Immediate answer to '是否批准启动 Docker-09 的发布前安全审查与离线准备？本次拟申请的范围不包含实际推送 GHCR、创建 Release/Tag 或部署 NAS/PVE；这些仍需单独授权。'",
+      "authorized_actions": [
+        "Design ADR-0016 with public CVE review, source/base/OCI digest provenance and release plan gates",
+        "Add fail-closed standard-library prepublish review of public OS and PyPI Medium/Low findings and negative tests",
+        "Build local V1.1 official pinned Alpine images on native amd64+arm64 temporary GitHub runners and scan with fresh Trivy/CycloneDX public databases",
+        "Document remaining risks, signing/attestation design, future remote digest verification and reversible NAS/PVE deployment gates without execution",
+        "Ask separately for Docker-09 offline stage acceptance after exact HEAD CI"
+      ],
+      "not_authorized": [
+        "Mark PR #49 Ready, merge into main, or claim Docker-09 stage acceptance without separate reply",
+        "Publish GHCR packages or digests, Git tags/Releases, sign or attest release to external registry, waive CVEs",
+        "Access user NAS/PVE/Portainer/Synology/VPS, production secrets DB/Session/token/backup, real notifications",
+        "Gate D-G or 48-72h live observation"
+      ],
+      "source": "User's explicit current chat approval, Issue #48 and Draft PR #49; not GitHub reviewer signature"
     }
   ]
 }

@@ -2,7 +2,7 @@
 
 日期：2026-10-15 · [Docker-08 Issue #46](https://github.com/Aspeternity/SeekPulse/issues/46) · 父 [S7 #16](https://github.com/Aspeternity/SeekPulse/issues/16)
 
-**状态：DEVELOPMENT AUTHORIZED / NOT MERGED / NOT RELEASED。** 用户在 Docker-07 [Issue #44](https://github.com/Aspeternity/SeekPulse/issues/44) 已验收、[PR #45](https://github.com/Aspeternity/SeekPulse/pull/45) 独立授权 Squash 合并、main `30c246be5f7cb11fb315ccecc882798b75f28160` 且 [post-merge G0 #38718379825](https://github.com/Aspeternity/SeekPulse/actions/runs/38718379825) 4/4 后，针对 **“Docker-08：Alpine 正式运行环境迁移与离线兼容性验证，是否批准方案设计及离线开发；不包含合并、发布或实机部署”** 单独回答「批准」。据此仅可更改本独立分支的 opt-in V1.1 候选并跑临时 GitHub runner，不能认定已完成阶段验收、实际发布授权或用户宿主兼容性。
+**执行状态（2026-10-15 补注）：OFFLINE ACCEPTED / MERGED MAIN，BUT NOT RELEASED。** Docker-08 已独立离线验收、PR #47 获用户另行批准 Squash 合并（main `e86b10bd324f083955b1d38a340bbca092b0dc03`，postmerge G0 #38723709559 4/4 PASS）。下文原始开发授权/方案描述作为当时历史记录保留；当前 GHCR 仍 `NOT_PUBLISHED`，真正发布或 NAS/PVE 实机均未授权。 用户在 Docker-07 [Issue #44](https://github.com/Aspeternity/SeekPulse/issues/44) 已验收、[PR #45](https://github.com/Aspeternity/SeekPulse/pull/45) 独立授权 Squash 合并、main `30c246be5f7cb11fb315ccecc882798b75f28160` 且 [post-merge G0 #38718379825](https://github.com/Aspeternity/SeekPulse/actions/runs/38718379825) 4/4 后，针对 **“Docker-08：Alpine 正式运行环境迁移与离线兼容性验证，是否批准方案设计及离线开发；不包含合并、发布或实机部署”** 单独回答「批准」。据此仅可更改本独立分支的 opt-in V1.1 候选并跑临时 GitHub runner，不能认定已完成阶段验收、实际发布授权或用户宿主兼容性。
 
 ## 1. 旧 Debian Trixie 安全风险与新候选范围
 
