@@ -1,9 +1,10 @@
 # Opt-in V1.1 image: build-only until a separate GHCR publishing approval.
 # Do not modify the legacy Dockerfile or its default app.main entrypoint.
-# Docker-04 official multi-platform index digest, verified (amd64 + arm64)
-# from docker.io/library/python:3.11-slim by no-login GitHub runner
-# workflow #38632803851. Re-pin only after renewed supply-chain review.
-FROM python:3.11-slim@sha256:e88e9763f943ec1834f992a4b51e0f24500486803e8bc534e5767af9ea65f6ce
+# Docker-08 opt-in official Python 3.11 Alpine 3.24 multiarch index.
+# Verified full-app candidate on native amd64+arm64 in Docker-07.
+# This is a BASE index digest, NOT a published SeekPulse GHCR digest.
+# Branch-only migration until separate acceptance and merge approval.
+FROM python:3.11-alpine3.24@sha256:d9368b3a5ac59afea7b5d4f2e2aea0941dbf9fdee9c369c5bec00b98244bc929
 
 # Offline CI uses 0.0.0-ci; a real version/tag needs a separate approval.
 # Labels are traceability only; they are NOT a GHCR release or digest.
@@ -18,7 +19,8 @@ LABEL org.opencontainers.image.title="SeekPulse" \
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    PIP_DISABLE_PIP_VERSION_CHECK=1
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    HOME=/tmp
 
 WORKDIR /app
 
@@ -34,10 +36,11 @@ COPY app ./app
 
 # The image has no secrets or host data. A fresh bind volume must be writable
 # by this numeric uid/gid; do not add a root entrypoint that chowns user data.
-RUN groupadd --gid 10001 seekpulse \
-    && useradd --uid 10001 --gid 10001 --no-create-home \
-       --home-dir /tmp --shell /usr/sbin/nologin seekpulse \
-    && install -d -o 10001 -g 10001 -m 0700 /app/data
+# Use already verified Alpine-compatible numeric nonroot identity.
+# Never recursively chown any user-provided persistent bind mount.
+RUN mkdir -p /app/data \
+    && chown 10001:10001 /app/data \
+    && chmod 0700 /app/data
 
 USER 10001:10001
 
