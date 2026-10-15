@@ -236,8 +236,12 @@ class SecurityIsolationContracts(unittest.TestCase):
         for required in ("read_only: true", "cap_drop:", "- ALL",
                          "no-new-privileges:true", 'restart: "no"'):
             self.assertIn(required, compose)
+        active = "\n".join(
+            line for line in compose.splitlines()
+            if line.strip() and not line.lstrip().startswith("#")
+        )
         for unsafe in ("privileged: true", "/var/run/docker.sock", "ports:"):
-            self.assertNotIn(unsafe, compose)
+            self.assertNotIn(unsafe, active)
 
     def test_docker06_ci_stays_read_only_and_reports_unknown(self):
         ci = (ROOT / ".github/workflows/s7-v11-os-high-offline.yml").read_text()
