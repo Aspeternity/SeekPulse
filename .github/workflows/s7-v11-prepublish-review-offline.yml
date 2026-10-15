@@ -169,7 +169,7 @@ jobs:
           set -euo pipefail
           root="${RUNNER_TEMP}/prepublish"
           image="seekpulse-prepublish-local:${ARCH}"
-          python scripts/v11_pre_release_review.py \
+          python -m scripts.v11_pre_release_review \
             --scan "$root/vulnerabilities.json" \
             --validated-report "$root/validated-report.json" \
             --revision "${GITHUB_SHA}" \

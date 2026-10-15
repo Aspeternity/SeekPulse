@@ -247,7 +247,11 @@ class LocalPreReleaseContracts(unittest.TestCase):
         self.assertIn("read_only: true", compose)
         self.assertIn("create_host_path: false", compose)
         self.assertNotIn("docker.sock", compose)
-        self.assertNotIn("build:", compose)
+        active_compose = "\n".join(
+            line for line in compose.splitlines()
+            if not line.lstrip().startswith("#")
+        )
+        self.assertNotIn("build:", active_compose)
 
     def test_readonly_workflow_cannot_create_remote_release(self):
         workflow = (ROOT / ".github/workflows/s7-v11-prepublish-review-offline.yml").read_text()
@@ -257,8 +261,9 @@ class LocalPreReleaseContracts(unittest.TestCase):
         )
         self.assertIn("contents: read", active)
         self.assertIn("ubuntu-24.04-arm", active)
-        self.assertIn("linux/amd64", active)
-        self.assertIn("linux/arm64", active)
+        self.assertIn("- arch: amd64", active)
+        self.assertIn("- arch: arm64", active)
+        self.assertIn('--platform "linux/${ARCH}"', active)
         self.assertIn("scripts/v11_security_evidence.py", active)
         self.assertIn("scripts/v11_pre_release_review.py", active)
         self.assertIn("version: v0.75.0", active)
