@@ -2,7 +2,7 @@
 
 2026-10-15 · Docker-09 [Issue #48](https://github.com/Aspeternity/SeekPulse/issues/48) · S7 [#16](https://github.com/Aspeternity/SeekPulse/issues/16)
 
-**状态：仅方案设计与本地 CI 研究获批（PROPOSED, NOT ACCEPTED, NOT MERGED, NOT PUBLISHED）。** 用户针对“Docker-09 的发布前安全审查与离线准备，不包含实际 GHCR 推送、创建 Release/Tag 或 NAS/PVE 部署”独立回复「批准」。这不是 Docker-09 阶段验收、PR 合并、发布、生产镜像或实机授权。
+**状态更新（2026-10-15）：OFFLINE REVIEW ACCEPTED / MERGED MAIN / NOT PUBLISHED。** Docker-09 已独立离线验收、PR #49 经用户另行单独批准 Squash 合并，新 main `09ab09416a94d472f32bf74e52da4897772d06fd`，postmerge G0 #38731768690 4/4 PASS。下文原始研究许可只作为当时历史记录保留；正式 GHCR 仍 `NOT_PUBLISHED`，Medium/Low 风险未修复，当前另立 Docker-10 离线受控修复。 用户针对“Docker-09 的发布前安全审查与离线准备，不包含实际 GHCR 推送、创建 Release/Tag 或 NAS/PVE 部署”独立回复「批准」。这不是 Docker-09 阶段验收、PR 合并、发布、生产镜像或实机授权。
 
 ## 1. 当前可证事实（以最新实时 GitHub 为准）
 

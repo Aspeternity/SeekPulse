@@ -586,6 +586,51 @@
         "Gate D-G or 48-72h live observation"
       ],
       "source": "User's explicit current chat approval, Issue #48 and Draft PR #49; not GitHub reviewer signature"
+    },
+    {
+      "event_id": "APPROVAL-2026-10-15-DOCKER09-SEPARATE-ACCEPTANCE-AND-PR49-MERGE",
+      "date": "2026-10-15",
+      "approved_plan": "SeekPulse V1.1",
+      "authorization_kind": "independent_offline_stage_acceptance_then_separate_ready_squash_merge",
+      "authorized_stage": "S7-Docker-09",
+      "issue": 48,
+      "pr": 49,
+      "user_instruction": "批准（仅离线阶段验收）；批准（精确 HEAD PR #49 独立 Ready/Squash Merge）",
+      "authorized_actions": [
+        "Accept only offline prepublish CVE/supply-chain review and 29/29 CI",
+        "Then separately authorize PR #49 exact HEAD 16b8b68c0b92373e3aef0835fafee1708c2576c0 Ready+Squash Merge",
+        "New main 09ab09416a94d472f32bf74e52da4897772d06fd and G0 #38731768690 4/4 success"
+      ],
+      "not_authorized": [
+        "Apply any CVE dependency fix or waive risks under Docker09",
+        "GHCR push/sign/attest/Tag/Release and release_ready or release_authorized",
+        "NAS/PVE/Synology/Portainer, production credentials/SQLite/Telegram/Bark/ntfy"
+      ],
+      "source": "User direct replies; Issue #48 acceptance comment 6191441489, separate merger approval 6191576935, final audit 6191638393; not independent GitHub review"
+    },
+    {
+      "event_id": "APPROVAL-2026-10-15-DOCKER10-RUNTIME-SECURITY-FIX-OFFLINE-DEV-ONLY",
+      "date": "2026-10-15",
+      "approved_plan": "SeekPulse V1.1",
+      "authorization_kind": "stage_design_and_offline_development_only",
+      "authorized_stage": "S7-Docker-10",
+      "issue": 50,
+      "pr": 51,
+      "user_instruction": "批准  顺便告诉我 我们项目目前在哪个阶段",
+      "context": "Immediate answer to assistant's explicit Docker-10 patch design/offline dev request, excluding acceptance, merge, GHCR and NAS/PVE deployment",
+      "authorized_actions": [
+        "Create ADR-0017 and independent Issue #50 / Draft PR #51 (sole writer ChatGPT)",
+        "Minimal V1.1-only stable Alpine zlib 1.3.2-r1 + pinned pip26.2.1 + python-dotenv1.2.2 runtime fixes; retain four prior V1.1 security pins",
+        "Run real native AMD64/ARM64 offline full app build/unit tests, WAL/TLS/isolated resource tests, Trivy OS/Python and CycloneDX with all eight reviewed target CVEs absent",
+        "Only after CI and evidence request separate Docker10 offline stage acceptance"
+      ],
+      "not_authorized": [
+        "Docker10 independent stage acceptance, Ready, Squash Merge main",
+        "CVE severity waiver/suppression or automatic release_ready=true",
+        "GHCR login/push/tag/release, signature/attestation, production remote digest",
+        "User NAS/PVE/Synology/Portainer/VPS, production DB/secret/session/real notifications, Gate D-G"
+      ],
+      "source": "Explicit current user chat reply and scope; Issue #50 / Draft PR #51; not GitHub reviewer signature"
     }
   ]
 }

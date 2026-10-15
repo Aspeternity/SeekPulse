@@ -1,6 +1,6 @@
 # 审批及执行权限记录（人工可核实）
 
-> **最新（2026-10-15）**：Docker-01～08 均分别离线验收并独立获批 Squash 合并；Docker-08 [PR #47](https://github.com/Aspeternity/SeekPulse/pull/47) 已合并，main `e86b10bd324f083955b1d38a340bbca092b0dc03`，合并后 G0 #38723709559 4/4 PASS。main opt-in `Dockerfile.v11` 使用官方 pinned Python3.11 Alpine3.24；GHCR `NOT_PUBLISHED`，无正式远端 image digest。**当前仅独立批准 Docker-09 / Issue #48 / Draft PR #49 GHCR 发布前 Medium/Low CVE 公开证据/双架构本地镜像安全审查及离线准备**；未批准此阶段验收、合并、发布、签名或 NAS/PVE 实机。
+> **最新（2026-10-15）**：S7 Docker-01～09 分别离线验收并独立合并；Docker-09 [PR #49](https://github.com/Aspeternity/SeekPulse/pull/49) MERGED，main `09ab09416a94d472f32bf74e52da4897772d06fd`，postmerge G0 #38731768690 4/4 PASS。当前处于 **S7 Docker V1.1 正式发布前安全收尾，尚未发布/部署**。用户**仅批准 Docker-10 / Issue #50 / Draft PR #51 的 pip、python-dotenv、zlib 最小化离线漏洞修复方案设计及开发**；不包括修复阶段验收、合并、GHCR push/Release、NAS/PVE 实机。当前 `release_ready=false` / `release_authorized=false`，GHCR `NOT_PUBLISHED`。
 
 ## 2026-10-13：V1.1 方案批准，G0 授权
 
@@ -201,3 +201,14 @@ S7-01 文档规划经用户回复「批准」验收后，用户另行回复「�
 
 用户原话：**「批准」**；明确上下文：“**是否批准启动 Docker-09 的发布前安全审查与离线准备？本次拟申请的范围不包含实际推送 GHCR、创建 Release/Tag 或部署 NAS/PVE；这些仍需单独授权。**”故只批准独立 [Issue #48](https://github.com/Aspeternity/SeekPulse/issues/48) / [Draft PR #49](https://github.com/Aspeternity/SeekPulse/pull/49)、分支 `research/s7-docker-09-prepublish-security-offline`，唯一写者 ChatGPT。允许纯离线 ADR-0016/风险清单、GitHub 原生双架构 Runner 完整镜像公开 Trivy/CycloneDX 最新漏洞扫描、Medium/Low ID/包/版本/Trivy 修复提示逐条复核、真实 High/Critical/UNKNOWN fail-closed 及负向测试、已有 OCI 多平台/Tag/SBOM/签名来源**设计**和发布/回滚门槛文档与交接事实同步。静态产物不包含私密凭据或真实设备。
 **明确不批准**：Docker-09 阶段验收、PR #49 转 Ready/合并 main、`packages:write`、GHCR login/push、GitHub Tag/Release、签名及 attest 正式远端发布、用户 NAS/PVE/群晖/Portainer/VPS、生产 DB/Session/Token/备份、真实 TG/Bark/ntfy、Gate D–G/48–72h。成功离线 CI 不等于安全风险接收或 GHCR release_ready=true；后续各权限需单独申请。
+
+
+## 2026-10-15 Docker-09 离线阶段验收 + PR #49 单独合并 + 主线 G0
+
+用户对 Docker-09 / Issue #48 公开漏洞逐项安全审查、双架构 Trivy/CycloneDX、供应链/签名/回滚**方案**及 CI 29/29 的**仅离线阶段验收**单独回复「批准」，留痕 [#6191441489](https://github.com/Aspeternity/SeekPulse/issues/48#issuecomment-6191441489)。随后助手另行申请 PR #49 **精确 HEAD `16b8b68c0b92373e3aef0835fafee1708c2576c0`** 转 Ready+Squash Merge main、合并后 G0，用户**再次明确回复「批准」**，见 [独立授权 #6191576935](https://github.com/Aspeternity/SeekPulse/issues/48#issuecomment-6191576935)。GitHub PR #49 MERGED、Issue #48 CLOSED/completed；新 main `09ab09416a94d472f32bf74e52da4897772d06fd`、merge Git tree 与受验 HEAD 同 SHA，postmerge [G0 #38731768690](https://github.com/Aspeternity/SeekPulse/actions/runs/38731768690) 4/4 PASS；最终记录 [#6191638393](https://github.com/Aspeternity/SeekPulse/issues/48#issuecomment-6191638393)。仅合并只读审计/测试/文档；**未修改 Dockerfiles/Compose/依赖/app，更未升级漏洞包或授权 GHCR**。
+
+## 2026-10-15 Docker-10 最小化漏洞修复方案设计与离线开发独立批准
+
+用户原话 **「批准  顺便告诉我 我们项目目前在哪个阶段」**；对应紧邻明确问题：“**是否批准启动 Docker-10 的漏洞修复方案设计及离线开发？此次授权仅限独立分支开发与测试，不包含阶段验收、PR 合并、GHCR 发布或 NAS/PVE 部署。**”因此仅批准 [Issue #50](https://github.com/Aspeternity/SeekPulse/issues/50) / [Draft PR #51](https://github.com/Aspeternity/SeekPulse/pull/51) 和 [ADR-0017](decisions/ADR-0017-v11-runtime-vulnerability-remediation.md) 的受控、安全、最小范围离线修复开发：原生 AMD64/ARM64 正式 opt-in Alpine 镜像固定 `zlib=1.3.2-r1`、镜像安装前 `pip==26.2.1`、V1.1-only `python-dotenv==1.2.2`，保留旧四项 pin；原版业务/依赖/Compose/SQLite/通知协议全不改；8 个 Docker-09 CVE 必须真实最新扫描不再报告，任何新漏洞不得遮掩，CI 应失效关闭。父 #16 必须 OPEN/status:blocked。
+
+**本批准不等于**已修复 CVE、Docker-10 离线阶段人工验收、PR #51 Ready/Squash 合并、GHCR login/push/Tag/Release、远端签名、多架构生产 digest、NAS/PVE/Portainer/群晖/VPS 实机/凭据/真通知/Gate D–G。新 CI 绿色后仍须分别申请人工阶段验收、精确 HEAD 合并、GHCR 发版及用户 Docker 现场许可。本记录来自用户聊天明确原话，非 GitHub UI Reviewer 签名。
