@@ -58,20 +58,24 @@ jobs:
   scan_candidate:
     name: Full V1.1 Alpine candidate local build + Trivy / linux/${{ matrix.arch }}
     needs: lock_base
-    runs-on: ubuntu-latest
+    # Use real hosted architectures; QEMU can make the 319 SQLite/async
+    # regression tests very slow and is not equivalent to native ARM64.
+    runs-on: ${{ matrix.runner }}
     timeout-minutes: 90
     strategy:
       fail-fast: false
       matrix:
-        arch: ['amd64', 'arm64']
+        include:
+          - arch: amd64
+            runner: ubuntu-latest
+          - arch: arm64
+            runner: ubuntu-24.04-arm
     env:
       ARCH: ${{ matrix.arch }}
       CANDIDATE_REF: docker.io/library/python:3.11-alpine3.24@${{ needs.lock_base.outputs.digest }}
       TRIVY_CACHE_DIR: /tmp/seekpulse-docker07-trivy
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-      - name: Enable emulation on ephemeral GitHub runner only
-        uses: docker/setup-qemu-action@1f40c72289eff860ee54a304f1438e3cff362e0a # v4.3.0
       - name: Buildx local-only builder
         uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0
       - name: Pinned public Trivy scanner, no registry login
