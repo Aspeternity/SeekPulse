@@ -1,6 +1,7 @@
-# SeekPulse 开发路线图 — 授权闸门
+# SeekPulse 开发路线图 — 审批闸门
 
-> **2026-10-15 当前基线**：Docker-01/02/03/04 已分别完成离线验收、独立合并和新 main G0。main `fbb4f400`，合并后 [G0 #38639966882](https://github.com/Aspeternity/SeekPulse/actions/runs/38639966882) 4/4 PASS。**Docker-05 / Issue #40** 仅获 High CVE 专项审查与离线修复开发授权；正式 GHCR 因 Debian/Python High 仍 BLOCKED。**未获阶段验收、PR 合并、发布或 NAS/PVE 部署授权**。
+> 2026-10-15：Docker-01～05 已按各自离线验收及独立合并许可完成；main `e78112a7123758da24340f4c59f3df190c445ea8`，合并后 [G0 #38703450876](https://github.com/Aspeternity/SeekPulse/actions/runs/38703450876) 4/4 PASS。**Docker-06 / Issue #42 / Draft PR #43 仅获得 Debian OS High 审查与离线开发授权**；GHCR 仍 `BLOCKED_HIGH_OR_CRITICAL`，未授权阶段验收、合并、发布或 NAS/PVE 实机。
+
 
 | ID | 阶段 | 必需产物 | 退出门槛 | 状态 |
 |---|---|---|---|---|
@@ -12,7 +13,7 @@
 | S4 | 多渠道通知 | Telegram、Bark、ntfy、路由、优先级 | 多目标发送与限流/重试通过 | **已验收并合并**（Issue #13、PR #25，main 6d5f078，CI 4/4；仅离线核心） |
 | S5 | Web 管理 | 界面、认证、规则管理、状态统计 | 双端一致、权限与 CSRF/XSS 测试通过 | **离线已验收并合并**（Issue #14、PR #26，main 9fe66d9，G0 4/4） |
 | S6 | 稳定性硬化 | WAL 快照/校验/恢复至新 DB 路径、故障注入、人工回滚规程 | 可验证恢复、资源与故障测试通过 | **离线验收并合并**（Issue #15 / PR #27，main 12ce325，G0 4/4；实机未验） |
-| S7 | V1.1 容器安全交付、漏洞处置、受控发布与实机验收 | Docker-01/02/03/04 已合并，Docker-05 独立 High CVE 定向修复（仅 V1.1）、AMD64/ARM64 复扫、后续 GHCR 发行和 PVE/群晖真实验证 | 每次离线阶段验收/合并单独批准；剩余 High 修复或风险处置以及正式 GHCR Push/部署/通知/48–72h 各有独立闸门 | **Docker-01~04 已验收合并**（PR #33/#35/#37/#39，main fbb4f400 G0 4/4）；**Docker-05 仅离线开发获批**（Issue #40 / ADR-0012），GHCR 仍 BLOCKED |
+| S7 | V1.1 容器交付、Debian High 风险审查、受控 GHCR 与实机 | Docker-01～05 已完成并合并；Docker-06 针对 8 个 OS High 的官方稳定分支状态、逐包/逐 CVE 审计、Bookworm/Trixie 双架构候选比较；后续受支持漏洞真正修补或风险处置及正式发布/宿主验证 | 每项离线验收与合并独立批准；High 未处置不能宣称发布安全；正式 GHCR/NAS/PVE 与 48–72h 各有单独许可 | **Docker-01～05 已验收合并**（PR #33/#35/#37/#39/#41，main e78112a7，新 G0 4/4）；**Docker-06 仅离线开发获批**（Issue #42 / Draft PR #43），OS High 44、GHCR BLOCKED |
 
 ### 开发原则
 

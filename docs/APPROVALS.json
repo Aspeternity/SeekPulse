@@ -404,6 +404,53 @@
       "user_instruction": "批准",
       "context": "Immediate answer to specific request '批准启动下一阶段的 High CVE 专项审查与离线修复开发？仍不发布 GHCR、不部署 NAS/PVE；完成修复和复测后再单独申请验收。'",
       "source": "Current ChatGPT conversation, Issue #40; not an independent GitHub Reviewer signature"
+    },
+    {
+      "event_id": "APPROVAL-2026-10-15-DOCKER05-OFFLINE-ACCEPT-MERGE",
+      "date": "2026-10-15",
+      "approved_plan": "SeekPulse V1.1",
+      "authorization_kind": "offline_acceptance_then_separate_squash_merge",
+      "authorized_stage": "S7-Docker-05",
+      "issue": 40,
+      "pr": 41,
+      "authorized_actions": [
+        "User separately accepted only finished Docker-05 opt-in Python High patches with real AMD64/ARM64 Trivy and CI 21/21",
+        "User separately authorized exact approved HEAD fa4575224b338596d41b4f9e8a9835b01202e8e0 PR #41 Squash merge",
+        "New main e78112a7123758da24340f4c59f3df190c445ea8; post-merge G0 #38703450876 4/4 PASS"
+      ],
+      "not_authorized": [
+        "Debian OS High CVE waivers or claiming GHCR release ready",
+        "GHCR Login/Push/Tag/Release or actual NAS/PVE/Portainer/Synology access",
+        "Live notifications, production SQLite/Token/Session, real Gate D-G"
+      ],
+      "user_instruction": "批准（仅 Docker-05 离线阶段验收）; 批准（独立 PR #41 合并许可）",
+      "source": "User immediate ChatGPT replies, Issue #40, PR #41 and parent #16 audit comments; not GitHub Reviewer signature"
+    },
+    {
+      "event_id": "APPROVAL-2026-10-15-DOCKER06-OS-HIGH-OFFLINE-DEV-ONLY",
+      "date": "2026-10-15",
+      "approved_plan": "SeekPulse V1.1",
+      "authorization_kind": "stage_development_only",
+      "authorized_stage": "S7-Docker-06",
+      "issue": 42,
+      "pr": 43,
+      "authorized_actions": [
+        "Review 8 Debian OS High IDs against Debian official security tracker, affected packages and real runtime exposure prerequisites",
+        "Develop fail-closed local OS CVE evidence audit and regression tests, no vulnerability ignore list",
+        "Read-only compare supported official Debian Bookworm base AMD64/ARM64 packages versus existing Trixie security scan on GitHub temporary runner",
+        "If and only if official supported compatible fix exists, implement minimal opt-in change and re-test; otherwise record unresolved with release BLOCKED",
+        "Request separate user offline stage acceptance after the final exact SHA CI"
+      ],
+      "not_authorized": [
+        "User stage acceptance or PR #43 merge to main without new authorization",
+        "Waive OS High, lower scanner severity or declare release ready based on CI",
+        "GHCR login/push, tag/release, real remote registry image or digest",
+        "NAS/PVE/Portainer/Synology/VPS real access, production DB/Session/Token, Telegram/Bark/ntfy sends",
+        "48-72 hour real observation or Gates D-G"
+      ],
+      "user_instruction": "批准",
+      "context": "Immediately follows explicit approval question '启动 Docker-06 的 Debian OS High 漏洞专项审查与离线修复开发？不解除发布阻断，不推 GHCR，不部署 NAS/PVE，验收/合并另批。'",
+      "source": "Current ChatGPT conversation and Github Issue #42, not an independently signed GitHub Reviewer approval"
     }
   ]
 }

@@ -1,6 +1,6 @@
 # 审批及执行权限记录（人工可核实）
 
-> **最新（2026-10-15）**：Docker-01/02/03/04 各自离线验收与独立 Squash 合并已完成，当前 `main fbb4f4009954567e3ed2943c0428075d8cf32fec`，合并后 G0 #38639966882 **4/4 PASS**；Docker-04 的 Trivy **High 48 条（12 个不同 CVE）** 仍使 GHCR 发布 **BLOCKED**。用户最新**仅批准 Docker-05 / Issue #40 的 High CVE 定向审查与离线修复开发**，不含阶段验收、PR 合并、解除风险阻断、正式发布、NAS/PVE 部署或生产通知。以实时 GitHub + 用户原话优先；下方老批次仅历史。
+> **最新（2026-10-15）**：Docker-01～05 分别已离线验收、独立 Squash 合并；main `e78112a7123758da24340f4c59f3df190c445ea8`，新 [G0 #38703450876](https://github.com/Aspeternity/SeekPulse/actions/runs/38703450876) **4/4 PASS**。Docker-05 双架构实际 Trivy：Python High=0、OS High=44 / 8 个不同 CVE，**GHCR 仍 BLOCKED**。用户本轮**仅批准 Docker-06（Issue #42、Draft PR #43）的 Debian OS High 审查及离线修复开发**；未批准 Docker-06 阶段验收/合并、OS High 风险豁免、GHCR/Tag 发布、NAS/PVE 实机或真实通知。以用户明确原话和实时 GitHub 记录优先。
 
 ## 2026-10-13：V1.1 方案批准，G0 授权
 
@@ -159,3 +159,12 @@ S7-01 文档规划经用户回复「批准」验收后，用户另行回复「�
 - **最新本阶段授权**：ChatGPT 提出“**是否批准启动下一阶段的 High CVE 专项审查与离线修复开发？仍不发布 GHCR、不部署 NAS/PVE；完成修复和复测后再单独申请验收。**”用户直接回答“**批准**”。唯一负责人 ChatGPT，[Docker-05 Issue #40](https://github.com/Aspeternity/SeekPulse/issues/40)，`feat/s7-docker-05-high-cve-remediation` 分支；仅允许对 V1.1 opt-in 镜像的 PyPI 修复、安全矩阵分析、GitHub 临时 runner 两 Python 与 AMD64/ARM64 Trivy/SBOM 执行，不允许旧版依赖/默认 Dockerfile/Compose 任意更改或 Debian unstable 混装。
 - **没有获得** Docker-05 人工阶段验收、PR 合并、High CVE 风险接受/免责、正式 GHCR login/push/Tag/Release、远端 registry digest、NAS/PVE/Portainer/群晖/VPS 连接、生产 SQLite/Session/Token、Telegram/Bark/ntfy 真实通知及 Gate D–G/48–72h 的批准。即使 PyPI High 修复后 OS High 残留，`BLOCKED_HIGH_OR_CRITICAL` 继续保持；须重新按最新公开漏洞 DB 和准确受验 SHA 核对。
 - 本节是对当前聊天用户原话与紧邻问题的审批范围解释，**不是 GitHub 独立 Reviewer 签名**；跨对话以 Issue #40/新 Draft PR 与 #16、AGENTS.md 和实际 CI/SHA 为准。
+
+
+## 2026-10-15 Docker-05 已独立验收合并；Docker-06 的唯一新开发授权
+
+- Docker-05 [Issue #40](https://github.com/Aspeternity/SeekPulse/issues/40)/[PR #41](https://github.com/Aspeternity/SeekPulse/pull/41) 的 Python 3.11/3.12 全量回归与 AMD64/ARM64 Trivy 证据对应精确 HEAD `fa4575224b338596d41b4f9e8a9835b01202e8e0`，用户**先单独答复「批准」验收离线修复范围**，然后在另问“PR #41 精确 HEAD Squash 合并 main + 新 main CI，明确不包含 OS High 风险接受/发布/实机”后再次独立回复「批准」。新 main `e78112a7123758da24340f4c59f3df190c445ea8`、合并后 G0 #38703450876 4/4 SUCCESS，子 #40 CLOSED；此次没有 GHCR 或用户实机授权。
+- **Docker-06 用户当前原话：「批准」**。紧邻具体申请：“**是否批准启动 Docker-06 的 Debian OS High 漏洞专项审查与离线修复开发？本阶段仍不解除发布阻断、不推送 GHCR、不部署 NAS/PVE，完成后单独申请验收和合并权限。**”因此只允许 [Issue #42](https://github.com/Aspeternity/SeekPulse/issues/42)、`feat/s7-docker-06-os-high-review`、[Draft PR #43](https://github.com/Aspeternity/SeekPulse/pull/43) 的官方 Debian CVE/source package 研究、稳定基础镜像候选比较、临时 runner 双架构公开 Trivy/CycloneDX 和安全审计代码与离线测试。唯一写入负责人 ChatGPT，其他 AI 未经接管不得修改其分支。
+- **未获授权** Docker-06 用户人工阶段验收、Squash 合并 main、已知 Debian OS High 的风险接受/忽略或改低严重性、GHCR 登录/推送/正式 digest/tag/Release、群晖/PVE/Portainer/VPS 登录、生产 SQLite/Token/Session/备份、真实 Telegram/Bark/ntfy 通知、Gate D–G/48–72h；GitHub Actions scanner PASS 不应视为这些许可。
+- Debian 官方 tracker 截至 2026-10-15 显示这些 CVE 在 Trixie/Bookworm 仍有 vulnerable/no-dsa/postponed；在无受支持补丁前，**不能为“降低 Trivy High 数量”去混装 Debian unstable，移除真实有漏洞程序但保留影响代码更不能视为已修复**。审计不能自动将扫描未检出的历史 CVE 标记 FIXED。细节见 ADR-0013 和实时 Draft PR #43 CI。
+- **仅下一审批**：Docker-06 实际完成范围的离线审查和自动化验证阶段验收；以后再另请 PR 合并。此条目为聊天用户原话与紧邻申请的审计解释，非 GitHub Reviewer 独立电子签名。

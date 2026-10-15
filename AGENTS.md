@@ -4,9 +4,9 @@
 
 ## 0. 当前授权边界（最高优先级）
 
-- **最新仓库事实（2026-10-15）**：Docker-01/02/03/04 已分别离线验收并独立 Squash 合并（PR #33/#35/#37/#39），当前 main `fbb4f4009954567e3ed2943c0428075d8cf32fec`，合并后 [G0 #38639966882](https://github.com/Aspeternity/SeekPulse/actions/runs/38639966882) **4/4 PASS**。Docker-04 的 AMD64/ARM64 Trivy 发现每平台 High 48 条、12 个不同 CVE ID；`vulnerability_gate=BLOCKED_HIGH_OR_CRITICAL`，**GHCR 发布仍被阻断**。
-- **当前唯一新开发授权**：用户在明确申请“**下一阶段 High CVE 专项审查与离线修复开发；不发布 GHCR、不部署 NAS/PVE；修复和复测后另行申请验收**”后回答「批准」。[Docker-05 Issue #40](https://github.com/Aspeternity/SeekPulse/issues/40)，唯一写入负责人 ChatGPT，分支 `feat/s7-docker-05-high-cve-remediation`；仅限 V1.1 opt-in Python 安全覆盖层、Debian High 分析、公开 CVE 情报、GitHub 临时 CI、双架构镜像 Trivy 复扫。**尚未批准该阶段人工验收/PR 合并、High CVE 免责、安全发布放行、GHCR Push/Tag/Release、真实 NAS/PVE/Portainer/群晖、生产数据/通知或 Gate D–G**。以实时 GitHub / 用户最新原话为准。
-- **历史授权非继承**：G0、Gate B 与 Docker-01/02/03/04 的审批均是限定范围的已完成阶段，不构成对 Docker-05 后续合并/发布或连接用户设备的默示许可。旧 VPS 预检 #31 已取消；未来已有 PVE/群晖上实际验收也须另外批准。
+- **最新仓库事实（2026-10-15）**：Docker-01～05 的独立离线验收、精确 HEAD Squash 合并及新 main G0 已完成（PR #33/#35/#37/#39/#41）；当前 main `e78112a7123758da24340f4c59f3df190c445ea8`、[G0 #38703450876](https://github.com/Aspeternity/SeekPulse/actions/runs/38703450876) **4/4 PASS**。Docker-05 的真实 AMD64/ARM64 Trivy：Python High **0**、Debian OS **High 44 个报告条目（8 个不同 CVE）**；正式发布仍 `BLOCKED_HIGH_OR_CRITICAL`。
+- **本次最新授权**：用户明确批准 [Docker-06 Issue #42](https://github.com/Aspeternity/SeekPulse/issues/42) / [Draft PR #43](https://github.com/Aspeternity/SeekPulse/pull/43) 的 **Debian OS High 专项审查和离线修复开发**（唯一写入负责人 ChatGPT，独立分支 `feat/s7-docker-06-os-high-review`），包括稳定版官方漏洞跟踪、Bookworm/Trixie 受支持候选对照、GitHub 临时 runner 实际扫描与审计工具回归。**未批准 Docker-06 人工阶段验收/PR 合并、接受 OS High 风险或忽略漏洞、GHCR 发布/Tag/Release、NAS/PVE/群晖/Portainer 实机访问、真实 SQLite/Session/Token/通知或 Gate D–G**。详见 ADR-0013、#42、PR #43；最新 GitHub SHA/CI 和用户审批优先于静态快照。
+- **历史授权不可继承**：Docker-05 的验收与独立合并许可只属于 #40/PR #41，不授权自动合并 Docker-06、更新生产环境或将 CVE 判为可发布。旧 VPS 预检 #31 已取消，用户未来现有 PVE/群晖实机部署须单独批准。
 - **明确禁止擅自执行**：合并 `main`、创建 Release / Tag 发布、修改生产环境、强制推送或覆盖既有工作。
 - 遇到授权边界不清、关键资料冲突或无法验证，先停止可能越权的操作并报告，不得推定默认获批。
 
