@@ -39,6 +39,7 @@ def inputs() -> dict:
     }
     report = {
         "evidence": "VALID_LOCAL_SCAN_NOT_PUBLISHED",
+        "os_family": "debian",
         "platform": "linux/amd64",
         "image": IMAGE,
         "scanner_db": {
@@ -86,6 +87,28 @@ class ReportContractTests(unittest.TestCase):
         self.assertIsNone(out["remote_index_digest"])
         self.assertFalse(out["release_authorized"])
         self.assertFalse(out["release_ready"])
+
+    def test_alpine_historical_debian_ids_unreported_not_fixed(self):
+        sample = inputs()
+        sample["os_family"] = "alpine"
+        sample["scan"]["Metadata"]["OS"]["Family"] = "alpine"
+        sample["validated_report"]["os_family"] = "alpine"
+        result = review_os_high(**sample)
+        self.assertEqual(result["os_family"], "alpine")
+        self.assertEqual(result["risk_gate"], "BLOCKED_HIGH_OR_CRITICAL")
+        self.assertEqual(
+            result["historical_high_cves"]["CVE-2025-69720"]["scan_state"],
+            "NOT_REPORTED_IN_DIFFERENT_DISTRO_NOT_A_FIX",
+        )
+        self.assertTrue(result["missing_id_does_not_prove_fixed"])
+        self.assertFalse(result["release_ready"])
+
+    def test_alpine_requires_matching_validated_os_family(self):
+        sample = inputs()
+        sample["os_family"] = "alpine"
+        sample["scan"]["Metadata"]["OS"]["Family"] = "alpine"
+        with self.assertRaisesRegex(OSHighEvidenceError, "validated_report_os_family_mismatch"):
+            review_os_high(**sample)
 
     def test_missing_historical_cve_is_not_claimed_fixed(self):
         out = review_os_high(**inputs())
@@ -224,10 +247,10 @@ class ReportContractTests(unittest.TestCase):
 
 
 class SecurityIsolationContracts(unittest.TestCase):
-    def test_no_runtime_changes_and_release_policy_stays_blocking(self):
+    def test_alpine_runtime_and_release_policy_stays_blocking(self):
         dockerfile = (ROOT / "Dockerfile.v11").read_text()
         self.assertIn("USER 10001:10001", dockerfile)
-        self.assertIn("python:3.11-slim@sha256:", dockerfile)
+        self.assertIn("python:3.11-alpine3.24@sha256:", dockerfile)
         self.assertNotIn("sid", dockerfile)
         self.assertNotIn("apt-get", dockerfile)
         self.assertIn('CMD ["--run"]', dockerfile)

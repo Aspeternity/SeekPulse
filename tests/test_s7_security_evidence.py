@@ -16,7 +16,7 @@ ROOT = Path(__file__).resolve().parents[1]
 NOW = datetime(2026, 10, 15, tzinfo=timezone.utc)
 IMAGE = "seekpulse-security-local:amd64"
 IMAGE_ID = "sha256:" + "b" * 64
-BASE_DIGEST = "e88e9763f943ec1834f992a4b51e0f24500486803e8bc534e5767af9ea65f6ce"
+BASE_DIGEST = "d9368b3a5ac59afea7b5d4f2e2aea0941dbf9fdee9c369c5bec00b98244bc929"
 
 
 def stamp(date):
@@ -78,6 +78,56 @@ class VulnerabilityGate(unittest.TestCase):
         self.assertIsNone(r["remote_index_digest"])
         self.assertFalse(r["release_authorized"])
         self.assertFalse(r["release_ready"])
+
+    def test_alpine_inventory_and_cross_family_evidence_fail_closed(self):
+        data = fixture()
+        data["os_family"] = "alpine"
+        data["scan"]["Metadata"]["OS"] = {"Family": "alpine", "Name": "3.24"}
+        data["scan"]["Results"][0]["Type"] = "alpine"
+        for item in data["sbom"]["components"]:
+            item["purl"] = item["purl"].replace("pkg:deb/debian/", "pkg:apk/alpine/")
+        report = verify_security_evidence(**data)
+        self.assertEqual(report["os_family"], "alpine")
+        self.assertEqual(report["inventory"], {"alpine_packages": 12, "pypi_packages": 8})
+        self.assertEqual(report["vulnerability_gate"], "NO_KNOWN_FINDINGS_AT_SCAN_TIME")
+        self.assertFalse(report["release_authorized"])
+        self.assertFalse(report["release_ready"])
+
+        for kind in ("scan_os", "os_type", "sbom", "expected"):
+            bad = fixture()
+            bad["os_family"] = "alpine"
+            bad["scan"]["Metadata"]["OS"] = {"Family": "alpine", "Name": "3.24"}
+            bad["scan"]["Results"][0]["Type"] = "alpine"
+            for item in bad["sbom"]["components"]:
+                item["purl"] = item["purl"].replace("pkg:deb/debian/", "pkg:apk/alpine/")
+            if kind == "scan_os":
+                bad["scan"]["Metadata"]["OS"]["Family"] = "debian"
+            elif kind == "os_type":
+                bad["scan"]["Results"][0]["Type"] = "debian"
+            elif kind == "sbom":
+                bad["sbom"]["components"] = [
+                    c for c in bad["sbom"]["components"]
+                    if not c["purl"].startswith("pkg:apk/")
+                ]
+            else:
+                bad["os_family"] = "unknown"
+            with self.subTest(mismatch=kind), self.assertRaises(SecurityEvidenceError):
+                verify_security_evidence(**bad)
+
+    def test_alpine_new_high_must_still_block(self):
+        data = fixture()
+        data["os_family"] = "alpine"
+        data["scan"]["Metadata"]["OS"] = {"Family": "alpine", "Name": "3.24"}
+        data["scan"]["Results"][0]["Type"] = "alpine"
+        for item in data["sbom"]["components"]:
+            item["purl"] = item["purl"].replace("pkg:deb/debian/", "pkg:apk/alpine/")
+        data["scan"]["Results"][0]["Vulnerabilities"] = [
+            {"VulnerabilityID": "CVE-2026-SIMULATED", "Severity": "HIGH",
+             "PkgName": "libssl3", "InstalledVersion": "3.24.0"}
+        ]
+        report = verify_security_evidence(**data)
+        self.assertEqual(report["vulnerability_gate"], "BLOCKED_HIGH_OR_CRITICAL")
+        self.assertFalse(report["release_ready"])
 
     def test_high_critical_block_even_if_unfixed_and_ci_scan_succeeds(self):
         data = fixture()
@@ -211,7 +261,7 @@ class SupplyChainContracts(unittest.TestCase):
         dockerfile = (ROOT / "Dockerfile.v11").read_text(encoding="utf-8")
         self.assertRegex(
             dockerfile,
-            rf"(?m)^FROM python:3\.11-slim@sha256:{BASE_DIGEST}$",
+            rf"(?m)^FROM python:3\.11-alpine3\.24@sha256:{BASE_DIGEST}$",
         )
         self.assertEqual(len(re.findall(r"(?m)^FROM ", dockerfile)), 1)
         self.assertNotIn("ARG PYTHON_BASE_IMAGE", dockerfile)
