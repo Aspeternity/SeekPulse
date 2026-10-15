@@ -22,7 +22,8 @@ IMAGE_ID = "sha256:" + "4" * 64
 
 def sample(arch="amd64", published=True):
     now = datetime.now(timezone.utc)
-    iso = lambda d: d.isoformat().replace("+00:00", "Z")
+    def iso(d):
+        return d.isoformat().replace("+00:00", "Z")
     inspect = {
         "Id": IMAGE_ID, "Os": "linux", "Architecture": arch,
         "RepoDigests": [f"{IMAGE}@{INDEX}"] if published else [],
