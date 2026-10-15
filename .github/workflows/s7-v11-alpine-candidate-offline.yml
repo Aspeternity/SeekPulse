@@ -136,6 +136,19 @@ jobs:
           import aiohttp, telethon, apprise, fastapi, uvicorn, app.v11_main
           print("FULL_APP_CANDIDATE_OFFLINE_IMPORT=PASS; SERVICE_NOT_STARTED=true")
           '
+      - name: All offline S1-S7 regressions inside musl candidate (no network or credentials)
+        shell: bash
+        run: |
+          set -euo pipefail
+          image="seekpulse-alpine-feasibility:${ARCH}"
+          docker run --rm --platform "linux/${ARCH}" \
+            --network none --read-only --cap-drop ALL \
+            --security-opt no-new-privileges \
+            --tmpfs /tmp:rw,nosuid,nodev,noexec,size=64m \
+            --mount "type=bind,source=${GITHUB_WORKSPACE},target=/source,readonly" \
+            --workdir /source --entrypoint python "$image" \
+            -m unittest discover -s tests -v
+          echo "ALPINE_FULL_APP_OFFLINE_UNITTTEST=PASS platform=linux/${ARCH}"
       - name: Fresh local Trivy full OS plus Python vulnerability scan, no ignore
         shell: bash
         run: |
