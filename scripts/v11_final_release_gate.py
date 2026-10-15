@@ -81,8 +81,6 @@ def evaluate_final_release_evidence(
     _need(prepublish_review == expected_review,
           "prepublish_review_does_not_match_raw_inputs")
 
-    _need(expected_review["status"] == "MANUAL_RELEASE_SECURITY_REVIEW_REQUIRED",
-          "security_evidence_not_manual_review_status")
     _need(expected_review["manual_review_completed"] is False
           and expected_review["sbom_locally_validated"] is True
           and expected_review["sbom_signed"] is False
@@ -97,6 +95,8 @@ def evaluate_final_release_evidence(
     _need(all(type(totals.get(level)) is int and totals[level] == 0
               for level in LEVELS),
           "nonzero_or_missing_vulnerability_findings")
+    _need(expected_review["status"] == "MANUAL_RELEASE_SECURITY_REVIEW_REQUIRED",
+          "security_evidence_not_manual_review_status")
     _need(expected_review["manual_findings"] == []
           and expected_review["unique_vulnerability_ids"] == 0,
           "nonzero_or_hidden_vulnerability_details")

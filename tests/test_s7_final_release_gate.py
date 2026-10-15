@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from copy import deepcopy
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 import re
@@ -276,7 +275,7 @@ class FinalReleaseGateContract(unittest.TestCase):
         self.assertIn("github.event.pull_request.head.sha || github.sha", wf)
         self.assertIn('SOURCE_SHA', wf)
         self.assertIn("scripts.v11_final_release_gate", wf)
-        self.assertIn("FINAL_GHCR_OFFLINE_PREPUBLISH_GATE=", wf)
+        self.assertIn("DOCKER11_FINAL_OFFLINE_ONLY=PASS", wf)
         self.assertIn("ubuntu-24.04-arm", wf)
         self.assertIn("- arch: amd64", wf)
         self.assertIn("- arch: arm64", wf)
