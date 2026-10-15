@@ -250,7 +250,10 @@ jobs:
           for arch in amd64 arm64; do
             if [ "$arch" = amd64 ]; then platform_digest="${AMD_DIGEST}";
             else platform_digest="${ARM_DIGEST}"; fi
-            ref="${IMAGE}@${INDEX_DIGEST}"
+            # Staging index->platform digest mapping was verified above.
+            # Classic Docker cannot load both platforms using the same index
+            # digest in one image store. Re-pull the verified child manifests.
+            ref="${IMAGE}@${platform_digest}"
             image="seekpulse-remote-verified:${arch}"
             docker pull --platform "linux/${arch}" "$ref"
             docker tag "$ref" "$image"
