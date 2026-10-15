@@ -52,3 +52,19 @@ Alpine 官方分支支持见 https://www.alpinelinux.org/releases/ ；官方 Pyt
 - 继续 `BLOCKED_HIGH_OR_CRITICAL`（针对**当前正式候选 V1.1 Debian**），`release_ready=false`、`release_authorized=false`、`GHCR NOT_PUBLISHED`，父 #16 继续 OPEN/status:blocked。
 - 单独 Issue/分支/Draft PR/CI；无 GHCR login/push、正式 Tag/Release、任何 NAS/PVE/Portainer/群晖/VPS 登录、生产 Token/Session/SQLite、真实 TG/Bark/ntfy，或 Gate D–G/48–72h。
 - 完成且验证对应最新 HEAD 的临时 runner 证据后，**先申请 Docker-07 仅候选研究阶段验收**。若 Alpine 证据可行，将另行提出“是否同意实际变更 V1.1 运行基础镜像”的独立方案和开发授权（先兼容性/安全回归，后另行验收、独立合并）。本 ADR **不得被理解为已正式选用 Alpine**。
+
+## 6. 第一轮双架构真实候选证据（仅已完成的旧 HEAD，非当前最终 PR CI）
+
+[Draft PR #45](https://github.com/Aspeternity/SeekPulse/pull/45) 原 HEAD `8c3c5d03c317ec1081442a39d7a6d8163294a420` 的 [G0 #38714422113](https://github.com/Aspeternity/SeekPulse/actions/runs/38714422113) **4/4 PASS**、[Docker-07 #38714422199](https://github.com/Aspeternity/SeekPulse/actions/runs/38714422199) **3/3 PASS**（官方 Registry index job + AMD64/ARM64 完整应用构建、pip、断网只读 import、OS+PyPI Trivy 与 SBOM）。两架构均绑定同一个官方多平台候选 digest：
+
+`docker.io/library/python:3.11-alpine3.24@sha256:d9368b3a5ac59afea7b5d4f2e2aea0941dbf9fdee9c369c5bec00b98244bc929`
+
+| 该次本地完整候选 | AMD64 | ARM64 |
+|---|---:|---:|
+| 本地镜像 Docker inspect 大小（byte） | 137481095 | 141675652 |
+| Trivy OS High / Critical | 0 / 0 | 0 / 0 |
+| Trivy PyPI High / Critical | 0 / 0 | 0 / 0 |
+| pip check / 指定四个 Python 安全 pin | PASS | PASS |
+| non-root UID/GID 10001、只读根文件系统、断网 app import | PASS | PASS |
+
+当时公开 Trivy DB `UpdatedAt=2026-10-15T07:10:08Z`；正式 `Dockerfile.v11` 没有任何替换、GHCR `NOT_PUBLISHED`。**这是不同 distro 安装的同 V1.1 app 候选的一次真实扫描结果，不是 Debian 漏洞已经修复、也不是随后的完整业务测试已通过或获得发布授权**。此后新增候选内部 **全 S1–S7 单元回归**；最终 PR HEAD 要独立重新实测，不能复用这里旧 HEAD 的绿色为新 HEAD 结论。

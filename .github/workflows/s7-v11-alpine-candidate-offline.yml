@@ -148,7 +148,7 @@ jobs:
             --mount "type=bind,source=${GITHUB_WORKSPACE},target=/source,readonly" \
             --workdir /source --entrypoint python "$image" \
             -m unittest discover -s tests -v
-          echo "ALPINE_FULL_APP_OFFLINE_UNITTTEST=PASS platform=linux/${ARCH}"
+          echo "ALPINE_FULL_APP_OFFLINE_UNITTEST=PASS platform=linux/${ARCH}"
       - name: Fresh local Trivy full OS plus Python vulnerability scan, no ignore
         shell: bash
         run: |

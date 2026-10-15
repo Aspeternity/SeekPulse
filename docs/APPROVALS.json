@@ -451,6 +451,50 @@
       "user_instruction": "批准",
       "context": "Immediately follows explicit approval question '启动 Docker-06 的 Debian OS High 漏洞专项审查与离线修复开发？不解除发布阻断，不推 GHCR，不部署 NAS/PVE，验收/合并另批。'",
       "source": "Current ChatGPT conversation and Github Issue #42, not an independently signed GitHub Reviewer approval"
+    },
+    {
+      "event_id": "APPROVAL-2026-10-15-DOCKER06-OFFLINE-ACCEPT-AND-INDEPENDENT-MERGE",
+      "date": "2026-10-15",
+      "approved_plan": "SeekPulse V1.1",
+      "authorization_kind": "separate_offline_stage_acceptance_then_squash_merge",
+      "authorized_stage": "S7-Docker-06",
+      "issue": 42,
+      "pr": 43,
+      "authorized_actions": [
+        "User expressly accepted only completed Debian OS High official status review, Bookworm/Trixie candidate comparison and automated evidence",
+        "User later independently authorized PR #43 f951b4616bbbd09c75b279af503977eb0e9435e1 Ready + Squash merge",
+        "New main accc0b26097b75a5fa724b5ca303d0c87c9be195; post-merge G0 38711994265 4/4 PASS"
+      ],
+      "not_authorized": [
+        "Waive or ignore eight remaining Debian OS High CVEs",
+        "GHCR publishing, Release/Tag, live NAS/PVE/Portainer, production data/credentials, real messages"
+      ],
+      "user_instruction": "批准 Docker-06 / Issue #42 按已完成的离线安全审查、Bookworm/Trixie 候选对照及自动化验证范围阶段验收通过。仅记录验收，PR #43 合并须单独申请授权。 ; 授权（在明确 PR #43 独立合并申请后）",
+      "source": "Current user conversation; GitHub issue #42 comments 6188704869/6188772860 and PR #43 merge; not a GitHub UI reviewer signature"
+    },
+    {
+      "event_id": "APPROVAL-2026-10-15-DOCKER07-SUPPORTED-OS-CANDIDATE-RESEARCH-ONLY",
+      "date": "2026-10-15",
+      "approved_plan": "SeekPulse V1.1",
+      "authorization_kind": "isolated_research_and_candidate_validation_only",
+      "authorized_stage": "S7-Docker-07",
+      "issue": 44,
+      "pr": 45,
+      "authorized_actions": [
+        "Design evidence-based supported OS remediation/alternative base strategy in ADR-0014",
+        "Create independent Draft PR and GitHub temporary runner to evaluate complete app Python 3.11 Alpine 3.24 AMD64/ARM64 candidate using public dependencies",
+        "Local-only image builds, no-network nonroot import and regression tests, full Trivy OS/Python and CycloneDX current public CVE DB review",
+        "Request separate offline stage acceptance after latest exact HEAD CI"
+      ],
+      "not_authorized": [
+        "Select or switch production Dockerfile.v11/Compose to Alpine or otherwise change V1.1 runtime architecture",
+        "Treat different-distro missing Debian CVE IDs as fixed/waived, or bypass High gate",
+        "Merge PR #45 or main without separate user acceptance and merge permission",
+        "GHCR login/push/tag/release, real NAS/PVE/Portainer/Synology/VPS, production credentials/SQLite/Session or real notifications and Gate D-G"
+      ],
+      "user_instruction": "批准",
+      "context": "Direct reply to '单独制定受支持的 OS 漏洞修复或替代基础镜像方案。需要新的开发授权' after Docker-06 independently accepted/merged",
+      "source": "Current user conversation, Issue #44 and Draft PR #45; not a GitHub UI reviewer signature"
     }
   ]
 }

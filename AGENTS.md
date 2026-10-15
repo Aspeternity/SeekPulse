@@ -4,11 +4,10 @@
 
 ## 0. 当前授权边界（最高优先级）
 
-- **最新仓库事实（2026-10-15）**：Docker-01～05 的独立离线验收、精确 HEAD Squash 合并及新 main G0 已完成（PR #33/#35/#37/#39/#41）；当前 main `e78112a7123758da24340f4c59f3df190c445ea8`、[G0 #38703450876](https://github.com/Aspeternity/SeekPulse/actions/runs/38703450876) **4/4 PASS**。Docker-05 的真实 AMD64/ARM64 Trivy：Python High **0**、Debian OS **High 44 个报告条目（8 个不同 CVE）**；正式发布仍 `BLOCKED_HIGH_OR_CRITICAL`。
-- **本次最新授权**：用户明确批准 [Docker-06 Issue #42](https://github.com/Aspeternity/SeekPulse/issues/42) / [Draft PR #43](https://github.com/Aspeternity/SeekPulse/pull/43) 的 **Debian OS High 专项审查和离线修复开发**（唯一写入负责人 ChatGPT，独立分支 `feat/s7-docker-06-os-high-review`），包括稳定版官方漏洞跟踪、Bookworm/Trixie 受支持候选对照、GitHub 临时 runner 实际扫描与审计工具回归。**未批准 Docker-06 人工阶段验收/PR 合并、接受 OS High 风险或忽略漏洞、GHCR 发布/Tag/Release、NAS/PVE/群晖/Portainer 实机访问、真实 SQLite/Session/Token/通知或 Gate D–G**。详见 ADR-0013、#42、PR #43；最新 GitHub SHA/CI 和用户审批优先于静态快照。
-- **历史授权不可继承**：Docker-05 的验收与独立合并许可只属于 #40/PR #41，不授权自动合并 Docker-06、更新生产环境或将 CVE 判为可发布。旧 VPS 预检 #31 已取消，用户未来现有 PVE/群晖实机部署须单独批准。
-- **明确禁止擅自执行**：合并 `main`、创建 Release / Tag 发布、修改生产环境、强制推送或覆盖既有工作。
-- 遇到授权边界不清、关键资料冲突或无法验证，先停止可能越权的操作并报告，不得推定默认获批。
+- **最新 GitHub 基线（2026-10-15）**：Docker-01～06 均已按各自离线阶段验收及独立 Squash 合并完成；Docker-06 [#42](https://github.com/Aspeternity/SeekPulse/issues/42) CLOSED/completed、[PR #43](https://github.com/Aspeternity/SeekPulse/pull/43) MERGED，main `accc0b26097b75a5fa724b5ca303d0c87c9be195`；合并后 [G0 #38711994265](https://github.com/Aspeternity/SeekPulse/actions/runs/38711994265) 4/4 PASS。完整 Debian V1.1 双架构原扫描 OS High 44 个报告条目 / 8 个 CVE，PyPI High=0，**GHCR 发布继续 BLOCKED_HIGH_OR_CRITICAL / NOT_PUBLISHED**。
+- **当前唯一新阶段权限**：用户在明确提出“**单独制定受支持的 OS 漏洞修复或替代基础镜像方案。需要新的开发授权**”之后答复「批准」，仅批准 [Docker-07 Issue #44](https://github.com/Aspeternity/SeekPulse/issues/44) / [Draft PR #45](https://github.com/Aspeternity/SeekPulse/pull/45) 的**官方受支持候选研究、方案 ADR、GitHub 临时 runner 隔离完整应用 Alpine 3.24 双架构候选构建、离线回归与公开 Trivy/CycloneDX**。唯一写入负责人 ChatGPT，分支 `research/s7-docker-07-supported-os-candidate`。尚未授权 Docker-07 人工阶段验收/PR 合并、正式 V1.1 `Dockerfile.v11`/Compose 修改或迁移到 Alpine。候选扫描即使 High=0 也不意味着 Debian CVE 已修复或自动放行。
+- **保留禁令**：不接受/忽略/降级 OS High，不从 Debian sid/forky 混装，不伪造扫描清零，不执行 GHCR login/push/Tag/Release，任何 NAS/PVE/Portainer/群晖/VPS、生产 SQLite/Token/Session/备份、真实 Telegram/Bark/ntfy 或 Gate D–G/48–72h。父 [S7 #16](https://github.com/Aspeternity/SeekPulse/issues/16) 保持 OPEN/status:blocked。过往授权不自动继承，任何新 HEAD CI 必须重新核验。
+- **明确禁止擅自执行**：未经用户新的独立审批合并 main、正式选型并改动生产运行底座、创建 Release/Tag、修改生产环境、强推或覆盖既有工作。如事实或授权冲突，停止并报告 UNKNOWN/UNVERIFIED。以最新 GitHub Issue/PR/SHA/CI 与用户明确原话优先于本快照。
 
 ## 1. 开工前必须执行的核验
 
