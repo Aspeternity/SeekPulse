@@ -7,6 +7,9 @@ on:
       - 'requirements-v11-security.txt'
       - 'compose.v11.yaml'
       - 'scripts/v11_pre_release_review.py'
+      - 'scripts/v11_final_release_gate.py'
+      - 'tests/test_s7_final_release_gate.py'
+      - 'docs/decisions/ADR-0018-v11-final-ghcr-release-supply-chain.md'
       - 'scripts/v11_security_evidence.py'
       - 'scripts/v11_release_policy.py'
       - 'tests/test_s7_pre_release_review.py'
@@ -32,6 +35,8 @@ jobs:
         python-version: ['3.11', '3.12']
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
           python-version: '${{ matrix.python-version }}'
@@ -39,13 +44,15 @@ jobs:
       - name: Install unchanged S1-S5 dependency pins
         run: python -m pip install -r requirements-s5.txt
       - name: Fail-closed prepublish report negative contracts
-        run: python -m unittest discover -s tests -p 'test_s7_pre_release_review.py' -v
+        run: |
+          python -m unittest discover -s tests -p 'test_s7_pre_release_review.py' -v
+          python -m unittest discover -s tests -p 'test_s7_final_release_gate.py' -v
       - name: Full S1-S7 + Docker-09 offline regression
         run: python -m unittest discover -s tests -v
       - name: Syntax, lint and dependency compatibility
         run: |
           python -m pip install ruff==0.13.3
-          ruff check scripts/v11_pre_release_review.py tests/test_s7_pre_release_review.py
+          ruff check scripts/v11_pre_release_review.py tests/test_s7_pre_release_review.py scripts/v11_final_release_gate.py tests/test_s7_final_release_gate.py
           python -m compileall -q scripts tests app
           python -m pip check
 
@@ -66,6 +73,17 @@ jobs:
       TRIVY_CACHE_DIR: /tmp/seekpulse-docker09-trivy
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Verify exact checked-out source HEAD before local security builds
+        shell: bash
+        run: |
+          set -euo pipefail
+          source_sha="$(git rev-parse HEAD)"
+          expected_sha="${{ github.event.pull_request.head.sha || github.sha }}"
+          test "$source_sha" = "$expected_sha"
+          echo "SOURCE_SHA=$source_sha" >> "$GITHUB_ENV"
+          echo "PREPUBLISH_EXACT_SOURCE_HEAD=PASS"
       - name: Configure ephemeral Buildx local images only
         uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0
       - name: Pinned public Trivy CLI and fresh public vulnerability DB
@@ -83,7 +101,7 @@ jobs:
             --platform "linux/${ARCH}" \
             --provenance=false --sbom=false --load \
             --build-arg SEEKPULSE_BUILD_VERSION=0.0.0-ci \
-            --build-arg "SEEKPULSE_BUILD_REVISION=${GITHUB_SHA}" \
+            --build-arg "SEEKPULSE_BUILD_REVISION=${SOURCE_SHA}" \
             --tag "$image" .
           root="${RUNNER_TEMP}/prepublish"
           mkdir -p "$root"
@@ -102,7 +120,7 @@ jobs:
           assert config["Entrypoint"]==["python","-m","app.v11_main"]
           assert config["Cmd"]==["--run"]
           labels=config["Labels"]
-          assert labels["org.opencontainers.image.revision"]==os.environ["GITHUB_SHA"]
+          assert labels["org.opencontainers.image.revision"]==os.environ["SOURCE_SHA"]
           assert labels["org.opencontainers.image.version"]=="0.0.0-ci"
           assert labels["org.opencontainers.image.source"]=="https://github.com/Aspeternity/SeekPulse"
           assert labels["org.opencontainers.image.licenses"]=="MIT"
@@ -172,14 +190,14 @@ jobs:
           python -m scripts.v11_pre_release_review \
             --scan "$root/vulnerabilities.json" \
             --validated-report "$root/validated-report.json" \
-            --revision "${GITHUB_SHA}" \
+            --revision "${SOURCE_SHA}" \
             --platform "linux/${ARCH}" --image "$image" \
             --version v1.1.0-rc.1 --output "$root/review.json"
           python - <<'PY'
           import json, os
           from pathlib import Path
           review=json.loads((Path(os.environ["RUNNER_TEMP"])/"prepublish"/"review.json").read_text())
-          assert review["reviewed_source_sha"]==os.environ["GITHUB_SHA"]
+          assert review["reviewed_source_sha"]==os.environ["SOURCE_SHA"]
           assert review["manual_review_completed"] is False
           assert review["release_authorized"] is False
           assert review["release_ready"] is False
@@ -206,4 +224,40 @@ jobs:
           assert not present, "unremediated_docker09_target_cves=" + json.dumps(present)
           print("DOCKER10_EIGHT_TARGET_CVE_IDS_ABSENT=PASS platform=linux/"+os.environ["ARCH"])
           print("PUBLIC_MANUAL_REVIEW_REQUIRED=PASS platform=linux/"+os.environ["ARCH"])
+          PY
+
+      - name: Fail-closed final local source/CycloneDX/zero-CVE gate (no registry)
+        shell: bash
+        run: |
+          set -euo pipefail
+          root="${RUNNER_TEMP}/prepublish"
+          image="seekpulse-prepublish-local:${ARCH}"
+          python -m scripts.v11_final_release_gate \
+            --scan "$root/vulnerabilities.json" \
+            --sbom "$root/sbom.cdx.json" \
+            --db-metadata "${TRIVY_CACHE_DIR}/db/metadata.json" \
+            --inspect "$root/inspect.json" \
+            --validated-report "$root/validated-report.json" \
+            --prepublish-review "$root/review.json" \
+            --revision "${SOURCE_SHA}" \
+            --platform "linux/${ARCH}" --image "$image" \
+            --version v1.1.0-rc.1 --output "$root/final-evidence.json"
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          path=Path(os.environ["RUNNER_TEMP"])/"prepublish"/"final-evidence.json"
+          report=json.loads(path.read_text())
+          assert report["status"]=="LOCAL_EVIDENCE_CLEAN_AWAITING_MANUAL_RELEASE_APPROVAL"
+          assert report["reviewed_source_sha"]==os.environ["SOURCE_SHA"]
+          assert report["platform"]=="linux/"+os.environ["ARCH"]
+          assert report["known_vulnerability_records_at_scan_time"]==0
+          assert report["local_cyclonedx_sbom_validated"] is True
+          assert report["remote_oci_index_verified"] is False
+          assert report["remote_sbom_attestation_verified"] is False
+          assert report["remote_signature_verified"] is False
+          assert report["release_ready"] is False
+          assert report["release_authorized"] is False
+          assert report["ghcr_image_status"]=="NOT_PUBLISHED"
+          assert report["remote_index_digest"] is None
+          print("DOCKER11_FINAL_OFFLINE_ONLY=PASS platform=linux/"+os.environ["ARCH"])
           PY

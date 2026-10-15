@@ -1,6 +1,6 @@
 # SeekPulse 开发路线图 — 审批闸门
 
-> 2026-10-15：**目前 S7，V1.1 Docker/Compose 发行前安全收尾**。S0 条件式 Go、S1～S6 离线验收合并，**Docker-01～09 各自离线验收并获独立 Squash Merge**；Docker-09 PR #49 已合并，新 main `09ab09416a94d472f32bf74e52da4897772d06fd`，postmerge G0 #38731768690 4/4 PASS。当前仅 **Docker-10 #50 / Draft PR #51 已获已知 pip/dotenv/zlib CVE 的离线受控修复开发批准**，尚未阶段验收/合并。正式 GHCR 仍 NOT_PUBLISHED、真实 NAS/PVE/群晖 Docker 部署另批；父 S7 #16 OPEN/status:blocked。
+> 2026-10-15：SeekPulse 仍处 **S7 V1.1 Docker Compose 正式发行前收尾**，Docker-01～10 各自离线验收并另获独立 Squash Merge；Docker-10 PR #51 已合并，main `c6c8d8ca68a7e5763baca0e2b4ef5e1592974a93`，postmerge G0 #38742527999 4/4 PASS。当前仅批准 **Docker-11 / Issue #52 / Draft PR #53** GHCR 发行前最终安全与供应链方案及离线准备，尚无阶段验收、PR 合并、实际 GHCR 推送/Tag/Release 或 NAS/PVE 实机。父 S7 #16 继续 OPEN/status:blocked。
 
 
 | ID | 阶段 | 必需产物 | 退出门槛 | 状态 |
@@ -13,7 +13,7 @@
 | S4 | 多渠道通知 | Telegram、Bark、ntfy、路由、优先级 | 多目标发送与限流/重试通过 | **已验收并合并**（Issue #13、PR #25，main 6d5f078，CI 4/4；仅离线核心） |
 | S5 | Web 管理 | 界面、认证、规则管理、状态统计 | 双端一致、权限与 CSRF/XSS 测试通过 | **离线已验收并合并**（Issue #14、PR #26，main 9fe66d9，G0 4/4） |
 | S6 | 稳定性硬化 | WAL 快照/校验/恢复至新 DB 路径、故障注入、人工回滚规程 | 可验证恢复、资源与故障测试通过 | **离线验收并合并**（Issue #15 / PR #27，main 12ce325，G0 4/4；实机未验） |
-| S7 | V1.1 Docker Compose 发行前安全收尾和 GHCR/NAS/PVE 交付 | Docker-01～09 各自已验收合并；Docker-10 #50 / Draft PR #51：稳定 Alpine zlib 1.3.2-r1、pip 26.2.1、dotenv 1.2.2 定向修复/双架构真实 Trivy/CycloneDX + 全量回归 | 最新精确 HEAD 的所有适用 CI 全绿、独立离线阶段验收、再单独 PR Squash 合并；正式 GHCR 发版和 NAS/PVE 实机各申请新授权 | **当前 S7，Docker-01～09 已完成，Docker-10 仅离线开发获批/未验收未合并；GHCR NOT_PUBLISHED / 父 #16 OPEN blocked** |
+| S7 | V1.1 Docker Compose 最终安全/供应链与 GHCR/现有 NAS/PVE 交付 | Docker-01～10 离线验收合并；Docker-11 #52 / Draft #53：精确源码 HEAD、Action SHA、双架构 Trivy/CycloneDX/OCI 本地安全证据、不可变 digest/签名与回滚方案 | 最新 HEAD 全 CI 全绿 + 独立离线验收 + 另行合并；真实 GHCR 发行/Tag/Release 和 NAS/PVE/群晖 Docker 实机各独立批准 | **Docker-01～10 已完成；Docker-11 仅离线设计/准备获批，尚未阶段验收/合并；GHCR NOT_PUBLISHED，父 #16 OPEN blocked** |
 
 ### 开发原则
 
