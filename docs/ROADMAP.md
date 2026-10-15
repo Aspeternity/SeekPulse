@@ -1,6 +1,6 @@
 # SeekPulse 开发路线图 — 审批闸门
 
-> 2026-10-15：Docker-01～07 已分别离线验收并独立合并（Docker-07 **仅研究**），main `30c246be5f7cb11fb315ccecc882798b75f28160`，合并后 G0 #38718379825 4/4 PASS。**Docker-08 / Issue #46 / Draft PR #47 仅获得 Alpine 正式 opt-in 底座的方案设计和离线开发授权**；主线仍 Debian Trixie，旧 OS High 44/8 CVE；GHCR 仍 NOT_PUBLISHED/BLOCKED，正式发布/实机需另批。
+> 2026-10-15：Docker-01～08 均完成离线阶段验收和**独立授权合并**，main `e86b10bd324f083955b1d38a340bbca092b0dc03`、postmerge G0 #38723709559 4/4 PASS，main 的 opt-in V1.1 已切换官方 pinned Alpine3.24。**Docker-09 / #48 / Draft #49 仅获 GHCR 发布前安全复核及离线准备授权，未验收、未合并、未发布。** 两架构历史 Alpine 真实 Medium 7/Low 1 待逐项复核；旧 Debian 8 个历史 CVE 不能声称已修复。GHCR NOT_PUBLISHED，无真实远端 digest，NAS/PVE 现场另批。
 
 
 | ID | 阶段 | 必需产物 | 退出门槛 | 状态 |
@@ -13,7 +13,7 @@
 | S4 | 多渠道通知 | Telegram、Bark、ntfy、路由、优先级 | 多目标发送与限流/重试通过 | **已验收并合并**（Issue #13、PR #25，main 6d5f078，CI 4/4；仅离线核心） |
 | S5 | Web 管理 | 界面、认证、规则管理、状态统计 | 双端一致、权限与 CSRF/XSS 测试通过 | **离线已验收并合并**（Issue #14、PR #26，main 9fe66d9，G0 4/4） |
 | S6 | 稳定性硬化 | WAL 快照/校验/恢复至新 DB 路径、故障注入、人工回滚规程 | 可验证恢复、资源与故障测试通过 | **离线验收并合并**（Issue #15 / PR #27，main 12ce325，G0 4/4；实机未验） |
-| S7 | V1.1 Docker 容器交付、Alpine 正式 opt-in 运行时离线迁移、安全治理与宿主验证 | Docker-01～07 各自完成；Docker-08 / Issue #46 / Draft PR #47：ADR-0015、正式 Dockerfile.v11 pinned Alpine、原生 AMD64/ARM64 真实 Trivy/SBOM、SQLite/WAL/TLS/模拟通知与资源限制回归；后续正式 GHCR 和 NAS/PVE | 精确 HEAD 全部适用 CI、独立离线人工验收、独立合并；High 未处置不得自动发布；GHCR 与实机再逐道申请 | **Docker-01～07 已验收合并（07 仅研究）**，**Docker-08 仅设计与离线开发获批、未验收/未合并**，旧 Debian High 44/8 持续阻断已发布资格 |
+| S7 | V1.1 Docker 容器交付与发布前安全/供应链审查 | Docker-01～08 已合并；Docker-09 #48 / Draft #49：ADR-0016、Medium/Low 逐条公开漏洞清单、原生双架构镜像/Trivy/CycloneDX、fail-closed 发行前审计、OCI/SBOM/签名来源设计与回滚方案 | G0 + 最新 HEAD 全部适用 CI 全绿、仅离线阶段独立验收、独立 PR 合并；正式 GHCR push/tag 和 NAS/PVE 各须新许可 | **Docker-01～08 各自验收合并；Docker-09 仅离线设计/开发获批，未验收/合并；GHCR NOT_PUBLISHED / 父 #16 OPEN blocked** |
 
 ### 开发原则
 
