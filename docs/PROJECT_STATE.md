@@ -1,16 +1,16 @@
-# SeekPulse — GitHub 跨会话接力状态（静态快照 2026-10-15）
+# SeekPulse — GitHub 跨对话交接（静态快照 2026-10-15）
 
-> **每次接手以 GitHub 当前 main/PR/Issue SHA、最新 CI、明确用户审批优先。** 本页不是新授权。
+> 每次接手**先核对 GitHub 实时 main、Issue #52 / PR #53、父 #16、审批评论、精确 HEAD 和最新 CI**；本文件不是独立授权。
 
-## 项目实际阶段
-- **目前 S7：V1.1 Docker/Compose 交付与正式发布前的安全收尾**。S0 **条件式 Go**；S1～S6 双来源 TG/RSS、规则/通知/SQLite/WAL、Bot/Web/备份等**离线**功能已验收合并。**尚未正式 GHCR 发布或在用户 NAS/PVE/群晖/Portainer 实机部署**；不能把离线测试当生产运行证据。
-- S7 **Docker-01～09 每个均离线阶段验收并获独立 Squash Merge 授权**；Docker-09 [Issue #48](https://github.com/Aspeternity/SeekPulse/issues/48) CLOSED/completed、[PR #49](https://github.com/Aspeternity/SeekPulse/pull/49) MERGED，main `09ab09416a94d472f32bf74e52da4897772d06fd`、合并后 [G0 #38731768690](https://github.com/Aspeternity/SeekPulse/actions/runs/38731768690) 4/4 PASS。主线仅 opt-in `Dockerfile.v11` 使用官方 Python3.11 Alpine3.24 pinned 多架构基础镜像，旧 Dockerfile、Compose、原版 requirements/app 行为没有改变。
-- Docker-09 原生 AMD64/ARM64 实测每平台 **Medium=7, Low=1, High/Critical=0**：`pip 24.0` 六项、`python-dotenv 1.0.1` 一项、`zlib 1.3.2-r0` 一项；zlib CVE-2026-85091 另有公开来源评级差异。旧 Debian Trixie 的 44 包级/8 去重 High CVE 是其他**旧镜像历史证据**，不代表新 Alpine 镜像或已在 Debian 修复。至今 `release_ready=false`、`release_authorized=false`、GHCR `NOT_PUBLISHED`、无正式 SeekPulse 远端多架构 digest。
+## 产品与开发阶段
+- **S7：V1.1 Docker Compose 正式发行前收尾**。S0 条件式 Go、S1～S6 离线业务核心已验收合并。**S7 Docker-01～10 已分别离线阶段验收并另行独立批准 Squash Merge main**。最新 main `c6c8d8ca68a7e5763baca0e2b4ef5e1592974a93`（[Docker-10 PR #51](https://github.com/Aspeternity/SeekPulse/pull/51) MERGED，[Issue #50](https://github.com/Aspeternity/SeekPulse/issues/50) CLOSED/completed，合并后 [G0 #38742527999](https://github.com/Aspeternity/SeekPulse/actions/runs/38742527999) 4/4 PASS）。
+- 主线 opt-in `Dockerfile.v11` 为 pinned 官方 Python3.11 Alpine3.24 多架构**基础镜像** index，zlib1.3.2-r1、V1.1-only python-dotenv1.2.2、构建期 pip26.2.1 运行 pip check 后卸载。原 Dockerfile/两份 Compose/原上游 requirements/业务 app 均不改。Docker-10 **最后经用户验收 HEAD** 原生 AMD64+ARM64 全镜像 Trivy OS+PyPI/CycloneDX **Critical/High/Medium/Low/Unknown=0**，8 个此前 CVE 不再被报告，**只限当次镜像/DB**；旧 Debian Trixie 44 个包级/8 不同 High 是不同旧镜像历史证据，不能说 Debian 已修复。
+- GHCR 目前 **`NOT_PUBLISHED`** / `manual_review_completed=false` / `release_ready=false` / `release_authorized=false`，无已批准或回读验证的远端 SeekPulse index digest、正式 Git Tag/Release/签名/远端 SBOM attest、NAS/PVE/群晖/Portainer 用户 Docker 实机/生产凭据/真实通知。
 
-## 当前唯一许可：Docker-10 已知漏洞**离线修复开发**
-- 用户对明确请求“**启动 Docker-10 的漏洞修复方案设计及离线开发，非阶段验收、合并、GHCR 发布、NAS/PVE**”回复 **「批准」**，同时询问项目阶段。已在回复解释 **S7**，不是从头开发。独立 [Issue #50](https://github.com/Aspeternity/SeekPulse/issues/50) OPEN、[Draft PR #51](https://github.com/Aspeternity/SeekPulse/pull/51) OPEN、分支 `fix/s7-docker-10-remediate-runtime-cves-offline`，唯一写入者 ChatGPT；最新 HEAD/CI 必须实时查询，**未完成不得预报绿色**。
-- [ADR-0017](decisions/ADR-0017-v11-runtime-vulnerability-remediation.md) 研发候选：只在 opt-in V1.1 `Dockerfile.v11` 的旧固定 Alpine3.24 基础上，从 Alpine stable 仓库精确 `zlib=1.3.2-r1`、启动 pip 安装前升级固定 `pip==26.2.1`，经 `pip check` 后从最终运行镜像卸载 pip（其捆绑旧版 setuptools/urllib3 被真实 Trivy 新 High 证据识别）；`requirements-v11-security.txt` 只加 `python-dotenv==1.2.2`，原四个安全 pin 保留；旧 Dockerfile/两份 Compose/原版 requirements `app/` 和 DB/通知协议全部不改。两原生架构本地完整镜像、SQLite WAL/TLS/资源限制和最新 Trivy OS+PyPI/CycloneDX **对 8 个明确目标 CVE 全部不再报告**，无 ignore/隐瞒风险。
-- **未批准** Docker-10 代码阶段验收、PR #51 独立合并、GHCR login/push/Tag/Release/签名/attestation/正式 registry digest、用户 NAS/PVE/群晖/Portainer/VPS、生产 SQLite/Token/Session/备份、真实 TG/Bark/ntfy 或 Gate D–G/48–72h。父 [S7 #16](https://github.com/Aspeternity/SeekPulse/issues/16) 必须继续 **OPEN/status:blocked**。
+## 当前仅独立批准 Docker-11 发行前最终安全/供应链离线准备
+- 用户对“**GHCR 正式发布前最终安全与供应链复核方案设计与离线准备，不含实际 GHCR push/Tag/Release 或 NAS/PVE**”独立回复原话 **「批准」**；唯一写入者 ChatGPT。独立 [Issue #52](https://github.com/Aspeternity/SeekPulse/issues/52) OPEN、[Draft PR #53](https://github.com/Aspeternity/SeekPulse/pull/53) OPEN，分支 `research/s7-docker-11-final-ghcr-release-preflight-offline`；PR 精确 HEAD 必须**实时读取**，任何新 commit 必须重新核查 CI。
+- [ADR-0018](decisions/ADR-0018-v11-final-ghcr-release-supply-chain.md)：复用已验证的真实 Trivy/OS+PyPI/CycloneDX 和 Docker-03 本地 OCI 双架构清单，新增纯 stdlib `scripts/v11_final_release_gate.py` 失败关闭、负向测试；GH Actions 固定 40 hex SHA、checkout **精确 PR head 而非临时 merge SHA**，标签来源同一 commit；完善未来获批的 registry index 真 `@sha256` 回读、SBOM/签名/来源证明、NAS/PVE Docker 不变镜像/SQLite 备份恢复**方案**，不实施任何远端行动。
+- **此用户批准不包含 Docker-11 人工阶段验收、PR #53 转 Ready/合并、GHCR 登录/推送/tag/Release、Sigstore/OIDC 实际签名/attestation、修改用户 NAS/PVE/群晖/Portainer/VPS、生产 SQLite/Token/Session/备份、真实 TG/Bark/ntfy/48–72h 运行**。父 [S7 #16](https://github.com/Aspeternity/SeekPulse/issues/16) 必须继续 OPEN/status:blocked。
 
 ## 唯一下一步
-验证 PR #51 **最新精确 HEAD** 的所有适用 G0 + Docker-01～10 CI，原生双架构真实 zlib/pip/dotenv 版本与目标 8 CVE、全部现存高危检测及历史风险标记；如测试失败先找根因，修复后新 SHA 全部重跑。**只向用户单独申请 Docker-10 已完成离线范围阶段验收**；批准后另申请精确 HEAD PR Ready/Squash 合并及 postmerge G0；真正 GHCR 发布和家中 NAS/PVE Docker 实机各须后续新批准。
+核查 PR #53 **最新精确 HEAD** 的 G0 + 所有适用 Docker 工作流、原生 AMD64/ARM64 正式全镜像新鲜 Trivy/CycloneDX、Docker-03 多架构 OCI archive 与 source SHA、所有负向安全合同；将真实风险/证据与审批边界写入 Issue #52 / Draft PR #53 / 父 #16。**先单独向用户申请本轮“仅离线方案与准备”阶段验收**，如通过再单独申请 PR #53 Ready + Squash 合并 main 和 postmerge G0；**正式 GHCR push/tag/Release 与 NAS/PVE Docker 真部署依旧分别新批准**。

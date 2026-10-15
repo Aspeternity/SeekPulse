@@ -1,6 +1,6 @@
 # 审批及执行权限记录（人工可核实）
 
-> **最新（2026-10-15）**：S7 Docker-01～09 分别离线验收并独立合并；Docker-09 [PR #49](https://github.com/Aspeternity/SeekPulse/pull/49) MERGED，main `09ab09416a94d472f32bf74e52da4897772d06fd`，postmerge G0 #38731768690 4/4 PASS。当前处于 **S7 Docker V1.1 正式发布前安全收尾，尚未发布/部署**。用户**仅批准 Docker-10 / Issue #50 / Draft PR #51 的 pip、python-dotenv、zlib 最小化离线漏洞修复方案设计及开发**；不包括修复阶段验收、合并、GHCR push/Release、NAS/PVE 实机。当前 `release_ready=false` / `release_authorized=false`，GHCR `NOT_PUBLISHED`。
+> **最新（2026-10-15）**：SeekPulse **S7 Docker-01～10 均分别离线验收、另外取得独立合并许可并进入 main**。Docker-10 [Issue #50](https://github.com/Aspeternity/SeekPulse/issues/50) CLOSED/completed、[PR #51](https://github.com/Aspeternity/SeekPulse/pull/51) MERGED，新 main `c6c8d8ca68a7e5763baca0e2b4ef5e1592974a93`，合并后 G0 [#38742527999](https://github.com/Aspeternity/SeekPulse/actions/runs/38742527999) 4/4 PASS。Docker-10 两原生架构本地实际 V1.1 Alpine 镜像当次 Trivy OS+PyPI/CycloneDX **Critical/High/Medium/Low/Unknown 全 0**，但 `release_ready=false`、`release_authorized=false`、GHCR `NOT_PUBLISHED`。**当前仅独立批准 Docker-11 / Issue #52 / Draft PR #53 GHCR 正式发行前安全/供应链方案与离线准备**，绝不包含阶段验收、PR 合并、GHCR 推送/Tag/Release、NAS/PVE 实机。
 
 ## 2026-10-13：V1.1 方案批准，G0 授权
 
@@ -212,3 +212,16 @@ S7-01 文档规划经用户回复「批准」验收后，用户另行回复「�
 用户原话 **「批准  顺便告诉我 我们项目目前在哪个阶段」**；对应紧邻明确问题：“**是否批准启动 Docker-10 的漏洞修复方案设计及离线开发？此次授权仅限独立分支开发与测试，不包含阶段验收、PR 合并、GHCR 发布或 NAS/PVE 部署。**”因此仅批准 [Issue #50](https://github.com/Aspeternity/SeekPulse/issues/50) / [Draft PR #51](https://github.com/Aspeternity/SeekPulse/pull/51) 和 [ADR-0017](decisions/ADR-0017-v11-runtime-vulnerability-remediation.md) 的受控、安全、最小范围离线修复开发：原生 AMD64/ARM64 正式 opt-in Alpine 镜像固定 `zlib=1.3.2-r1`、镜像安装前 `pip==26.2.1`、V1.1-only `python-dotenv==1.2.2`，保留旧四项 pin；原版业务/依赖/Compose/SQLite/通知协议全不改；8 个 Docker-09 CVE 必须真实最新扫描不再报告，任何新漏洞不得遮掩，CI 应失效关闭。父 #16 必须 OPEN/status:blocked。
 
 **本批准不等于**已修复 CVE、Docker-10 离线阶段人工验收、PR #51 Ready/Squash 合并、GHCR login/push/Tag/Release、远端签名、多架构生产 digest、NAS/PVE/Portainer/群晖/VPS 实机/凭据/真通知/Gate D–G。新 CI 绿色后仍须分别申请人工阶段验收、精确 HEAD 合并、GHCR 发版及用户 Docker 现场许可。本记录来自用户聊天明确原话，非 GitHub UI Reviewer 签名。
+
+
+## 2026-10-15 Docker-10 离线阶段验收与 PR #51 后续**独立** Squash 合并
+
+用户先对 Docker-10 / Issue #50 的稳定 Alpine zlib、V1.1-only python-dotenv、构建期 pip 隐藏高危包清理、原生 AMD64/ARM64 完整镜像/Trivy 0 漏洞和精确 HEAD 11/11 workflow/34/34 jobs 范围**仅离线阶段验收**直接肯定回复原话“pi准”（在“是否批准验收”紧邻上下文下认定为批准）；留痕 [Issue #50 #6192977478](https://github.com/Aspeternity/SeekPulse/issues/50#issuecomment-6192977478)。**此时未批准 PR Ready/合并**。
+
+随后用户对助手**另行提出**的“是否批准 PR #51 **精确 HEAD `8379b374c0da21adaede4f9e5471b295ff5ac25a`** 转 Ready、Squash Merge main、postmerge G0？不包括 GHCR/Tag/Release/NAS/PVE”回复原话**「批准」**；留痕 [Issue #50 独立合并审批 #6193139521](https://github.com/Aspeternity/SeekPulse/issues/50#issuecomment-6193139521)。GitHub 经 HEAD/main 未变校验、`expected_head_sha` Squash Merge 得新 main `c6c8d8ca68a7e5763baca0e2b4ef5e1592974a93`、与受验 HEAD Git tree 完全相同，合并后 [G0 #38742527999](https://github.com/Aspeternity/SeekPulse/actions/runs/38742527999) **4/4 success**；PR #51 MERGED、Issue #50 CLOSED/completed。最终审计 [#6193210829](https://github.com/Aspeternity/SeekPulse/issues/50#issuecomment-6193210829)。本次合并**不**批准发行/远端镜像 digest、签名/attestation、NAS/PVE 真实部署；原 legacy Dockerfile、两份 Compose、S1～S5 requirements 及应用运行入口逐 Git blob 同前 main。
+
+## 2026-10-15 Docker-11 最终 GHCR 发行前安全/供应链**方案与离线准备**独立获批
+
+用户原话：**「批准」**，紧邻的明确申请为“**是否批准启动 GHCR 正式发布前的最终安全与供应链复核方案设计与离线准备？该批准不会包含真正推送 GHCR、创建 Tag/Release，或操作现有 NAS/PVE Docker 环境；这些仍需后续分别授权。**”因此仅批准独立 [Issue #52](https://github.com/Aspeternity/SeekPulse/issues/52) / [Draft PR #53](https://github.com/Aspeternity/SeekPulse/pull/53) 和 [ADR-0018](decisions/ADR-0018-v11-final-ghcr-release-supply-chain.md) 的本地纯只读 Final Evidence Gate、负向回归、**精确源码 HEAD**和 GitHub Actions SHA 固定、原生双架构本地完整镜像公开 Trivy/CycloneDX + Docker-03 本地多架构 OCI 验证、未来 GHCR 远端 digest/可选 Sigstore/OIDC 签名/回滚**方案**与交接事实同步；唯一写入人 ChatGPT。
+
+**此次绝不授权** Docker-11 用户阶段验收、PR #53 Ready/Squash Merge main、GHCR login/push、`packages: write`、`id-token: write`、Git Tag/Release、真正签名/Attestation 或用户 NAS/PVE/群晖/Portainer/VPS 的任何操作、生产 Token/Session/SQLite/备份、真实 Telegram/Bark/ntfy、48–72h 运行。即使当次扫描所有漏洞级别都为 0，也仍 `release_ready=false`、`release_authorized=false`、GHCR `NOT_PUBLISHED`，不存在获核验的远端 SeekPulse GHCR index digest。仅完成本次离线证据和 CI 后**单独申请阶段验收**，之后还须独立申请 PR 合并；发布/实机各自另批。

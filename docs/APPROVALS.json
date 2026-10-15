@@ -631,6 +631,70 @@
         "User NAS/PVE/Synology/Portainer/VPS, production DB/secret/session/real notifications, Gate D-G"
       ],
       "source": "Explicit current user chat reply and scope; Issue #50 / Draft PR #51; not GitHub reviewer signature"
+    },
+    {
+      "event_id": "APPROVAL-2026-10-15-DOCKER10-STAGE-ACCEPTED",
+      "date": "2026-10-15",
+      "authorized_stage": "S7-Docker-10",
+      "authorization_kind": "offline_stage_acceptance_only",
+      "approved_plan": "SeekPulse V1.1",
+      "issue": 50,
+      "pr": 51,
+      "user_instruction": "pi准",
+      "context": "Reply affirming narrowly requested Docker-10 offline-only stage acceptance; not PR merge",
+      "authorized_actions": [
+        "Accept CVE remediation and real dual-native AMD64/ARM64 offline Trivy OS/PyPI/CycloneDX 0 findings at scan time",
+        "Accept exact HEAD 8379b374c0da21adaede4f9e5471b295ff5ac25a, 11/11 workflows, 34/34 jobs"
+      ],
+      "not_authorized": [
+        "PR Ready/Squash merge until later independent approval",
+        "GHCR push/tag/Release, signature, user NAS/PVE hosts, production tokens/data"
+      ],
+      "source": "Current user explicit reply; Issue #50 comment 6192977478; not GitHub reviewer signature"
+    },
+    {
+      "event_id": "APPROVAL-2026-10-15-DOCKER10-PR51-SEPARATE-SQUASH-MERGE",
+      "date": "2026-10-15",
+      "authorized_stage": "S7-Docker-10",
+      "authorization_kind": "separate_ready_squash_merge_and_postmerge_g0",
+      "approved_plan": "SeekPulse V1.1",
+      "issue": 50,
+      "pr": 51,
+      "user_instruction": "批准",
+      "context": "User separately approved exact PR #51 HEAD Ready+Squash Merge after offline stage acceptance",
+      "authorized_actions": [
+        "Mark PR #51 at exact accepted HEAD 8379b374c0da21adaede4f9e5471b295ff5ac25a ready",
+        "Squash merge main and validate new SHA c6c8d8ca68a7e5763baca0e2b4ef5e1592974a93 tree identity",
+        "Verify postmerge G0 #38742527999 4/4 success"
+      ],
+      "not_authorized": [
+        "GHCR registry, signing, Tag/Release or production release readiness",
+        "NAS/PVE/Synology/Portainer deployments, production data/token/session/notifications"
+      ],
+      "source": "Issue #50 comment 6193139521 and final audit 6193210829; not independent GitHub reviewer signature"
+    },
+    {
+      "event_id": "APPROVAL-2026-10-15-DOCKER11-FINAL-GHCR-OFFLINE-DESIGN-ONLY",
+      "date": "2026-10-15",
+      "authorized_stage": "S7-Docker-11",
+      "authorization_kind": "final_security_supply_chain_design_and_offline_preparation_only",
+      "approved_plan": "SeekPulse V1.1",
+      "issue": 52,
+      "pr": 53,
+      "user_instruction": "批准",
+      "context": "Direct answer to proposal for final GHCR prepublish security/supply-chain review design and offline preparation; explicitly excluding real GHCR push, Git Tag/Release and NAS/PVE",
+      "authorized_actions": [
+        "ADR-0018 final security and supply-chain planning, public evidence and future immutable remote digest/signature/rollback procedure",
+        "Read-only final fail-closed local gate and negative tests on native AMD64 and ARM64 full opt-in V1.1 images",
+        "Fix release-critical action pinning and bind OCI/Trivy source labels to exact PR HEAD for offline CI",
+        "Record prior Docker-10 merger in GitHub-managed handoff docs on standalone Draft PR"
+      ],
+      "not_authorized": [
+        "Docker-11 stage acceptance and PR #53 Ready/Squash merge main",
+        "GHCR login/push, packages:write, id-token:write, release tags, signed attestations or any remote image digest",
+        "NAS/PVE/Portainer/Synology/VPS, production secrets/SQLite, true TG/Bark/ntfy or 48-72h live observation"
+      ],
+      "source": "User current reply '批准' and Issue #52 / Draft PR #53; not GitHub reviewer signature"
     }
   ]
 }
