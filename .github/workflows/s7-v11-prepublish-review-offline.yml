@@ -189,5 +189,21 @@ jobs:
           assert review["image_signed"] is False
           assert review["build_provenance_attested"] is False
           assert review["status"]=="MANUAL_RELEASE_SECURITY_REVIEW_REQUIRED"
+          # The eight specifically reviewed Docker-09 target CVEs must be absent
+          # from this complete unsuppressed final-image OS+PyPI report.
+          targets = {
+              "CVE-2025-8869", "CVE-2026-13346", "CVE-2026-28684",
+              "CVE-2026-3219", "CVE-2026-6357", "CVE-2026-8643",
+              "CVE-2026-85091", "CVE-2026-1703",
+          }
+          scan = json.loads((Path(os.environ["RUNNER_TEMP"])/"prepublish"/"vulnerabilities.json").read_text())
+          present = sorted({
+              v.get("VulnerabilityID")
+              for result in scan["Results"]
+              for v in (result.get("Vulnerabilities") or [])
+              if v.get("VulnerabilityID") in targets
+          })
+          assert not present, "unremediated_docker09_target_cves=" + json.dumps(present)
+          print("DOCKER10_EIGHT_TARGET_CVE_IDS_ABSENT=PASS platform=linux/"+os.environ["ARCH"])
           print("PUBLIC_MANUAL_REVIEW_REQUIRED=PASS platform=linux/"+os.environ["ARCH"])
           PY
