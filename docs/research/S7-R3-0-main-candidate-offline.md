@@ -7,7 +7,7 @@
 ## 1. 源码与安全证据身份（不能混淆的三类 SHA）
 
 - 已验收 Docker-11：原 PR #53 HEAD `eb98fdc0f91adc6cda0cf0eda305bb0609b1b916`，8/8 workflow / 27/27 job PASS；合并后 main 为 **`cf5f6010ff45c2511c2343f2466c63538397fdea`**，[postmerge G0 #38787500228](https://github.com/Aspeternity/SeekPulse/actions/runs/38787500228) 4/4 PASS。两 Git tree 同为 `3e9c8ea5dd35876069512f6a76cdda09f9dca4ea`，但**Git commit/revision label 必须用新 main SHA**。
-- [R3-0 专项只读 workflow](../../.github/workflows/s7-r30-main-candidate-offline.yml) 在 PR 上执行时，审查**精确 PR base/main SHA** `github.event.pull_request.base.sha`，只读取对应 main 源码并用 `git rev-parse HEAD` 再校验；不会把 PR 分支 HEAD、synthetic merge-ref 的 `GITHUB_SHA`、或前一阶段 SHA 当新主线的身份。该 workflow 自身的静态政策测试可 checkout PR HEAD，但不会用它当扫描镜像源码；每次 base 移动必须重新核对真实 SHA/CI。
+- [R3-0 专项只读 workflow](../../.github/workflows/s7-r30-main-candidate-offline.yml) 在 PR 上执行时，审查**精确 PR base/main SHA** `github.event.pull_request.base.sha`，只读取对应 main 源码并用 `git rev-parse HEAD` 再校验；不会把 PR 分支 HEAD、synthetic merge-ref 的 `GITHUB_SHA`、或前一阶段 SHA 当新主线的身份。PR 事件还必须验证 `base.ref=main`；将来 `workflow_dispatch` 仅允许 `refs/heads/main`，否则强制阻断。该 workflow 自身的静态政策测试可 checkout PR HEAD，但不会用它当扫描镜像源码；每次 base 移动必须重新核对真实 SHA/CI。
 - 官方 Python3.11 Alpine3.24 **基础镜像** index SHA `sha256:d9368b3a5ac59afea7b5d4f2e2aea0941dbf9fdee9c369c5bec00b98244bc929` 只固定基础来源，**不是** SeekPulse 自己的最终 GHCR index digest；Trivy 检查所用本地 Docker `image ID` 也不是远端 index digest。远端 `ghcr.io/aspeternity/seekpulse@sha256:...` **当前未知，不得代填**。
 
 ## 2. 本阶段 R3-0 可执行的离线证明（不接触 registry 写权限）
