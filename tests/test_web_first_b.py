@@ -68,6 +68,44 @@ class WebFirstBootstrapContracts(unittest.TestCase):
             self.assertFalse(recovered.check_login("my_admin", PASSWORD))
             self.assertTrue(recovered.check_login("my_admin", NEW_PASSWORD))
 
+    def test_empty_prepared_database_restarts_into_registration(self):
+        with database_owner_lock(self.store.path):
+            self.store.prepare_locked()
+            self.assertFalse(self.store.admin_exists())
+        with database_owner_lock(self.store.path):
+            self.store.prepare_locked()
+            self.assertFalse(self.store.admin_exists())
+            self.assertEqual(len(list(self.base.iterdir())), 2)
+
+    def test_foreign_files_or_partial_schema_cannot_be_mistaken_for_new_volume(self):
+        with database_owner_lock(self.store.path):
+            self.store.prepare_locked()
+            (self.base / "bot.db").write_bytes(b"legacy-secret-must-not-touch")
+            with self.assertRaises(UnsafeWebFirstData):
+                self.store.prepare_locked()
+            self.assertEqual((self.base / "bot.db").read_bytes(),
+                             b"legacy-secret-must-not-touch")
+            (self.base / "bot.db").unlink()
+            (self.base / "web-first.sqlite-wal").write_bytes(b"orphan WAL")
+            with self.assertRaises(UnsafeWebFirstData):
+                self.store.prepare_locked()
+            (self.base / "web-first.sqlite-wal").unlink()
+
+    def test_parallel_registration_creates_exactly_one_administrator(self):
+        from concurrent.futures import ThreadPoolExecutor
+        with database_owner_lock(self.store.path):
+            self.store.prepare_locked()
+            with ThreadPoolExecutor(max_workers=3) as executor:
+                results = list(executor.map(
+                    lambda i: self.store.create_admin(f"owner{i}", PASSWORD),
+                    range(3),
+                ))
+            self.assertEqual(results.count(True), 1)
+            with sqlite3.connect(self.store.path) as conn:
+                self.assertEqual(conn.execute(
+                    "SELECT COUNT(*) FROM web_admin"
+                ).fetchone()[0], 1)
+
     def test_bad_and_repeat_registrations_fail_without_creating_users(self):
         with database_owner_lock(self.store.path):
             self.store.prepare_locked()
@@ -181,6 +219,97 @@ class WebFirstPageContracts(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(dashboard.status_code, 200)
         self.assertIn("运行概览", dashboard.text)
         self.assertIn("B 阶段", dashboard.text)
+
+    async def _register_and_login(self):
+        registration = await self.client.get("/register")
+        response = await self.client.post(
+            "/register", data={
+                "_csrf": self.csrf(registration.text),
+                "username": "owner",
+                "password": PASSWORD,
+                "confirm": PASSWORD,
+            }, follow_redirects=False,
+        )
+        self.assertEqual(response.status_code, 303)
+        form = await self.client.get("/login")
+        login = await self.client.post(
+            "/login", data={
+                "_csrf": self.csrf(form.text),
+                "username": "owner",
+                "password": PASSWORD,
+            }, follow_redirects=False,
+        )
+        self.assertEqual(login.status_code, 303)
+
+    async def test_health_probe_does_not_create_a_login_cookie(self):
+        response = await self.client.get("/healthz")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.text, "ok")
+        self.assertNotIn("set-cookie", response.headers)
+        self.assertEqual(response.headers.get("cache-control"), "no-store")
+
+    async def test_login_protects_all_pages_and_persistent_preference_csrf(self):
+        for path in ("/", "/sources", "/rules", "/channels", "/history",
+                     "/settings"):
+            response = await self.client.get(path, follow_redirects=False)
+            self.assertEqual(response.status_code, 303)
+            self.assertEqual(response.headers["location"], "/register")
+        await self._register_and_login()
+        for path in ("/", "/sources", "/rules", "/channels", "/history",
+                     "/settings?tab=general", "/settings?tab=account",
+                     "/settings?tab=data", "/settings?tab=maintenance"):
+            response = await self.client.get(path)
+            self.assertEqual(response.status_code, 200, path)
+        page = await self.client.get("/settings")
+        self.assertIn("常规", page.text)
+        bad = await self.client.post(
+            "/settings/preferences",
+            data={"theme": "dark", "home": "rules", "_csrf": "invalid"},
+            follow_redirects=False,
+        )
+        self.assertEqual(bad.status_code, 403)
+        good = await self.client.post(
+            "/settings/preferences",
+            data={
+                "theme": "dark", "home": "rules",
+                "_csrf": self.csrf(page.text),
+            }, follow_redirects=False,
+        )
+        self.assertEqual(good.status_code, 303)
+        self.assertEqual(self.store.preferences()["theme"], "dark")
+        self.assertEqual(self.store.preferences()["home"], "rules")
+        after_logout = await self.client.post(
+            "/logout",
+            data={"_csrf": self.csrf((await self.client.get("/settings")).text)},
+            follow_redirects=False,
+        )
+        self.assertEqual(after_logout.status_code, 303)
+        self.assertEqual((await self.client.get("/")).headers["content-type"].split(";")[0],
+                         "text/html")
+        login_form = await self.client.get("/login")
+        new_login = await self.client.post(
+            "/login",
+            data={"_csrf": self.csrf(login_form.text),
+                  "username": "owner", "password": PASSWORD},
+            follow_redirects=False,
+        )
+        self.assertEqual(new_login.headers["location"], "/rules")
+
+    async def test_password_change_revokes_login_session(self):
+        await self._register_and_login()
+        page = await self.client.get("/settings?tab=account")
+        changed = await self.client.post(
+            "/settings/password",
+            data={"_csrf": self.csrf(page.text), "old_password": PASSWORD,
+                  "new_password": NEW_PASSWORD, "confirm": NEW_PASSWORD},
+            follow_redirects=False,
+        )
+        self.assertEqual(changed.status_code, 303)
+        self.assertEqual(changed.headers["location"], "/login")
+        self.assertFalse(self.store.check_login("owner", PASSWORD))
+        self.assertTrue(self.store.check_login("owner", NEW_PASSWORD))
+        self.assertEqual((await self.client.get("/", follow_redirects=False)).headers["location"],
+                         "/login")
 
     async def test_csrf_rejects_form_posts(self):
         await self.client.get("/register")
