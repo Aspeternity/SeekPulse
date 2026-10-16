@@ -1,0 +1,122 @@
+name: Web-first B Offline
+
+on:
+  pull_request:
+    paths:
+      - 'app/web_first*.py'
+      - 'app/web_first_ui/**'
+      - 'app/web_auth.py'
+      - 'app/instance_lock.py'
+      - 'tests/test_web_first_b.py'
+      - 'scripts/web_first_docker_smoke.py'
+      - 'Dockerfile.web-first'
+      - 'compose.web-first.yaml'
+      - 'requirements-web-first.txt'
+      - '.github/workflows/web-first-b.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: web-first-b-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  offline:
+    name: B unit and security / Python ${{ matrix.python-version }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.11', '3.12']
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install minimal B runtime plus lint
+        run: |
+          python -m pip install -r requirements-web-first.txt
+          python -m pip install ruff==0.13.3
+      - name: Web-first B in-process SQLite and ASGI tests
+        run: python -m unittest discover -s tests -p 'test_web_first_b.py' -v
+      - name: Ruff and Python syntax
+        run: |
+          ruff check app/web_first.py app/web_first_main.py app/web_first_store.py tests/test_web_first_b.py scripts/web_first_docker_smoke.py
+          python -m compileall -q app/web_first.py app/web_first_main.py app/web_first_store.py tests/test_web_first_b.py scripts/web_first_docker_smoke.py
+
+  container:
+    name: B real Docker fresh and restart smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      IMAGE: seekpulse-web-first-b-ci:${{ github.run_id }}
+      CONTAINER: seekpulse-b-ci-${{ github.run_id }}
+      VOLUME: seekpulse-b-data-ci-${{ github.run_id }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Validate Portainer Compose offline
+        run: |
+          docker compose -f compose.web-first.yaml config -q
+          docker compose -f compose.web-first.yaml config --format json > /tmp/web-first-compose.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          data=json.loads(Path("/tmp/web-first-compose.json").read_text())
+          assert len(data["services"]) == 1
+          s=data["services"]["seekpulse"]
+          assert s["read_only"] is True
+          assert "ports" in s and "8765" in str(s["ports"])
+          assert "volumes" in s and "/app/data" in str(s["volumes"])
+          assert not any(x in str(s) for x in (
+              "BOT_TOKEN", "SEEKPULSE_ADMIN_TG_USER_ID", "SEEKPULSE_WEB_PASSWORD_HASH",
+              "SEEKPULSE_FIRST_ADMIN_CODE", "setup_code", "docker.sock",
+          ))
+          assert "build" not in s
+          print("WEB_FIRST_PORTAINER_COMPOSE_CONTRACT=PASS")
+          PY
+      - name: Build opt-in Web-only container (no publish)
+        run: |
+          docker build --pull=false -f Dockerfile.web-first \
+            --build-arg SEEKPULSE_BUILD_REVISION=${{ github.event.pull_request.head.sha || github.sha }} \
+            -t "$IMAGE" .
+      - name: Fresh Docker volume, registration, login and preferences
+        run: |
+          set -euo pipefail
+          docker volume create "$VOLUME"
+          docker run --detach --init --name "$CONTAINER" \
+            --read-only --cap-drop ALL --security-opt no-new-privileges \
+            --tmpfs /tmp:rw,nosuid,nodev,noexec,size=32m \
+            -p 127.0.0.1:18765:8765 \
+            -v "$VOLUME":/app/data \
+            "$IMAGE"
+          for i in $(seq 1 35); do
+            if curl --silent --fail --max-time 2 http://127.0.0.1:18765/register > /dev/null; then
+              break
+            fi
+            sleep 1
+          done
+          curl --fail --silent http://127.0.0.1:18765/register > /dev/null
+          docker exec "$CONTAINER" python -c 'import os,stat; s=os.stat("/app/data"); assert s.st_uid==os.getuid()==10001; assert stat.S_IMODE(s.st_mode)==0o700'
+          python3 scripts/web_first_docker_smoke.py first http://127.0.0.1:18765
+          docker restart "$CONTAINER"
+          for i in $(seq 1 35); do
+            if curl --silent --fail --max-time 2 http://127.0.0.1:18765/login > /dev/null; then
+              break
+            fi
+            sleep 1
+          done
+          python3 scripts/web_first_docker_smoke.py restarted http://127.0.0.1:18765
+          test -z "$(docker logs "$CONTAINER" 2>&1 | grep -E 'FIRST_ADMIN_CODE|setup_code|初始化码|secret token' || true)"
+          echo WEB_FIRST_REAL_DOCKER_COLD_START_AND_RESTART=PASS
+      - name: Clean up isolated CI container/volume
+        if: always()
+        run: |
+          docker rm -f "$CONTAINER" || true
+          docker volume rm -f "$VOLUME" || true
