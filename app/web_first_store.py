@@ -20,7 +20,6 @@ from app.web_auth import check_password, password_hash
 
 SCHEMA_VERSION = 1
 USERNAME = re.compile(r"[A-Za-z0-9_.-]{3,32}\Z")
-SETUP_CODE = re.compile(r"[A-Za-z0-9_-]{30,64}\Z")
 PREFERENCES = {
     "theme": {"light", "dark"},
     "home": {"overview", "rules"},
@@ -36,7 +35,6 @@ class WebFirstStore:
     def __init__(self, directory: Path):
         self.directory = Path(directory)
         self.path = self.directory / "web-first.sqlite"
-        self.setup_file = self.directory / ".setup-code"
 
     def _check_directory(self) -> None:
         p = self.directory
@@ -131,11 +129,12 @@ class WebFirstStore:
         finally:
             os.close(fd)
 
-    def prepare_locked(self) -> str | None:
-        """Start/validate under database_owner_lock(self.path) for process lifetime.
+    def prepare_locked(self) -> None:
+        """Initialize only a genuinely new volume; otherwise validate existing data.
 
-        Return an initial-registration code for printing to *container logs*,
-        never to an HTTP response. A configured instance returns None.
+        First-time visitors register their own username/password on the Web.
+        Never generate an initial account, a password, or an out-of-band code.
+        This method is called while the process holds the database owner lock.
         """
         self._check_directory()
         if os.path.lexists(self.path):
@@ -143,34 +142,9 @@ class WebFirstStore:
         else:
             self._initialize_new_locked()
             self._read_only_check()
-        if self.admin_exists():
-            # Crash after DB commit but before unlinking the one-time code.
-            if os.path.lexists(self.setup_file):
-                self._check_regular_private(self.setup_file)
-                self.setup_file.unlink()
-            return None
-        if not os.path.lexists(self.setup_file):
-            code = secrets.token_urlsafe(24)
-            flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_CLOEXEC
-            if hasattr(os, "O_NOFOLLOW"):
-                flags |= os.O_NOFOLLOW
-            fd = os.open(self.setup_file, flags, 0o600)
-            try:
-                with os.fdopen(fd, "w", encoding="ascii") as f:
-                    f.write(code + "\n")
-                    f.flush()
-                    os.fsync(f.fileno())
-            except BaseException:
-                with suppress(FileNotFoundError):
-                    self.setup_file.unlink()
-                raise
-            self._fsync_directory()
-            return code
-        self._check_regular_private(self.setup_file)
-        code = self.setup_file.read_text(encoding="ascii").strip()
-        if not SETUP_CODE.fullmatch(code):
-            raise UnsafeWebFirstData("web_first_setup_code_invalid")
-        return code
+        # The rejected log-code design must not be carried forward.
+        if os.path.lexists(self.directory / ".setup-code"):
+            raise UnsafeWebFirstData("web_first_obsolete_setup_code_present")
 
     def _connect(self) -> sqlite3.Connection:
         # Never allow sqlite3.connect() to silently create a missing database.
@@ -183,17 +157,10 @@ class WebFirstStore:
         with closing(self._connect()) as conn:
             return conn.execute("SELECT 1 FROM web_admin WHERE id=1").fetchone() is not None
 
-    def create_admin(self, username: str, password: str, code: str) -> bool:
+    def create_admin(self, username: str, password: str) -> bool:
+        """Atomic first-user signup; a second administrator cannot be registered."""
         if (not isinstance(username, str) or not USERNAME.fullmatch(username)
-                or not isinstance(password, str) or not 12 <= len(password) <= 512
-                or not isinstance(code, str) or not SETUP_CODE.fullmatch(code)):
-            return False
-        try:
-            self._check_regular_private(self.setup_file)
-            expected = self.setup_file.read_text(encoding="ascii").strip()
-        except (OSError, UnsafeWebFirstData):
-            return False
-        if not secrets.compare_digest(code, expected):
+                or not isinstance(password, str) or not 12 <= len(password) <= 512):
             return False
         digest = password_hash(password)
         with closing(self._connect()) as conn:
@@ -210,9 +177,6 @@ class WebFirstStore:
             except sqlite3.IntegrityError:
                 conn.rollback()
                 return False
-        # Registration already committed: failure to unlink is safe; restart cleans.
-        with suppress(FileNotFoundError):
-            self.setup_file.unlink()
         return True
 
     def check_login(self, username: str, password: str) -> bool:
