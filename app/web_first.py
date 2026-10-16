@@ -205,7 +205,8 @@ def create_web_first_app(store: WebFirstStore) -> FastAPI:
         auth.login_success(peer)
         auth.revoke(current_token(request))
         token, _ = auth.new_session(authenticated=True)
-        response = response_redirect("/")
+        landing = "/rules" if store.preferences()["home"] == "rules" else "/"
+        response = response_redirect(landing)
         attach_cookie(response, token)
         return response
 
