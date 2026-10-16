@@ -1,0 +1,7 @@
+# Web-first B standalone control-plane dependencies only.
+# Deliberately excludes Telegram Bot, Telethon, RSS worker and other S1-S5 deps.
+# The opt-in B image is not a replacement for RC1 until separately accepted.
+fastapi==0.143.0
+uvicorn==0.54.0
+jinja2==3.1.6
+python-multipart==0.0.32

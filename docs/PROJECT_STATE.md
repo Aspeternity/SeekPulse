@@ -1,16 +1,23 @@
-# SeekPulse — GitHub 跨对话状态（2026-10-16 静态快照）
+# SeekPulse — GitHub 跨对话状态（2026-10-16 Web-first B 开发中）
 
-> 必须优先实时核对 main、[R3-0 Issue #54](https://github.com/Aspeternity/SeekPulse/issues/54)、相应 Draft PR、父 [#16](https://github.com/Aspeternity/SeekPulse/issues/16)、审批记录和最新精确 HEAD CI；此文件不是独立权限来源。
+> 每次新对话**先读 `AGENTS.md`、`docs/APPROVALS.md/json`、`docs/ROADMAP.md`、相关 ADR**，然后实时核实 GitHub main/PR HEAD/Issue/CI。此文件是交接快照，不是额外授权；**历史 R3-0/Docker-11 静态记录已非当前工作锚点**。
 
-## 最新 main 与已完成范围
-- SeekPulse V1.1 / S7。S0 条件式 Go、S1～S6 离线核心，以及 S7 **Docker-01～11 各自离线验收、另行 Squash Merge**。Docker-11 [Issue #52](https://github.com/Aspeternity/SeekPulse/issues/52) CLOSED/completed、[PR #53](https://github.com/Aspeternity/SeekPulse/pull/53) MERGED，main `cf5f6010ff45c2511c2343f2466c63538397fdea`，新 [G0 #38787500228](https://github.com/Aspeternity/SeekPulse/actions/runs/38787500228) **4/4 PASS**；原受验 PR HEAD `eb98fdc0f91adc6cda0cf0eda305bb0609b1b916` 和新 main Git tree `3e9c8ea5dd35876069512f6a76cdda09f9dca4ea` 一致，但 revision 不相同。
-- opt-in `Dockerfile.v11` 固定官方 Python3.11 Alpine3.24 多架构**基础** index digest，Docker-10 zlib/dotenv/pip 修复已纳入。旧版 Dockerfile/Compose、原 requirements、app/DB/通知协议未改。旧 PR 原生 AMD64/ARM64 实镜像当时 Trivy OS+PyPI/CycloneDX 五级漏洞均 0（38 Alpine+62 PyPI；只限当次 DB 与镜像）。旧 Debian Trixie High 不可借 Alpine 缺报称为 Debian 漏洞已修复。
-- 正式 GHCR `NOT_PUBLISHED`、`release_ready=false`、`release_authorized=false`、`remote_index_digest=null`；无正式签名/远端 SBOM attestation/Tag/Release/NAS/PVE 实机。父 #16 **OPEN / status:blocked**。
+## 当前最新事实
 
-## 当前唯一新增许可：R3-0 发行候选方案与离线复核
-- 用户在单独请求「启动 R3-0 方案及离线验证，不包含 GHCR 推送、签名、Tag/Release 或 NAS/PVE 部署」后直接回复 **「批准」**。唯一写入者 ChatGPT，[Issue #54](https://github.com/Aspeternity/SeekPulse/issues/54) / `research/s7-r3-0-main-candidate-offline` 分支/Draft PR，**没有** R3-0 离线验收或 PR 合并权限。
-- [R3-0 方案](research/S7-R3-0-main-candidate-offline.md) 复用 [ADR-0018](decisions/ADR-0018-v11-final-ghcr-release-supply-chain.md) 与已证明的 fail-closed validators；新的 GitHub 只读临时 Runner 在 R3-0 PR 上明确 checkout **精确 PR base/main SHA**（非 PR HEAD/synthetic merge ref），原生 amd64/arm64 两镜像真实 Trivy OS+PyPI/CycloneDX、来源/SBOM/DB/运行保护和零发现，再设计未来一次实际发行字节/远端核验/签名/回滚顺序。此阶段没有正式 GHCR blob、tag 或用户现有 NAS/PVE 连接。
-- 若 CVE、数据库、包库存、影像 SHA、OCI 来源不符，标 `BLOCKED` 不掩盖；即使全部 PASS 也仅 `LOCAL_EVIDENCE_CLEAN_AWAITING_MANUAL_RELEASE_APPROVAL`。R3-0 当前代码/CI 必须以实时 GitHub HEAD 为准。
+- 仓库：`Aspeternity/SeekPulse`。**main `0fc92f9ad3ad57eb1153f15666ab1c054632da94`**；已发布 `v1.1.0-rc.1` 属于 **Prerelease**，不是用户 NAS/PVE/Portainer 实机验收后的 Stable。S7 父 Issue #16 尚有实机交付闸门；历史 GHCR/R3 方案不得当成 Web-first B 开发许可。
+- 用户已确认 **Web-first**：Docker/Portainer → 独立 Web 管理中心 → 统一配置与运行管理 → RSS/TG/规则/通知引擎 → SQLite/受保护配置。RSS/TG 单独启停或双源协同；通知选择 Telegram Bot/Bark/ntfy，各自独立；启用 Bot 后保留 Telegram 命令管理。
+- **A 阶段 UI V4 已验收、PR #60 已独立授权 Squash 合并**；Issue #59 CLOSED。主导航一套侧栏，系统设置四顶部分类；独立首注/登录，没有强制安装向导。main postmerge [G0 #38885495278](https://github.com/Aspeternity/SeekPulse/actions/runs/38885495278) 4/4 SUCCESS。
+- **B 阶段仅获“架构设计 + 独立分支离线开发”授权**：Issue [#61](https://github.com/Aspeternity/SeekPulse/issues/61)，独立分支 `feat/web-first-b-foundation`，Draft PR [#62](https://github.com/Aspeternity/SeekPulse/pull/62)，唯一写入负责人 ChatGPT。继续直接在此分支上开发/修复，**未获 B 阶段验收、合并或发布授权**。
+- **用户特意纠正首注行为**：Portainer 部署后，首次打开浏览器直接出现「创建管理员」；用户自行输入用户名、密码和确认密码。**不得生成默认账号/密码、容器日志验证码、初始化码，或附加安装向导/CLI 初始化步骤**。注册完成显示独立登录页，关闭公开注册，重启保持；只允许可信局域网访问。
+- B 已有独立 `app.web_first_main` / `app.web_first` / `app.web_first_store`、`Dockerfile.web-first`、`compose.web-first.yaml`、最小 Web 依赖、V4 样式的设置与注册页面、专用 SQLite 初始化/异常拒绝、真实 Docker CI 空卷注册/登录/持久化/重启测试。**镜像仍未 GHCR 发布**，示例 Compose 使用 `web-first-b-NOT-PUBLISHED` 明确阻止误部署。版本号未升级，尚无真实采集/通知接入；见 [ADR-0019](decisions/ADR-0019-web-first-portainer-admin-bootstrap.md) 和 [B 部署候选说明](deployment/WEB_FIRST_B.md)。
+- B 最新 HEAD、PR/CI 状态需**每次实时查询**，不得直接沿用本文件中任何旧的 SHA 或旧的 CI 绿灯。专项 CI：`.github/workflows/web-first-b.yml`；同时查看 G0/S1/S5 的同 SHA 运行。
 
-## 下一道审批
-首先独立复核最新 R3-0 Draft PR 精确 HEAD 的 G0 + 原生 AMD64/ARM64 **main-source** 正式扫描真实 Job；**仅申请 R3-0 离线阶段验收**。如用户批准，再另行请求 PR Ready/Squash Merge + postmerge G0；真正 GHCR push/sign/Tag/Release、用户 NAS/PVE/群晖/Portainer 的不可变 digest Compose/SQLite/通知/回滚和 48–72h 分别后续审批。不得为了刷新文件而自行写入 main。
+## B 阶段退出闸门
+
+1. 最终 PR #62 精确 HEAD：B 专项 Python 3.11/3.12 + Docker 首注/重启、G0、S1、S5 及必要安全回归完整成功。
+2. **先单独申请用户 B 阶段离线开发验收**；收到明确验收后，再另行申请 PR Ready/Squash Merge main。
+3. 实际 GHCR 发布、NAS/PVE/群晖/Portainer 登录部署、真实 Token/SQLite/Session/通知、旧 RC1 数据迁移、C 阶段集成，都须分别获得额外授权。不可将“离线 GitHub Runner Docker 测试”写成用户实机验收。
+
+## 历史项目边界
+
+旧 S0～S6 核心及 S7 Docker-01～11 的单项验收和 CI 已存档在对应 Issues/PR/ADR；这些算法应在 C/D 阶段**择优复用，不应该绕过适配契约直接启用双写入者或自动迁移现有生产数据库**。当此文件与最新 GitHub 状态不一致，以后者和用户明确批准为准。

@@ -235,3 +235,16 @@ S7-01 文档规划经用户回复「批准」验收后，用户另行回复「�
 用户直接回复「批准」对应助手紧邻申请：“**R3-0：GHCR 正式发行候选的最终安全证据与发布方案审核**。这一步需要以新 main SHA 重新核对发行候选的双架构安全扫描、来源证明、SBOM、拟发布镜像与最终推送字节的一致性要求，并明确发布、签名和失败回滚的执行顺序。现在申请单独授权启动 R3-0 方案及离线验证，**本次仍不包含 GHCR 实际推送、签名、Tag/Release 或 NAS/PVE 部署**。”
 
 因此仅授权 [Issue #54](https://github.com/Aspeternity/SeekPulse/issues/54)、ChatGPT 唯一写入、独立 `research/s7-r3-0-main-candidate-offline` 分支/Draft PR 的严格只读 R3-0 方案/证据：基于新 main `cf5f601...` 做原生 AMD64+ARM64 真本地完整镜像/公开 Trivy OS+PyPI/CycloneDX/SBOM/新鲜 DB 的再次验证、精确 main SHA OCI label/镜像身份、已有 fail-closed 负向回归及未来实际发行字节/远端 digest/签名/回滚**设计**，不改变 Dockerfile、Compose、app、依赖或业务协议；父 #16 OPEN/status:blocked。**未授权** R3-0 阶段验收、PR Ready/合并、GHCR login/push、`packages:write`、`id-token:write`、实际 Sigstore/cosign 签名/attestation、Git Tag/Release、NAS/PVE/Portainer/群晖/VPS 登录/变更、生产 SQLite/Token/Session/真通知/Gate D–G/48–72h。最新精确 HEAD CI 完成后必须先**单独向用户申请仅离线成果阶段验收**，之后合并/发行/实机各自另批。此处为用户聊天批准的 GitHub 审计摘要，非 GitHub UI Reviewer 独立签名。
+
+
+## 2026-10-16 Web-first A 阶段 UI 验收、PR #60 独立合并授权与 B 阶段开发授权
+
+用户明确反馈 V4 页面「**符合预期**」，认定 Web-first **A 阶段 V4 原型 UI 人工验收**通过：一套全局导航、系统设置「常规/账户安全/数据备份/系统维护」四顶部分类；首次注册和独立登录，不强制安装向导；RSS/TG 独立启停与双源算法；Telegram Bot 通知兼容命令管理，Bark/ntfy 独立。验收范围**仅 HTML UI 原型**，不代表真实 Portainer、通知或后端验收。
+
+随后用户针对单独请求「PR #60 Draft→Ready、Squash Merge main、验证 postmerge CI」回复原话「**批准**」。PR #60 已 Squash Merge 得 **main `0fc92f9ad3ad57eb1153f15666ab1c054632da94`**，[postmerge G0 #38885495278](https://github.com/Aspeternity/SeekPulse/actions/runs/38885495278) **4/4 SUCCESS**；Issue #59 CLOSED。此授权不包含 B 阶段、GHCR 发布、NAS/PVE 实机。
+
+用户针对助手紧邻申请「B 阶段架构设计与独立分支开发，仅 Portainer Web 可部署底座、注册登录和配置持久化，不包含合并、发布或 NAS/PVE 操作」回复「**批准B阶段**」，之后针对继续推进开发回复「**那你可开发啊**」。因此允许 Issue #61 / `feat/web-first-b-foundation` / Draft PR #62 独立开发、ADR 和离线 GitHub CI；仍**不授权** B 阶段验收、PR 合并 main、GHCR push/Tag/Release、真实 NAS/PVE/Portainer、生产账号/Session/SQLite/通知或 C 阶段业务集成。
+
+### 用户对首装流程的明确纠正
+
+用户明确说「**首次进入网页 是注册账号界面……让用户自己注册账号密码**」，拒绝助手擅自加入的容器日志一次性验证码。最终有效需求：容器不生成默认管理员、不生成随机账号密码、不生成授权码、不要求查看 Portainer 日志；**首次打开 Web 直接由用户自行注册用户名+密码+确认，之后只允许登录**。该用户明确纠偏**覆盖**此前 ADR 草案中的日志初始化码构想，并已更新 ADR-0019 / Issue #61 / B 分支代码、模板和测试。纯 Web 自助首次注册意味着必须限定可信局域网并及时完成首注；不能以安全为由自行改变已经明确的操作流程。

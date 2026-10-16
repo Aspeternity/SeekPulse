@@ -1,0 +1,39 @@
+# SeekPulse B-stage Web-first layout — UNRELEASED CANDIDATE, do not deploy yet.
+# After separate GHCR publishing approval, replace the image with the exact
+# verified, immutable GHCR digest; no Bot Token or password config is needed.
+#
+# Host port 8765 is mapped on all host interfaces. Only deploy on a trusted
+# home LAN behind a firewall, never with public WAN forwarding or reverse
+# proxy/TLS assumptions. First browser visitor can create the sole admin.
+services:
+  seekpulse:
+    image: ghcr.io/aspeternity/seekpulse:web-first-b-NOT-PUBLISHED
+    init: true
+    restart: unless-stopped
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    stop_grace_period: 30s
+    tmpfs:
+      - /tmp:rw,nosuid,nodev,noexec,size=32m
+    ports:
+      - "8765:8765/tcp"
+    volumes:
+      - type: volume
+        source: seekpulse_web_first_data
+        target: /app/data
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "from urllib.request import urlopen; r=urlopen('http://127.0.0.1:8765/healthz',timeout=3); assert r.status==200"
+      start_period: 30s
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  seekpulse_web_first_data:
