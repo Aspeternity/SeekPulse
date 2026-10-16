@@ -22,15 +22,11 @@ def main() -> None:
     store = WebFirstStore(data_dir)
     # Hold the lock for the entire Web process lifetime; no second writer.
     with database_owner_lock(store.path):
-        setup_code = store.prepare_locked()
-        if setup_code is not None:
-            # Intentional one-time secret delivery for *Portainer administrators*.
-            # Never include this code in an HTTP response or checked-in config.
-            print("SeekPulse first-time setup: open http://<NAS-LAN-IP>:%d/register" % port, flush=True)
-            print("SEEKPULSE_FIRST_ADMIN_CODE=" + setup_code, flush=True)
-            print("Copy this one-time code from the Portainer container logs.", flush=True)
+        store.prepare_locked()
+        if store.admin_exists():
+            print("SeekPulse Web ready. Sign in with your registered account.", flush=True)
         else:
-            print("SeekPulse Web administrator configured; opening login.", flush=True)
+            print("SeekPulse Web ready. Open /register to create your own administrator account.", flush=True)
 
         import uvicorn
 
