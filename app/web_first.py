@@ -172,12 +172,11 @@ def create_web_first_app(store: WebFirstStore) -> FastAPI:
         username = form.get("username")
         password = form.get("password")
         confirm = form.get("confirm")
-        code = form.get("setup_code")
         if (not isinstance(password, str) or not isinstance(confirm, str)
                 or not hmac.compare_digest(password, confirm)
-                or not store.create_admin(username, password, code)):
+                or not store.create_admin(username, password)):
             auth.login_failure(peer)
-            return guest_page(request, register=True, error="注册信息或初始化码无效")
+            return guest_page(request, register=True, error="用户名或密码无效，或管理员已完成注册")
         auth.login_success(peer)
         auth.revoke(current_token(request))
         response = response_redirect("/login")
