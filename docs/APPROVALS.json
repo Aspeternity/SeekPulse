@@ -836,7 +836,8 @@
       ],
       "not_authorized": [
         "Reintroduce setup-token/code via another name",
-        "Require Compose environment secrets or command-line init before Web registration"
+        "Require Compose environment secrets or command-line init before Web registration",
+        "PR #62 merge main or B stage acceptance without separate explicit user approval"
       ],
       "source": "User corrective instruction and ADR-0019/Issue #61 updates"
     }
