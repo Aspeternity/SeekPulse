@@ -1,13 +1,15 @@
 # SeekPulse — AI 与人工协同开发总规则
 
-> **必须先读本文件。** 本文件适用于 ChatGPT、Claude、Gemini、人类开发者以及自动化编码代理。`CLAUDE.md` 和 `GEMINI.md` 只负责指向本文件，不建立第二套规则。
+> **必须先读本文件。** 本文件适用于 ChatGPT、Claude、Gemini、人类开发者及自动化编码代理；`CLAUDE.md` 和 `GEMINI.md` 仅指向本文件。每次开工须从 GitHub 独立恢复当次项目状态，不能以静态摘要取代最新 Issue/PR/CI/用户审批。
 
-## 0. 当前授权边界（最高优先级）
+## 0. 当前授权边界（2026-10-16 Web-first B）
 
-- **2026-10-16 已核实 main**：SeekPulse V1.1 S7 Docker-01～11 均已各自离线阶段验收、分别授权 Squash Merge；Docker-11 [Issue #52](https://github.com/Aspeternity/SeekPulse/issues/52) CLOSED / [PR #53](https://github.com/Aspeternity/SeekPulse/pull/53) MERGED。**main `cf5f6010ff45c2511c2343f2466c63538397fdea`**，[postmerge G0 #38787500228](https://github.com/Aspeternity/SeekPulse/actions/runs/38787500228) 4/4 PASS。前一 PR 源 HEAD `eb98fdc...` 与 main 的 Git tree 完全一致，但源码 commit/revision label 不同，旧扫描不能冒充新 main 的完整发行候选证据。
-- **新增且仅有的 R3-0 权限**：用户紧邻明确申请「是否批准进入 R3-0？」回复原话 **「批准」**。该申请明确只含 **GHCR RC 正式发行候选方案设计及离线验证**：用新 main 精确 SHA 原生 AMD64/ARM64 本地完整镜像安全扫描、Trivy OS+PyPI/CycloneDX/SBOM、精确来源核验、未来实际发布字节/签名/回滚次序设计；不允许真正推送/签名/Tag/Release/用户 Docker 实机。当前唯一写入者 ChatGPT，[R3-0 Issue #54](https://github.com/Aspeternity/SeekPulse/issues/54)，独立 `research/s7-r3-0-main-candidate-offline` 分支/Draft PR，沿用 [ADR-0018](docs/decisions/ADR-0018-v11-final-ghcr-release-supply-chain.md) 与 [R3-0 离线核验计划](docs/research/S7-R3-0-main-candidate-offline.md)。**阶段验收与 PR Ready/Squash Merge 仍分别需要新授权**。
-- **发布硬阻断保持**：GHCR `NOT_PUBLISHED`、`release_ready=false`、`release_authorized=false`、`manual_release_security_review_completed=false`、`remote_index_digest=null`；没有可信远端 SeekPulse index/signature/attestation/Tag/Release/用户 NAS/PVE/群晖/Portainer 实机验证。历史 Docker-11 native 双平台 CVE 0 只是当次本地扫描公开 DB 的观测。旧 Debian Trixie 8 个不同 High 是另一历史镜像，不能声称在 Debian 已修好。
-- **当前禁区**：无权 GHCR login/push、`packages:write`、`id-token:write`、真正 Sigstore/cosign 签名/attestation、Git Tag/Release、上传完整本地扫描/OCI artifact、访问用户现有 NAS/PVE/Portainer/群晖/VPS 或生产 SQLite/Session/Token/备份、真实 TG/Bark/ntfy 通知、48–72h/Gate D–G；不得凭 CI 自动解除发行阻断。父 [S7 Issue #16](https://github.com/Aspeternity/SeekPulse/issues/16) 必须保持 **OPEN/status:blocked**。当前唯一下一验收闸门：R3-0 离线方案/验证成果阶段验收；之后再单独申请 PR 合并，真实 GHCR 发行与 NAS/PVE 部署须后续独立分段授权。
+- **最新已核实 main**：`0fc92f9ad3ad57eb1153f15666ab1c054632da94`；Web-first A 阶段 V4 已获用户 UI 验收「符合预期」，[PR #60](https://github.com/Aspeternity/SeekPulse/pull/60) 获单独授权 Squash Merge、[postmerge G0 #38885495278](https://github.com/Aspeternity/SeekPulse/actions/runs/38885495278) 4/4 PASS，[Issue #59](https://github.com/Aspeternity/SeekPulse/issues/59) CLOSED。
+- **当前唯一新增开发权限**：用户明确回复「批准B阶段」「那你可开发啊」，对应 **Issue [#61](https://github.com/Aspeternity/SeekPulse/issues/61)、独立 `feat/web-first-b-foundation` 分支、Draft [PR #62](https://github.com/Aspeternity/SeekPulse/pull/62)**，ChatGPT 唯一写入；仅允许 B 阶段的 Portainer 单容器 Web-first 入口、独立管理员注册登录、持久化数据库及离线测试、ADR/交接维护。**未批准** B 阶段人工验收、PR Ready/合并、发行 GHCR 镜像、访问 NAS/PVE/群晖/Portainer 实机、真通知或进入 C 阶段。
+- **用户特别纠偏（最高优先级）**：首次打开 Web **直接显示用户自己填写用户名、密码、确认密码的注册页**；注册成功后跳到独立登录页，此后关闭公开注册。**不得**自动生成管理员账号密码、一次性验证码/初始化码、要求用户查看容器日志或额外安装向导。采用可信局域网内首位注册者成为唯一管理员的模型；默认不暴露公网。
+- **用户批准的 Web-first 架构**：Portainer/Docker → Web 配置管理中心 → 统一配置服务/运行管理器 → RSS/TG、规则与 Telegram Bot/Bark/ntfy → SQLite/受保护配置。RSS 与 TG 各自启停，双源协同时复用统一帖子/去重/恢复算法；Bot 可选且启用后支持通知和命令管理。B 先实现独立 Web 底座，完整来源/通知接入留 C。
+- **原 V1.1 RC1 已发布为 prerelease，未获用户真实 NAS/PVE/Portainer 稳定版验收**；旧 R3/Docker-01～11 的 Issue/PR/ADR 是历史证据，不是 B 阶段扩权。父 S7 #16 的剩余实机闸门需实时核实，不能自行关闭。现有 `app.v11_main`、原镜像和生产 SQLite 协议在 B 中保持不动。
+- **下一道审批**：B 阶段最新 PR 精确 HEAD 的 GitHub CI 全绿、离线镜像与安全/恢复回归完成后，**单独请求用户 B 阶段开发成果验收**；通过后**再单独请求 PR #62 Ready/Squash Merge + postmerge CI**。镜像发布、现有 NAS/PVE 部署、C 阶段另批。若与此静态段落冲突，以更新的 GitHub Issue、提交、CI 和用户明确审批为准。
 
 ## 1. 开工前必须执行的核验
 
