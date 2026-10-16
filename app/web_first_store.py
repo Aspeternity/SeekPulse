@@ -68,6 +68,13 @@ class WebFirstStore:
                 )}
                 if not {"web_admin", "web_preferences"}.issubset(tables):
                     raise UnsafeWebFirstData("web_first_missing_schema")
+                # A forged/partial database must not be accepted just because
+                # it has the expected table names and PRAGMA user_version.
+                conn.execute(
+                    "SELECT id, username, password_digest, created_at "
+                    "FROM web_admin LIMIT 0"
+                )
+                conn.execute("SELECT name,value FROM web_preferences LIMIT 0")
                 count = conn.execute("SELECT COUNT(*) FROM web_admin").fetchone()[0]
                 if count not in (0, 1):
                     raise UnsafeWebFirstData("web_first_invalid_administrator")
@@ -137,6 +144,11 @@ class WebFirstStore:
         This method is called while the process holds the database owner lock.
         """
         self._check_directory()
+        # Never run on a shared/legacy volume or implicitly replay unexpected
+        # journal, WAL, migration and staging files after a previous crash.
+        allowed = {self.path.name, self.path.name + ".owner.lock"}
+        if set(os.listdir(self.directory)) - allowed:
+            raise UnsafeWebFirstData("web_first_unexpected_data_in_volume")
         if os.path.lexists(self.path):
             self._read_only_check()
         else:
