@@ -142,9 +142,6 @@ class WebFirstStore:
         else:
             self._initialize_new_locked()
             self._read_only_check()
-        # The rejected log-code design must not be carried forward.
-        if os.path.lexists(self.directory / ".setup-code"):
-            raise UnsafeWebFirstData("web_first_obsolete_setup_code_present")
 
     def _connect(self) -> sqlite3.Connection:
         # Never allow sqlite3.connect() to silently create a missing database.
