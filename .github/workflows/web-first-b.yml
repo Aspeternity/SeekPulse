@@ -12,6 +12,8 @@ on:
       - 'Dockerfile.web-first'
       - 'compose.web-first.yaml'
       - 'requirements-web-first.txt'
+      - 'docs/deployment/WEB_FIRST_B.md'
+      - 'docs/decisions/ADR-0019-web-first-portainer-admin-bootstrap.md'
       - '.github/workflows/web-first-b.yml'
   workflow_dispatch:
 
