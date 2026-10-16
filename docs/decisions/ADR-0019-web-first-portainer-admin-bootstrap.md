@@ -14,11 +14,16 @@ V1.1 RC1 的 `app.v11_main` 在 Web 之前构建 Telegram Bot，`compose.v11.yam
 2. **Portainer 初装**：新增 `Dockerfile.web-first` 和 `compose.web-first.yaml`（**仅为未来授权后构建/部署的示例**），使用已在 CI 证实的 Linux 非 root uid/gid 10001、只读 rootfs、限制 capabilities、不挂 Docker socket、Docker 管理**命名卷**，网络用 bridge + Web TCP 端口映射，默认 HTTP 局域网访问。不得复用旧生产卷；不得将旧 `compose.v11.yaml` 变成静默新入口。用户只需在 Portainer 部署一份 Compose；不要求填 Bot Token、TG API、Bark/ntfy Secret、管理员密码哈希或运行 init CLI。
 3. **独立 SQLite 管理域**：在新专用数据卷内使用 `web-first.sqlite`（管理员摘要、非敏感 Web 偏好、schema 版本）。保留旧 `bot.db` 与 `s3/s4` 等表协议；**B 不宣称已迁移或连接旧业务历史**。C 阶段需独立 ADR 确定与可靠投递核心/新凭据存储的适配或迁移；不能同时存在两套实际规则的写入者。
 4. **安全的新安装检查**：启动只在明确空白且具备正确权限的私有目录创建新 DB；先获取 Linux 独占锁，检查非符号链接、数据库侧车和任何未知对象，随机私有暂存、SQLite schema 创建 + 校验、同卷 atomic no-clobber hardlink 发布。已存在、损坏、schema 不符、旧库误挂载或中断遗留 staging 均 **fail closed**，不删除、不重建、不直接迁移。已创建且完整的 B 库重启直接校验复用。
-5. **管理员注册与防抢注**：系统首次缺失管理员时自动生成随机一次性初始化码，只将其以 `0600` 文件保存在专用卷、向容器日志提示如何在 Portainer 获取；首次独立 `/register` 页面填写用户名、密码、确认及该码。只有匹配随机码、有效 CSRF、未限流且不存在管理员时才在 SQLite 单事务创建唯一管理员；创建后删除一次性码，并永久关闭公开注册入口。重启未完成注册可以复用原码，不暴露于网页响应/业务日志。容器日志可被 Portainer 管理员读取这一点是可信边界，日志访问应视为管理权限；不要求每次输入初装码。
+5. **首次 Web 自助注册（用户明确要求）**：部署容器后首次浏览器访问即进入独立 `/register` 页面，由用户自己填写用户名、密码和确认密码创建唯一管理员；注册完成进入 `/login`，以后只允许登录。**不得在容器启动时生成默认账号、初始密码、验证码、一次性初始化码；不得要求用户查看 Portainer 容器日志、执行额外命令或往 Compose 设置管理员凭据。** 管理员 ID=1 的单行约束加 SQLite `BEGIN IMMEDIATE` 事务确保并发情况下最多一个账号注册成功；有效 CSRF 和基础限流仍保留。部署者需要在可信局域网内及时完成首次注册。
+
 6. **认证**：复用 `app.web_auth.password_hash/check_password` 的 scrypt 协议与 `WebAuth` 的内存会话/CSRF/按客户端限流，移除对 TG 用户 ID 的要求；Web 用户名和 scrypt hash 存在私有 SQLite，明文密码不落盘、不回显、不进 Compose，重启注销旧会话；首次注册与登录为不同页面。受保护的 POST 检查 Origin+CSRF+大小限制，并设置 SameSite/HttpOnly cookie、安全响应头与登录失败限流。系统配置可以在 Web 修改且重启保留。
-7. **局域网访问而非公网安全假设**：容器监听 `0.0.0.0` **仅在容器命名空间**，通过 Compose 8765/tcp 映射到宿主机供家庭 LAN 使用；默认 HTTP，没有 TLS，**只适合可信局域网和防火墙阻止 WAN 的部署**。不默认支持公网直连。Host 应限于 IP literal、`localhost`，拒绝恶意 Forwarded/X-Forwarded 和 DNS rebinding host；未来 HTTPS 反向代理需另审网络信任与 `Secure` cookie，不为减少 Compose 行数牺牲认证。验证码是防止首装抢注的必要一次性步骤，但无需用户提前设置环境变量。
+7. **局域网访问而非公网安全假设**：容器监听 `0.0.0.0` **仅在容器命名空间**，通过 Compose 8765/tcp 映射到宿主机供家庭 LAN 使用；默认 HTTP，没有 TLS，**只适合可信局域网和防火墙阻止 WAN 的部署**。不默认支持公网直连。Host 应限于 IP literal、`localhost`，拒绝恶意 Forwarded/X-Forwarded 和 DNS rebinding host；未来 HTTPS 反向代理需另审网络信任与 `Secure` cookie，不为减少 Compose 行数牺牲认证。按用户批准的自助注册方案，首位成功注册的局域网访问者将拥有管理员权限；纯 Web 首注无法证明访客就是 Portainer 所有者，因此必须提醒用户不要把未初始化的管理端口暴露到不受信任网络，不擅自增加验证码或额外初始化步骤。
 8. **UI B 阶段边界**：沿用 V4 的六大入口和设置四顶部分类，独立注册/登录真实可用。概览、来源、规则、渠道和历史未接入的部分明确显示“待 C/D 阶段接入”，不提供会假装成功的生产开关或推送测试。B 仅持久化少量非敏感 Web 偏好、账户修改、退出、状态观测；完整 Bot/Telethon/Bark/ntfy 凭据的写入、运行动态应用和历史接入归 C/D 阶段。
 9. **部署和回滚**：GitHub CI 可离线 build `Dockerfile.web-first`、模拟网络禁用与 SQLite/HTTP 客户端；B 实机部署须单独授权。PR 未合并可直接关闭分支回滚；未来已经初始化的 B 数据卷不得让旧 RC1 启动或盲目覆盖，版本降级需兼容性验证与有校验的备份后停机切换。
+
+## 用户纠偏与优先级
+
+用户于 B 阶段开始后再次明确强调：「首次进入网页，是注册账号界面，让用户自己注册账号密码」。原稿擅自引入日志一次性码属于需求误读，**已撤销，不能据此恢复类似操作**。该用户要求优先于此前由助手自行拟定的「防抢注」实现方案。
 
 ## 验收分界
 
