@@ -57,8 +57,8 @@ jobs:
     timeout-minutes: 30
     env:
       IMAGE: seekpulse-web-first-b-ci:${{ github.run_id }}
-      CONTAINER: seekpulse-b-ci-${{ github.run_id }}
-      VOLUME: seekpulse-b-data-ci-${{ github.run_id }}
+      PROJECT: seekpulse-b-ci-${{ github.run_id }}
+      CI_COMPOSE: compose.web-first.ci.yaml
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
@@ -88,16 +88,24 @@ jobs:
           docker build --pull=false -f Dockerfile.web-first \
             --build-arg SEEKPULSE_BUILD_REVISION=${{ github.event.pull_request.head.sha || github.sha }} \
             -t "$IMAGE" .
-      - name: Fresh Docker volume, registration, login and preferences
+      - name: Real Compose Stack install, registration, restart and persistence
         run: |
           set -euo pipefail
-          docker volume create "$VOLUME"
-          docker run --detach --init --name "$CONTAINER" \
-            --read-only --cap-drop ALL --security-opt no-new-privileges \
-            --tmpfs /tmp:rw,nosuid,nodev,noexec,size=32m \
-            -p 127.0.0.1:18765:8765 \
-            -v "$VOLUME":/app/data \
-            "$IMAGE"
+          python3 - <<'PY'
+          from pathlib import Path
+          import os
+          src=Path("compose.web-first.yaml").read_text()
+          placeholder="ghcr.io/aspeternity/seekpulse:web-first-b-NOT-PUBLISHED"
+          assert src.count(placeholder)==1
+          assert src.count('"8765:8765/tcp"')==1
+          # Exact published Stack contract, differing ONLY by an unpublished
+          # local CI image and loopback-only CI port to avoid WAN exposure.
+          ci=src.replace(placeholder, os.environ["IMAGE"])
+          ci=ci.replace('"8765:8765/tcp"', '"127.0.0.1:18765:8765/tcp"')
+          Path(os.environ["CI_COMPOSE"]).write_text(ci)
+          PY
+          docker compose -p "$PROJECT" -f "$CI_COMPOSE" config -q
+          docker compose -p "$PROJECT" -f "$CI_COMPOSE" up -d --no-build
           for i in $(seq 1 35); do
             if curl --silent --fail --max-time 2 http://127.0.0.1:18765/healthz > /dev/null; then
               break
@@ -105,9 +113,11 @@ jobs:
             sleep 1
           done
           curl --fail --silent http://127.0.0.1:18765/healthz > /dev/null
-          docker exec "$CONTAINER" python -c 'import os,stat; s=os.stat("/app/data"); assert s.st_uid==os.getuid()==10001; assert stat.S_IMODE(s.st_mode)==0o700'
+          CID="$(docker compose -p "$PROJECT" -f "$CI_COMPOSE" ps -q seekpulse)"
+          test -n "$CID"
+          docker exec "$CID" python -c 'import os,stat; s=os.stat("/app/data"); assert s.st_uid==os.getuid()==10001; assert stat.S_IMODE(s.st_mode)==0o700'
           python3 scripts/web_first_docker_smoke.py first http://127.0.0.1:18765
-          docker restart "$CONTAINER"
+          docker compose -p "$PROJECT" -f "$CI_COMPOSE" restart
           for i in $(seq 1 35); do
             if curl --silent --fail --max-time 2 http://127.0.0.1:18765/healthz > /dev/null; then
               break
@@ -115,10 +125,12 @@ jobs:
             sleep 1
           done
           python3 scripts/web_first_docker_smoke.py restarted http://127.0.0.1:18765
-          test -z "$(docker logs "$CONTAINER" 2>&1 | grep -E 'FIRST_ADMIN_CODE|setup_code|初始化码|secret token' || true)"
-          echo WEB_FIRST_REAL_DOCKER_COLD_START_AND_RESTART=PASS
-      - name: Clean up isolated CI container/volume
+          test -z "$(docker logs "$CID" 2>&1 | grep -E 'FIRST_ADMIN_CODE|setup_code|初始化码|secret token' || true)"
+          echo WEB_FIRST_REAL_COMPOSE_COLD_START_AND_RESTART=PASS
+      - name: Clean up isolated CI Compose Stack and data volume
         if: always()
         run: |
-          docker rm -f "$CONTAINER" || true
-          docker volume rm -f "$VOLUME" || true
+          if test -f "$CI_COMPOSE"; then
+            docker compose -p "$PROJECT" -f "$CI_COMPOSE" down -v --remove-orphans || true
+            rm -f "$CI_COMPOSE"
+          fi
