@@ -52,6 +52,14 @@
 @media(max-width:760px){.settingsShell{grid-template-columns:1fr;gap:14px}.settingsNav{display:none}.settingsMobilePick{display:grid;gap:7px;margin-bottom:12px}.settingsMobilePick label{font-size:11px;font-weight:700;color:var(--muted)}.settingsMobilePick select{background:var(--panel);min-height:42px}.settingsPaneHead h2{font-size:20px}.sidebar{transform:translateX(calc(-100% - 16px));transition:none}.sidebar.open{transition:transform .18s ease}.toolbar .trail{min-width:0;flex:1;white-space:nowrap;overflow:hidden}.toolbar .trail>span{display:none}.toolbar .trail .slash{display:none}.toolbar .trail strong{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}.toolbar .right{gap:6px;flex:0 0 auto}.toolbar .right .pill{display:none}.toolbar .avatar{display:none}#openWizard,#logoutButton{display:none}.demoRibbon .detail{display:none}.demoRibbon{padding:10px 12px}}
 @media(max-width:520px){.settingsRow{grid-template-columns:1fr;gap:10px;padding:16px}.settingsRowControl{justify-content:flex-start;text-align:left}.settingsRowControl select{width:100%;max-width:none}.settingsGroupHead{padding:17px 16px 14px}.settingsActions{padding:14px 16px}.settingsNavItem{min-width:104px}.settingsPaneHead{margin-bottom:17px}}
 
+
+/* Shared visual polish: coherent navigation glyphs and quiet action banner. */
+.navIco{display:inline-flex;align-items:center;justify-content:center;width:19px;height:20px;flex:0 0 19px}
+.navIco svg{display:block;width:18px;height:18px}
+.setupCall{padding:17px 20px;border:1px solid var(--border);border-left:3px solid var(--primary);background:var(--panel);color:var(--ink);box-shadow:none}
+.setupCall strong{font-size:14px;color:var(--ink)}
+.setupCall p{color:var(--muted);line-height:1.6}
+.setupCall .btn{background:var(--primaryWash);color:var(--primary);border-color:transparent}
 </style>
 </head>
 <body data-theme="light">
@@ -62,15 +70,15 @@
  <div class="brand"><div class="brandLogo" aria-hidden="true">⌁</div><div class="brandText"><strong>SeekPulse</strong><small>NodeSeek Monitor</small></div></div>
  <div class="navLabel caps">工作台</div>
  <nav class="nav" id="navPrimary">
-  <button data-page="overview" class="active"><span class="navIco">▦</span>运行概览</button>
-  <button data-page="sources"><span class="navIco">⌁</span>监控来源</button>
-  <button data-page="rules"><span class="navIco">☷</span>关键词规则</button>
-  <button data-page="notifications"><span class="navIco">♧</span>通知管理</button>
-  <button data-page="history"><span class="navIco">◷</span>推送历史</button>
+  <button data-page="overview" class="active"><span class="navIco"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="8" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="15" width="7" height="6" rx="1.5"/></svg></span>运行概览</button>
+  <button data-page="sources"><span class="navIco"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="19" r="1.3"/><path d="M4 12a8 8 0 0 1 8 8M4 5a15 15 0 0 1 15 15"/></svg></span>监控来源</button>
+  <button data-page="rules"><span class="navIco"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6h12M9 12h12M9 18h12M3 6h1M3 12h1M3 18h1"/></svg></span>关键词规则</button>
+  <button data-page="notifications"><span class="navIco"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg></span>通知管理</button>
+  <button data-page="history"><span class="navIco"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l4 2"/></svg></span>推送历史</button>
  </nav>
  <div class="navLabel caps">管理</div>
  <nav class="nav" id="navAdmin">
-  <button data-page="settings"><span class="navIco">⚙</span>系统设置</button>
+  <button data-page="settings"><span class="navIco"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="2" fill="var(--nav)"/><circle cx="15" cy="17" r="2" fill="var(--nav)"/></svg></span>系统设置</button>
  </nav>
  <div class="sidebarBottom"><div class="pilot"><div class="pilotRing">A</div><div><strong style="font-size:12px">演示管理员</strong><small>产品原型 · 无真实账号</small></div></div></div>
 </aside>
