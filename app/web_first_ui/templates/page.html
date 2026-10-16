@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>{{ title }} · SeekPulse</title>
+  <link rel="stylesheet" href="/assets/web-first.css">
+</head>
+<body class="{{ 'dark' if prefs.theme == 'dark' else '' }}">
+  <div class="layout">
+    <aside class="sidebar" aria-label="SeekPulse 主导航">
+      <a class="brand" href="/">
+        <span class="brand-mark" aria-hidden="true">⌁</span>
+        <span><strong>SeekPulse</strong><small>NodeSeek Monitor</small></span>
+      </a>
+      <p class="nav-label">工作台</p>
+      <nav class="primary-nav" aria-label="功能导航">
+        <a class="{{ 'active' if page == 'overview' else '' }}" href="/"><span aria-hidden="true">▦</span>运行概览</a>
+        <a class="{{ 'active' if page == 'sources' else '' }}" href="/sources"><span aria-hidden="true">◔</span>监控来源</a>
+        <a class="{{ 'active' if page == 'rules' else '' }}" href="/rules"><span aria-hidden="true">☷</span>关键词规则</a>
+        <a class="{{ 'active' if page == 'channels' else '' }}" href="/channels"><span aria-hidden="true">♧</span>通知管理</a>
+        <a class="{{ 'active' if page == 'history' else '' }}" href="/history"><span aria-hidden="true">◷</span>推送历史</a>
+      </nav>
+      <p class="nav-label">管理</p>
+      <nav class="primary-nav" aria-label="管理导航">
+        <a class="{{ 'active' if page == 'settings' else '' }}" href="/settings"><span aria-hidden="true">⚙</span>系统设置</a>
+      </nav>
+      <div class="sidebar-bottom"><span class="avatar">{{ admin_name[:1] | upper }}</span><div><strong>{{ admin_name }}</strong><small>Web 管理员</small></div></div>
+    </aside>
+    <div class="main">
+      <header class="toolbar">
+        <div class="breadcrumb"><span>SeekPulse</span><span class="slash">/</span><strong>{{ title }}</strong></div>
+        <div class="toolbar-right">
+          <span class="badge neutral">B 阶段 · 开发中</span>
+          <form action="/logout" method="post">
+            <input type="hidden" name="_csrf" value="{{ csrf }}">
+            <button type="submit" class="button small">退出登录</button>
+          </form>
+        </div>
+      </header>
+      <main class="content">
+        {% if info == 'saved' %}<p role="status" class="notice success">设置已保存到持久化数据库。</p>{% elif info == 'password-error' %}<p role="alert" class="notice error">原密码错误或新密码不符合要求，请重新尝试。</p>{% endif %}
+
+        {% if page == 'settings' %}
+        <div class="page-heading"><h1>系统设置</h1><p>管理个人偏好、账号安全、数据和系统维护。</p></div>
+        <nav class="settings-tabs" role="tablist" aria-label="设置分类">
+          <a href="/settings?tab=general" role="tab" aria-selected="{{ 'true' if tab == 'general' else 'false' }}" class="{{ 'selected' if tab == 'general' else '' }}">常规</a>
+          <a href="/settings?tab=account" role="tab" aria-selected="{{ 'true' if tab == 'account' else 'false' }}" class="{{ 'selected' if tab == 'account' else '' }}">账户安全</a>
+          <a href="/settings?tab=data" role="tab" aria-selected="{{ 'true' if tab == 'data' else 'false' }}" class="{{ 'selected' if tab == 'data' else '' }}">数据备份</a>
+          <a href="/settings?tab=maintenance" role="tab" aria-selected="{{ 'true' if tab == 'maintenance' else 'false' }}" class="{{ 'selected' if tab == 'maintenance' else '' }}">系统维护</a>
+        </nav>
+
+        {% if tab == 'general' %}
+          <section class="panel">
+            <div class="panel-heading"><h2>界面偏好</h2><p>这些设置已经可以保存，并在容器重启后保留。</p></div>
+            <form action="/settings/preferences" method="post">
+              <input type="hidden" name="_csrf" value="{{ csrf }}">
+              <div class="setting-row"><div><strong>外观主题</strong><p>选择浅色或深色界面。</p></div>
+                <select name="theme" aria-label="外观主题"><option value="light" {{ 'selected' if prefs.theme == 'light' else '' }}>浅色</option><option value="dark" {{ 'selected' if prefs.theme == 'dark' else '' }}>深色</option></select>
+              </div>
+              <div class="setting-row"><div><strong>默认打开页面</strong><p>下次登录后首先进入的页面。</p></div>
+                <select name="home" aria-label="默认首页"><option value="overview" {{ 'selected' if prefs.home == 'overview' else '' }}>运行概览</option><option value="rules" {{ 'selected' if prefs.home == 'rules' else '' }}>关键词规则</option></select>
+              </div>
+              <div class="setting-actions"><button class="button primary" type="submit">保存偏好</button></div>
+            </form>
+          </section>
+          <p class="context-hint">监控采集和通知功能的设置将在后续阶段分别放在「监控来源」和「通知管理」，不会重复堆到系统设置里。</p>
+
+        {% elif tab == 'account' %}
+          <section class="panel">
+            <div class="panel-heading"><h2>管理员账户</h2><p>账号仅用于 Web 登录，与 Telegram 用户 ID 无关。</p></div>
+            <div class="setting-row"><div><strong>当前账号</strong><p>唯一的本地管理员。</p></div><span class="account-name">{{ admin_name }}</span></div>
+            <div class="setting-row"><div><strong>公开注册</strong><p>完成首次初始化后永久关闭公共注册入口。</p></div><span class="badge success">已关闭</span></div>
+          </section>
+          <section class="panel">
+            <div class="panel-heading"><h2>修改密码</h2><p>密码修改后，所有当前 Web 会话都会失效。</p></div>
+            <form action="/settings/password" method="post" class="password-form">
+              <input type="hidden" name="_csrf" value="{{ csrf }}">
+              <label for="old_password">当前密码</label><input type="password" id="old_password" name="old_password" required autocomplete="current-password">
+              <label for="new_password">新密码（12 字符以上）</label><input type="password" id="new_password" name="new_password" required minlength="12" maxlength="512" autocomplete="new-password">
+              <label for="confirm">确认新密码</label><input type="password" id="confirm" name="confirm" required minlength="12" maxlength="512" autocomplete="new-password">
+              <button class="button primary" type="submit">更新密码并退出</button>
+            </form>
+          </section>
+
+        {% elif tab == 'data' %}
+          <section class="panel">
+            <div class="panel-heading"><h2>数据存储</h2><p>管理配置已通过 SQLite 持久化，原 RSS/Bot 业务库尚未接入此控制面。</p></div>
+            <div class="setting-row"><div><strong>Web 配置数据库</strong><p>web-first.sqlite · 独立管理域。</p></div><span class="badge success">正常</span></div>
+            <div class="setting-row"><div><strong>专用数据卷</strong><p>由 Docker/Portainer 自动管理。</p></div><span class="badge neutral">已挂载</span></div>
+          </section>
+          <section class="panel">
+            <div class="panel-heading"><h2>备份与恢复</h2><p>一致性备份、校验和受控恢复将于 D 阶段接入。</p></div>
+            <p class="context-hint inset">此处不会提供无效的「备份成功」按钮。不要复制运行中的数据库文件充当可靠备份。</p>
+          </section>
+
+        {% else %}
+          <section class="panel">
+            <div class="panel-heading"><h2>运行状态与诊断</h2><p>各功能不再是 Web 启动的前置条件。</p></div>
+            <div class="setting-row"><div><strong>Web 管理中心</strong><p>当前认证及偏好存储已连接。</p></div><span class="badge success">可用</span></div>
+            <div class="setting-row"><div><strong>RSS / TG 采集引擎</strong><p>运行管理器将在 C 阶段接入。</p></div><span class="badge neutral">尚未接入</span></div>
+            <div class="setting-row"><div><strong>Telegram Bot / Bark / ntfy</strong><p>后续可分别启用、测试与管理。</p></div><span class="badge neutral">尚未接入</span></div>
+          </section>
+          <section class="panel">
+            <div class="panel-heading"><h2>日志与版本</h2><p>日志偏好可保存；实际运行日志管理留到 D 阶段。</p></div>
+            <form action="/settings/log-level" method="post">
+              <input type="hidden" name="_csrf" value="{{ csrf }}">
+              <div class="setting-row"><div><strong>日志级别</strong><p>仅保存 Web 管理偏好，不会改变尚未接入的采集器。</p></div>
+                <select name="log_level" aria-label="日志级别"><option {{ 'selected' if prefs.log_level == 'INFO' else '' }}>INFO</option><option {{ 'selected' if prefs.log_level == 'WARNING' else '' }}>WARNING</option><option {{ 'selected' if prefs.log_level == 'DEBUG' else '' }}>DEBUG</option></select>
+              </div>
+              <div class="setting-actions"><button class="button primary" type="submit">保存日志偏好</button></div>
+            </form>
+            <div class="setting-row"><div><strong>当前开发阶段</strong><p>未发布的 Web-first B 分支，不代表新的正式镜像。</p></div><span class="badge neutral">B · 开发中</span></div>
+          </section>
+        {% endif %}
+
+        {% else %}
+          <div class="page-heading"><h1>{{ title }}</h1><p>
+            {% if page == 'overview' %}欢迎使用 SeekPulse。Web 管理底座已连接，采集与通知功能正逐阶段接入。
+            {% elif page == 'sources' %}RSS 和 Telegram 频道将支持独立启停，也能同时协同采集。
+            {% elif page == 'rules' %}关键词、组合规则与通知路由将在 C/D 阶段接入同一业务服务。
+            {% elif page == 'channels' %}Telegram Bot、Bark 和 ntfy 都是可选通知方式，启用 Bot 后仍保留命令管理。
+            {% else %}将展示通知历史、投递状态和错误原因。{% endif %}</p></div>
+          {% if page == 'overview' %}
+            <div class="metric-grid">
+              <div class="metric"><small>Web 管理中心</small><strong>正常</strong><span>管理员认证已启用</span></div>
+              <div class="metric"><small>监控来源</small><strong>未接入</strong><span>待 C 阶段接入</span></div>
+              <div class="metric"><small>通知渠道</small><strong>未接入</strong><span>无需先配置 Telegram Bot</span></div>
+            </div>
+          {% elif page == 'sources' %}
+            <div class="card-grid">
+              <section class="panel"><div class="panel-heading"><h2>RSS 来源</h2><p>无需 Telegram 账号。</p></div><span class="badge neutral">待 C 阶段接入</span></section>
+              <section class="panel"><div class="panel-heading"><h2>Telegram 频道来源</h2><p>使用普通 Telegram 账号（Telethon），与 Bot 独立。</p></div><span class="badge neutral">待 C 阶段接入</span></section>
+            </div>
+          {% elif page == 'channels' %}
+            <div class="card-grid">
+              <section class="panel"><div class="panel-heading"><h2>Telegram Bot</h2><p>通知及 /start、/keywords 等管理命令。</p></div><span class="badge neutral">待 C 阶段接入</span></section>
+              <section class="panel"><div class="panel-heading"><h2>Bark / ntfy</h2><p>可单独启用，不依赖 Telegram Bot。</p></div><span class="badge neutral">待 C 阶段接入</span></section>
+            </div>
+          {% else %}
+            <section class="panel empty-state"><h2>尚无可展示数据</h2><p>当前阶段不会伪造关键词规则、通知记录或向真实平台发信。</p><span class="badge neutral">等待业务引擎接入</span></section>
+          {% endif %}
+          <p class="context-hint">B 阶段仅 Web 登录与偏好设置实际生效。来源、规则、通知和历史的业务功能将在后续阶段接入，不要求修改 Compose 来配置它们。</p>
+        {% endif %}
+      </main>
+      <footer>SeekPulse · Web-first B 控制面 · 请勿将未配置 TLS 的管理端口暴露公网</footer>
+    </div>
+  </div>
+</body>
+</html>
