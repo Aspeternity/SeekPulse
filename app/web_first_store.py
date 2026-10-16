@@ -177,7 +177,8 @@ class WebFirstStore:
         return True
 
     def check_login(self, username: str, password: str) -> bool:
-        if not isinstance(username, str) or not isinstance(password, str):
+        if (not isinstance(username, str) or not USERNAME.fullmatch(username)
+                or not isinstance(password, str) or len(password) > 512):
             return False
         with closing(self._connect()) as conn:
             row = conn.execute(
