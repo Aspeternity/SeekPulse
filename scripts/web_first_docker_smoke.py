@@ -89,7 +89,10 @@ def run(phase: str, base_url: str) -> None:
                 and "数据备份" in prefs and "系统维护" in prefs,
                 "V4 four-tab navigation must persist")
         registration, target, _ = request("/register")
-        checked(target == "/login", "after signup public registration must be closed")
+        # The redirect chain is /register -> /login -> / for an already
+        # authenticated administrator. Test that registration does not render.
+        checked(target != "/register" and "创建管理员账号" not in registration,
+                "after signup the public registration form must be closed")
     print("WEB_FIRST_DOCKER_" + phase.upper() + "=PASS")
 
 
