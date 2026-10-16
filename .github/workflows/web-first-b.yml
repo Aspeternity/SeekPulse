@@ -97,17 +97,17 @@ jobs:
             -v "$VOLUME":/app/data \
             "$IMAGE"
           for i in $(seq 1 35); do
-            if curl --silent --fail --max-time 2 http://127.0.0.1:18765/register > /dev/null; then
+            if curl --silent --fail --max-time 2 http://127.0.0.1:18765/healthz > /dev/null; then
               break
             fi
             sleep 1
           done
-          curl --fail --silent http://127.0.0.1:18765/register > /dev/null
+          curl --fail --silent http://127.0.0.1:18765/healthz > /dev/null
           docker exec "$CONTAINER" python -c 'import os,stat; s=os.stat("/app/data"); assert s.st_uid==os.getuid()==10001; assert stat.S_IMODE(s.st_mode)==0o700'
           python3 scripts/web_first_docker_smoke.py first http://127.0.0.1:18765
           docker restart "$CONTAINER"
           for i in $(seq 1 35); do
-            if curl --silent --fail --max-time 2 http://127.0.0.1:18765/login > /dev/null; then
+            if curl --silent --fail --max-time 2 http://127.0.0.1:18765/healthz > /dev/null; then
               break
             fi
             sleep 1
