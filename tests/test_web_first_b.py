@@ -284,8 +284,9 @@ class WebFirstPageContracts(unittest.IsolatedAsyncioTestCase):
             follow_redirects=False,
         )
         self.assertEqual(after_logout.status_code, 303)
-        self.assertEqual((await self.client.get("/")).headers["content-type"].split(";")[0],
-                         "text/html")
+        protected = await self.client.get("/", follow_redirects=False)
+        self.assertEqual(protected.status_code, 303)
+        self.assertEqual(protected.headers["location"], "/login")
         login_form = await self.client.get("/login")
         new_login = await self.client.post(
             "/login",
