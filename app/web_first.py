@@ -155,6 +155,13 @@ def create_web_first_app(store: WebFirstStore) -> FastAPI:
             raise HTTPException(403, "CSRF verification failed")
         return form, session
 
+    @app.get("/healthz")
+    async def health():
+        # The container health probe must not create unauthenticated sessions
+        # or reveal if the administrator has completed registration.
+        store.admin_exists()
+        return PlainTextResponse("ok")
+
     @app.get("/register")
     async def registration_page(request: Request):
         if store.admin_exists():
