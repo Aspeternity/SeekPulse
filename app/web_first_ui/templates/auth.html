@@ -11,7 +11,7 @@
     <div class="brand-mark" aria-hidden="true">⌁</div>
     <p class="eyebrow">SeekPulse · Web 管理中心</p>
     <h1>{{ '创建管理员账号' if register else '管理员登录' }}</h1>
-    <p class="muted">{% if register %}首次使用请创建独立的 Web 管理员账号。初始化码只需要填写一次，可从 Portainer 容器日志中复制。{% else %}登录后管理监控来源、规则和通知渠道。账号与 Telegram Bot 完全独立。{% endif %}</p>
+    <p class="muted">{% if register %}首次访问直接注册你自己的 Web 管理员账号，之后通过独立登录页面进入管理中心。{% else %}登录后管理监控来源、规则和通知渠道。账号与 Telegram Bot 完全独立。{% endif %}</p>
     {% if error %}<p role="alert" class="error">{{ error }}</p>{% endif %}
     <form action="{{ '/register' if register else '/login' }}" method="post" class="auth-form" autocomplete="off">
       <input type="hidden" name="_csrf" value="{{ csrf }}">
@@ -22,9 +22,7 @@
       {% if register %}
         <label for="confirm">确认密码</label>
         <input id="confirm" name="confirm" type="password" required minlength="12" maxlength="512" autocomplete="new-password">
-        <label for="setup_code">一次性初始化码</label>
-        <input id="setup_code" name="setup_code" required minlength="30" maxlength="64" autocomplete="off" spellcheck="false" placeholder="从 Portainer → 容器日志复制">
-        <p class="field-hint">注册完成后，公开注册入口自动关闭。请仅在可信局域网内设置管理员。</p>
+        <p class="field-hint">只有第一个成功注册的账号成为管理员，之后关闭注册入口。请在可信局域网部署后立即完成注册。</p>
       {% endif %}
       <button class="button primary" type="submit">{{ '创建管理员' if register else '登录管理中心' }} →</button>
     </form>
