@@ -1,0 +1,63 @@
+name: S0 Apprise Loopback Feasibility
+
+on:
+  pull_request:
+    paths:
+      - "scripts/s0_apprise_smoke.py"
+      - "tests/test_s0_apprise_smoke.py"
+      - "docs/research/S0-03-apprise.md"
+      - ".github/workflows/s0-apprise-loopback.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  apprise-loopback:
+    name: S0 Apprise pinned version loopback
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install pinned trial version
+        run: python -m pip install --disable-pip-version-check "apprise==2.0.1"
+      - name: Offline result contract tests
+        run: python -m unittest discover -s tests -p 'test_s0_apprise_smoke.py' -v
+      - name: Bark/ntfy loopback HTTP 200, 403, 429, 503 and timeout
+        run: python scripts/s0_apprise_smoke.py --output s0-apprise-loopback.json
+      - name: Emulated 1 CPU / 1 GiB memory-constrained container (not a VPS)
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/seekpulse-s003"
+          docker run --rm --cpus=1 --memory=1g --memory-swap=1g \
+            --mount "type=bind,source=$GITHUB_WORKSPACE,target=/src,readonly" \
+            --mount "type=bind,source=$RUNNER_TEMP/seekpulse-s003,target=/result" \
+            --workdir /src python:3.12-slim sh -eu -c '
+              python -m pip install --disable-pip-version-check "apprise==2.0.1" >/dev/null
+              python -m unittest discover -s tests -p test_s0_apprise_smoke.py -v
+              python scripts/s0_apprise_smoke.py --output /result/s0-apprise-resource.json
+            '
+          cp "$RUNNER_TEMP/seekpulse-s003/s0-apprise-resource.json" s0-apprise-resource.json
+          python - <<'PY'
+          import json
+          data = json.load(open("s0-apprise-resource.json", encoding="utf-8"))
+          assert data["scenario_counts"] == {"total": 10, "passed": 10}
+          quota = data["resource_observation"]
+          assert isinstance(quota["cgroup_memory_max_bytes"], int)
+          assert 0 < quota["cgroup_memory_max_bytes"] <= 1100000000
+          assert quota["cgroup_cpu_max"] and quota["cgroup_cpu_max"].split()[0] != "max"
+          print("S0_CGROUP_LIMITED_SMOKE=PASS")
+          print("S0_VM_PEAK_RSS_KIB=", quota["process_peak_rss_kib"])
+          print("S0_CGROUP_MEMORY_PEAK_BYTES=", quota["cgroup_memory_peak_bytes"])
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: s0-apprise-loopback-results
+          path: |
+            s0-apprise-loopback.json
+            s0-apprise-resource.json
+          if-no-files-found: warn
+          retention-days: 7
